@@ -166,6 +166,12 @@ A TRADE WILL START FOR A COIN IF THAT COIN REACHES A LONG LEVEL OF 3 OR HIGHER W
 
 ## Features (Version 2.0.0 - 2026-01-18)
 
+### New in v2.0.0: Comprehensive Dashboard & Risk Management
+- **Volume Analysis Dashboard**: Visualize volume trends, anomalies, and profiles per coin.
+- **Risk Management Dashboard**: Correlation matrix and portfolio diversification analysis.
+- **Enhanced Settings**: Centralized configuration for all modules via a tabbed interface.
+- **Advanced Documentation**: See [MANUAL.md](MANUAL.md) for a complete guide.
+
 ### Analytics Integration System
 - **Persistent Trade Journal**: SQLite-based database logging for all trades
 - **Performance Tracking**: Real-time metrics including win rate, P&L, Sharpe ratio, max drawdown
@@ -173,7 +179,7 @@ A TRADE WILL START FOR A COIN IF THAT COIN REACHES A LONG LEVEL OF 3 OR HIGHER W
 - **Dashboard Widgets**: Real-time KPI cards and period comparison tables
 - **Integration**: Single-point integration into pt_trader.py with graceful fallback
 
-**Modules**: pt_analytics.py (770 lines), pt_analytics_dashboard.py (262 lines)
+**Modules**: pt_analytics.py, pt_analytics_dashboard.py
 
 ### Analytics Dashboard
 - **KPI Cards**: Total trades, win rate, today's P&L, max drawdown
@@ -289,6 +295,7 @@ A TRADE WILL START FOR A COIN IF THAT COIN REACHES A LONG LEVEL OF 3 OR HIGHER W
 
 ## Documentation
 
+- **[MANUAL.md](MANUAL.md)**: **COMPLETE USER MANUAL** - Start here!
 - **README.md**: This file - main project documentation, setup, and usage
 - **CHANGELOG.md**: Complete version history with all changes documented
 - **ROADMAP.md**: Current status and future feature planning

@@ -49,8 +49,9 @@ try:
 except ImportError:
     TELEGRAM_AVAILABLE = False
 
+from pt_config import ConfigManager, NotificationConfig
+
 DB_PATH = Path("hub_data/notifications.db")
-CONFIG_PATH = Path("hub_data/notification_config.json")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,35 +70,7 @@ class NotificationPlatform(Enum):
     TELEGRAM = "telegram"
 
 
-@dataclass
-class NotificationConfig:
-    enabled: bool = True
-    platforms: Dict[str, bool] = None
-
-    email_address: Optional[str] = None
-    email_app_password: Optional[str] = None
-
-    discord_webhook_url: Optional[str] = None
-
-    telegram_bot_token: Optional[str] = None
-    telegram_chat_id: Optional[str] = None
-
-    rate_limit_emails_per_minute: int = 5
-    rate_limit_discord_per_minute: int = 10
-    rate_limit_telegram_per_minute: int = 10
-
-    level_platforms: Dict[str, Dict[str, bool]] = None
-
-    def __post_init__(self):
-        if self.platforms is None:
-            self.platforms = {"email": True, "discord": True, "telegram": True}
-        if self.level_platforms is None:
-            self.level_platforms = {
-                "info": {"email": True, "discord": True, "telegram": True},
-                "warning": {"email": True, "discord": True, "telegram": True},
-                "error": {"email": True, "discord": True, "telegram": True},
-                "critical": {"email": True, "discord": True, "telegram": True},
-            }
+# NotificationConfig is imported from pt_config
 
 
 @dataclass
@@ -562,22 +535,25 @@ class NotificationManager:
         }
 
     def _load_config(self) -> NotificationConfig:
-        if not CONFIG_PATH.exists():
-            return NotificationConfig()
-
         try:
-            with open(CONFIG_PATH, "r") as f:
-                data = json.load(f)
-            return NotificationConfig(**data)
+            cm = ConfigManager()
+            # Ensure notifications config is initialized
+            if cm.get().notifications is None:
+                cm.get().notifications = NotificationConfig()
+                cm.save()
+            return cm.get().notifications
         except Exception as e:
-            logger.error(f"Failed to load config, using defaults: {e}")
+            logger.error(f"Failed to load config from ConfigManager, using defaults: {e}")
             return NotificationConfig()
 
     def save_config(self):
-        CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(asdict(self.config), f, indent=2)
-        logger.info(f"Configuration saved to {CONFIG_PATH}")
+        try:
+            cm = ConfigManager()
+            cm.get().notifications = self.config
+            cm.save()
+            logger.info("Configuration saved via ConfigManager")
+        except Exception as e:
+            logger.error(f"Failed to save config via ConfigManager: {e}")
 
     def update_config(self, **kwargs):
         for key, value in kwargs.items():

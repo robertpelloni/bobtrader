@@ -20,6 +20,7 @@ import json
 import uuid
 
 from nacl.signing import SigningKey
+from pt_config import ConfigManager
 
 # -----------------------------
 # Robinhood market-data (current ASK), same source as rhcb.py trader:
@@ -164,52 +165,21 @@ long_started = "no"
 minute = 0
 last_minute = 0
 
-# -----------------------------
-# GUI SETTINGS (coins list)
-# -----------------------------
-_GUI_SETTINGS_PATH = os.environ.get("POWERTRADER_GUI_SETTINGS") or os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "gui_settings.json"
-)
-
-_gui_settings_cache = {
-    "mtime": None,
-    "coins": ["BTC", "ETH", "XRP", "BNB", "DOGE"],  # fallback defaults
-}
-
-
-def _load_gui_coins() -> list:
+def _load_config_coins() -> list:
     """
-    Reads gui_settings.json and returns settings["coins"] as an uppercased list.
-    Caches by mtime so it is cheap to call frequently.
+    Reads coins list from ConfigManager.
     """
     try:
-        if not os.path.isfile(_GUI_SETTINGS_PATH):
-            return list(_gui_settings_cache["coins"])
-
-        mtime = os.path.getmtime(_GUI_SETTINGS_PATH)
-        if _gui_settings_cache["mtime"] == mtime:
-            return list(_gui_settings_cache["coins"])
-
-        with open(_GUI_SETTINGS_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f) or {}
-
-        coins = data.get("coins", None)
-        if not isinstance(coins, list) or not coins:
-            coins = list(_gui_settings_cache["coins"])
-
-        coins = [str(c).strip().upper() for c in coins if str(c).strip()]
-        if not coins:
-            coins = list(_gui_settings_cache["coins"])
-
-        _gui_settings_cache["mtime"] = mtime
-        _gui_settings_cache["coins"] = coins
-        return list(coins)
+        cm = ConfigManager()
+        cm.reload()
+        coins = cm.get().trading.coins
+        return [str(c).strip().upper() for c in coins if str(c).strip()]
     except Exception:
-        return list(_gui_settings_cache["coins"])
+        return ["BTC", "ETH", "XRP", "BNB", "DOGE"]  # Fallback
 
 
 # Initial coin list (will be kept live via _sync_coins_from_settings())
-COIN_SYMBOLS = _load_gui_coins()
+COIN_SYMBOLS = _load_config_coins()
 CURRENT_COINS = list(COIN_SYMBOLS)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -344,14 +314,14 @@ def _is_printing_real_predictions(messages) -> bool:
 
 def _sync_coins_from_settings():
     """
-    Hot-reload coins from gui_settings.json while runner is running.
+    Hot-reload coins from ConfigManager while runner is running.
 
     - Adds new coins: creates folder + init_coin() + starts stepping them
     - Removes coins: stops stepping them (leaves state on disk untouched)
     """
     global CURRENT_COINS
 
-    new_list = _load_gui_coins()
+    new_list = _load_config_coins()
     if new_list == CURRENT_COINS:
         return
 
