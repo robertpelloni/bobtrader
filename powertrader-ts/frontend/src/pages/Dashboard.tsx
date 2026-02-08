@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface Trade {
     symbol: string;
@@ -9,33 +10,53 @@ interface Trade {
 export const Dashboard: React.FC = () => {
     const [trades, setTrades] = useState<Trade[]>([]);
     const [account, setAccount] = useState({ total: 0, pnl: 0 });
+    const { isConnected, lastMessage } = useWebSocket('ws://localhost:3000');
 
+    // Handle real-time updates
     useEffect(() => {
-        // Connect to Backend API
+        if (lastMessage) {
+            if (lastMessage.type === 'TRADE_UPDATE') {
+                // Update specific trade in list
+                const update = lastMessage.payload;
+                setTrades(prev => {
+                    const idx = prev.findIndex(t => t.symbol === update.symbol);
+                    if (idx >= 0) {
+                        const next = [...prev];
+                        next[idx] = update;
+                        return next;
+                    } else {
+                        return [...prev, update];
+                    }
+                });
+            } else if (lastMessage.type === 'ACCOUNT_UPDATE') {
+                setAccount(lastMessage.payload);
+            }
+        }
+    }, [lastMessage]);
+
+    // Initial fetch (fallback/hydration)
+    useEffect(() => {
         const fetchData = async () => {
             try {
-                // Mock fetch
-                // const res = await fetch('/api/dashboard');
-                // const data = await res.json();
-
-                // Using mock data for scaffolding verification
-                setAccount({ total: 12500, pnl: 450 });
-                setTrades([
-                    { symbol: 'BTC', pnl: 2.5, stage: 1 },
-                    { symbol: 'ETH', pnl: -1.2, stage: 0 }
-                ]);
+                const res = await fetch('http://localhost:3000/api/dashboard');
+                const data = await res.json();
+                setAccount(data.account);
+                setTrades(data.trades);
             } catch (e) {
                 console.error(e);
             }
         };
         fetchData();
-        const interval = setInterval(fetchData, 5000);
-        return () => clearInterval(interval);
     }, []);
 
     return (
         <div className="p-6">
-            <h1 className="text-3xl font-bold mb-6">PowerTrader Dashboard</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-3xl font-bold">PowerTrader Dashboard</h1>
+                <span className={`px-3 py-1 rounded text-sm ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {isConnected ? 'Live Connected' : 'Disconnected'}
+                </span>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Account Card */}

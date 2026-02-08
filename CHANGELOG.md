@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-01-18
+
+### Added
+- **Real-Time Frontend**: Upgraded `Dashboard.tsx` to use WebSockets (`useWebSocket` hook) for live trade and account updates.
+- **Advanced Cointrade Simulation**: Enhanced `CointradeAdapter` to simulate MACD, RSI, and Bollinger Bands signals, proving the integration point.
+- **Improved Cointrade Structure**: Prepared `backend/src/modules/cointrade` for submodule injection.
+- **Dashboard Hooks**: Added `useWebSocket` hook for reusable real-time data connection.
+
+### Changed
+- **Config Management**: Standardized configuration loading across the entire stack.
+- **Documentation**: Major overhaul of `VISION.md`, `MANUAL.md`, and `PROJECT_STRUCTURE.md` to reflect the TypeScript evolution.
+
 ## [2.1.0] - 2026-01-18
 
 ### Added
