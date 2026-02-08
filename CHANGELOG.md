@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-01-18
+
+### Added
+- **Dockerization**: Added `Dockerfile` for Backend and Frontend, plus `docker-compose.yml` for full stack deployment.
+- **Real-Time Data**: Implemented WebSocket server in backend and client integration for live updates.
+- **Trainer Port**: Ported AI training logic to `Trainer.ts`, removing Python dependency for pattern generation.
+- **Strategy Engine**: Added `SMAStrategy` as a proof-of-concept for the new Strategy interface.
+
 ## [2.0.0] - 2026-01-18
 
 ### Added

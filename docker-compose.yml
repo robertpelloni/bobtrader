@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./powertrader-ts/backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./hub_data:/app/hub_data
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+
+  frontend:
+    build: ./powertrader-ts/frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
