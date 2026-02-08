@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-18
+
+### Added
+- **Core Math Library**: Implemented `TechnicalAnalysis.ts` (SMA, EMA, RSI, MACD, BB) without external dependencies.
+- **Real Market Data**: `KuCoinConnector` and `BinanceConnector` now fetch real OHLCV data from public APIs.
+- **Strategy Integration**: `Trader` now uses `SMAStrategy` to check for entry signals on real data.
+- **Strategy Sandbox Live**: The Sandbox UI now runs strategies against real market data instead of mocks.
+
 ## [2.3.0] - 2026-01-18
 
 ### Added

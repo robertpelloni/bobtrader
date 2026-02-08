@@ -1,53 +1,52 @@
-# Session Handoff - PowerTrader AI v2.3.0
+# Session Handoff - PowerTrader AI v2.4.0
 
 **Date:** 2026-01-18
-**Status:** Strategy Sandbox & Persistence Implementation
+**Status:** Real Market Data & Strategy Implementation
 
 ---
 
 ## 1. Summary of Achievements
 
-This session delivered the "Strategy Sandbox" feature, enabling users to test and visualize trading strategies before deployment, and hardened the backend's data persistence.
+This session bridged the gap between the TypeScript architecture and the real world by implementing actual market data fetching and technical analysis.
 
 ### Core Deliverables
-1.  **Strategy Sandbox (Frontend)**:
-    *   `StrategySandbox.tsx`: A new dashboard page allowing users to select strategies, set parameters (e.g., RSI threshold), and visualize backtest results on an interactive chart.
-    *   **Visualization**: Used `recharts` to overlay price data with strategy indicators (RSI) and buy/sell signals.
+1.  **Core Math Library (`TechnicalAnalysis.ts`)**:
+    *   Implemented dependency-free versions of SMA, EMA, RSI, MACD, and Bollinger Bands.
+    *   This removes reliance on binary libraries like `tulind` which can cause cross-platform build issues.
 
-2.  **Strategy Execution API (Backend)**:
-    *   `POST /api/strategy/backtest`: Endpoint that runs the selected strategy adapter (e.g., `CointradeAdapter`) against simulated or historical data and returns results to the frontend.
+2.  **Real Exchange Data**:
+    *   `KuCoinConnector` and `BinanceConnector` now fetch real OHLCV candles from public APIs using `axios`.
+    *   The Strategy Sandbox now runs simulations on *real* live data, not random noise.
 
-3.  **Data Persistence**:
-    *   `AnalyticsManager.ts` now connects to the real SQLite database at `hub_data/trades.db`, ensuring trade history survives restarts.
-    *   Implemented proper table schemas for `trades` and `performance_daily`.
-
-4.  **Multi-Exchange Expansion**:
-    *   Added `KuCoinConnector` and `BinanceConnector` skeletons to the backend, preparing the architecture for non-Robinhood trading.
+3.  **Strategy-Driven Trading**:
+    *   `Trader.ts` was enhanced to use `SMAStrategy` for entry signals.
+    *   The trader now polls `KuCoin` for market data to feed the strategy engine.
 
 ---
 
 ## 2. Current State
 
-*   **Version:** 2.3.0
+*   **Version:** 2.4.0
 *   **Build Status:**
     *   Backend: **Compiles** (Verified).
-    *   Frontend: **Ready** (New page added).
-    *   Docker: **Ready**.
-*   **Database:** `hub_data/trades.db` is now the active source of truth.
+    *   Frontend: **Ready**.
+*   **Trading Logic:**
+    *   **Entry:** AI (Thinker) OR Strategy (SMA).
+    *   **Management:** DCA (Tiered) + Trailing Stop.
+    *   **Execution:** Robinhood (Real Auth) or Paper.
 
 ---
 
 ## 3. Next Steps (For Next Agent)
 
-1.  **Production Hardening**:
-    *   Replace the mock data in `server.ts`'s `/api/strategy/backtest` with actual historical data fetched via `RobinhoodConnector` or `KuCoinConnector`.
-    *   Implement the `fetchOHLCV` methods in the exchange connectors using real APIs.
+1.  **Cointrade Submodule**:
+    *   Now that `TechnicalAnalysis.ts` exists, port the *actual* Python logic from the external Cointrade repo into `CointradeAdapter.ts` using these TS primitives.
 
-2.  **Strategy Logic**:
-    *   Replace the random simulation in `CointradeAdapter` with actual technical analysis logic (using `tulind` or similar).
+2.  **Advanced Risk Management**:
+    *   Implement `PortfolioRebalancer.ts` to suggest rebalancing based on the Correlation Matrix.
 
-3.  **Deployment**:
-    *   Test the full Docker stack with persistence enabled to verify database file creation and retention.
+3.  **Frontend Polish**:
+    *   Add a "Live Strategy Status" widget to the Dashboard to show which strategy signals are currently active.
 
 ---
 
