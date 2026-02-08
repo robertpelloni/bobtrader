@@ -1,18 +1,27 @@
 import { IExchangeConnector } from "../engine/connector/IExchangeConnector";
 import axios, { AxiosInstance } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
-import * as crypto from 'crypto';
+import * as nacl from 'tweetnacl';
 
 export class RobinhoodConnector implements IExchangeConnector {
     name = "Robinhood";
     private baseUrl = "https://trading.robinhood.com";
     private apiKey: string;
-    private privateKey: string;
+    private privateKeySeed: Uint8Array;
     private axiosInstance: AxiosInstance;
 
-    constructor(apiKey: string, privateKey: string) {
+    constructor(apiKey: string, privateKeyBase64: string) {
         this.apiKey = apiKey;
-        this.privateKey = privateKey;
+
+        // Decode base64 private key seed
+        // Robinhood requires an Ed25519 keypair.
+        // The 'r_secret.txt' usually contains the base64 encoded seed (32 bytes).
+        const seedBuffer = Buffer.from(privateKeyBase64, 'base64');
+        if (seedBuffer.length !== 32) {
+            console.error(`[Robinhood] Warning: Private key seed length is ${seedBuffer.length}, expected 32 bytes.`);
+        }
+        this.privateKeySeed = new Uint8Array(seedBuffer);
+
         this.axiosInstance = axios.create({
             baseURL: this.baseUrl,
             timeout: 10000
@@ -22,16 +31,12 @@ export class RobinhoodConnector implements IExchangeConnector {
     private getAuthorizationHeader(method: string, path: string, body: string, timestamp: number): any {
         const messageToSign = `${this.apiKey}${timestamp}${path}${method}${body}`;
 
-        // Use Node.js crypto for Ed25519 signing
-        // Note: privateKey string from file is likely base64 encoded seed or private key
-        // This is a simplified implementation assuming standard handling
-        // Real implementation requires precise key format handling (e.g. using nacl or sodium-native)
-
-        // Placeholder for actual signing logic which depends on key format
-        // const signature = ...
-
-        // Mock signature for now to allow compilation/structure
-        const signature = "mock_signature_base64";
+        // Sign using tweetnacl (Ed25519)
+        // We regenerate the keypair from the seed every time (or could cache the keypair)
+        const keyPair = nacl.sign.keyPair.fromSeed(this.privateKeySeed);
+        const messageBytes = Buffer.from(messageToSign, 'utf-8');
+        const signatureBytes = nacl.sign.detached(messageBytes, keyPair.secretKey);
+        const signature = Buffer.from(signatureBytes).toString('base64');
 
         return {
             "x-api-key": this.apiKey,
@@ -55,7 +60,11 @@ export class RobinhoodConnector implements IExchangeConnector {
             });
             return response.data;
         } catch (error) {
-            console.error(`[Robinhood] Request failed: ${error}`);
+            if (axios.isAxiosError(error) && error.response) {
+                console.error(`[Robinhood] Request failed: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
+            } else {
+                console.error(`[Robinhood] Request failed: ${error}`);
+            }
             throw error;
         }
     }

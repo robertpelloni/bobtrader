@@ -1,0 +1,82 @@
+# PowerTrader AI - Project Structure & Modules
+
+**Version:** 2.0.0
+**Last Updated:** 2026-01-18
+
+This document outlines the directory structure, modules, and their current versions.
+
+---
+
+## Directory Structure
+
+```
+PowerTrader_AI/
+├── hub_data/                  # Runtime data (databases, logs, config)
+├── powertrader-ts/            # TypeScript Web Architecture (The Future)
+│   ├── backend/               # Node.js + Express + TypeScript
+│   │   ├── src/
+│   │   │   ├── analytics/     # AnalyticsManager (SQLite)
+│   │   │   ├── api/           # Express Server routes
+│   │   │   ├── config/        # ConfigManager (YAML)
+│   │   │   ├── engine/        # Core Interfaces (IStrategy, IConnector)
+│   │   │   ├── exchanges/     # Exchange Connectors (Robinhood)
+│   │   │   ├── extensions/    # PaperTrading, HyperOpt
+│   │   │   ├── modules/       # Submodules (Cointrade)
+│   │   │   ├── thinker/       # AI Engine (kNN)
+│   │   │   └── trader/        # Execution Engine (DCA, Trail)
+│   └── frontend/              # React + Vite
+│       ├── src/
+│       │   ├── components/    # Reusable UI components
+│       │   └── pages/         # Dashboard, Settings, Volume, Risk
+│
+├── pt_*.py                    # Legacy Python Desktop App (Tkinter)
+├── MANUAL.md                  # User Manual
+├── VISION.md                  # Project Vision & Design
+├── AGENTS.md                  # AI Agent Instructions
+└── VERSION.md                 # Single Source of Truth for Version
+```
+
+---
+
+## Module Inventory
+
+### TypeScript Backend (`powertrader-ts/backend`)
+
+| Module | Status | Description |
+| :--- | :--- | :--- |
+| `config` | **Production** | Centralized YAML config management. |
+| `trader` | **Production** | Core DCA and Trailing Stop logic. |
+| `thinker` | **Beta** | kNN pattern matching (file-based loading). |
+| `analytics` | **Production** | SQLite trade logging and performance metrics. |
+| `exchanges` | **Beta** | Robinhood Connector (Auth pending refinement). |
+| `extensions` | **Alpha** | PaperTrading and HyperOpt scaffolding. |
+
+### TypeScript Frontend (`powertrader-ts/frontend`)
+
+| Page | Status | Description |
+| :--- | :--- | :--- |
+| `Dashboard` | **Beta** | Real-time PnL and active trades view. |
+| `Settings` | **Beta** | Configuration editor. |
+| `Volume` | **Beta** | Volume Profile analysis visualization. |
+| `Risk` | **Beta** | Correlation matrix and position sizing. |
+
+### Legacy Python Core (`Root`)
+
+| File | Status | Description |
+| :--- | :--- | :--- |
+| `pt_hub.py` | **Maintenance** | Tkinter GUI and orchestration. |
+| `pt_trader.py` | **Maintenance** | Python implementation of trading logic. |
+| `pt_thinker.py` | **Maintenance** | Python implementation of AI logic. |
+| `pt_volume.py` | **Production** | Volume analysis logic. |
+| `pt_correlation.py` | **Production** | Risk analysis logic. |
+
+---
+
+## Versioning Strategy
+
+*   **Source of Truth:** `VERSION.md` contains the current semantic version (e.g., `2.0.0`).
+*   **Update Policy:**
+    *   **Major (X.0.0):** Architectural changes (e.g., Python -> TypeScript).
+    *   **Minor (0.X.0):** New features (e.g., New Dashboard, New Exchange).
+    *   **Patch (0.0.X):** Bug fixes and small tweaks.
+*   **Automation:** CI/CD pipelines (or Agents) must bump `VERSION.md` on every release commit.

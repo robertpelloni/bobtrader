@@ -119,9 +119,42 @@ This roadmap outlines the development history, current status, and future plans 
   - JSON file logging for structured data
   - Main testing function with comprehensive examples
 
+#### TypeScript Web Port (New in v2.0.0)
+- [x] **Backend** (Node.js + TypeScript)
+  - Modular Express.js architecture
+  - `Trader.ts` with full DCA and Trailing Stop logic
+  - `Thinker.ts` with kNN pattern matching and file-based memory loading
+  - `RobinhoodConnector.ts` with real Ed25519 signing (via tweetnacl)
+  - `ConfigManager.ts` matching Python YAML schema
+  - `AnalyticsManager.ts` with SQLite integration
+- [x] **Frontend** (React + Vite)
+  - Real-time Dashboard with Account Value and PnL
+  - Risk Management Dashboard (Correlation Matrix)
+  - Volume Analysis Dashboard
+  - Settings Management
+- [x] **Extensions**
+  - `CointradeAdapter` placeholder for submodule integration
+  - `HyperOpt` and `PaperTrading` scaffolding
+
 ---
 
 ## Version 3.0.0 - Planned Features (Future)
+
+### High Priority 🔴
+
+#### Production Readiness for Web Port
+**Status:** In Progress
+**Description:**
+- Full end-to-end testing of TypeScript backend
+- Implement WebSocket support for real-time frontend updates (currently polling)
+- Replace file-based kNN memory loading with a database solution for speed
+- Dockerize the entire stack (Backend + Frontend + Nginx)
+
+#### Cointrade Integration
+**Status:** Placeholder Ready
+**Description:**
+- Fully integrate the `cointrade` logic into `CointradeAdapter` once code is accessible
+- Expose Cointrade signals to the Frontend Dashboard
 
 ### Medium Priority 🟡
 
@@ -163,43 +196,6 @@ This roadmap outlines the development history, current status, and future plans 
 - Regime-specific trading parameters
 - Market regime dashboard visualization
 
-#### Advanced Notifications
-**Status:** Partial (basic implemented, advanced pending)
-**Description:**
-- Slack notifications
-- Microsoft Teams notifications
-- SMS notifications (via Twilio)
-- Push notifications (via OneSignal)
-- Custom webhook notifications
-
-#### Backtesting Improvements
-**Status:** Not Started
-**Description:**
-- Walk-forward optimization
-- Monte Carlo simulation
-- Multi-symbol backtesting
-- Parameter optimization
-- Strategy comparison dashboard
-
-#### Machine Learning Enhancements
-**Status:** Not Started
-**Description:**
-- Feature engineering pipeline
-- Model ensemble (multiple kNN models)
-- Feature importance analysis
-- Model versioning and rollback
-- A/B testing framework
-
-#### GUI Enhancements
-**Status:** Not Started
-**Description:**
-- Real-time streaming charts
-- Customizable dashboard layouts
-- Trade replay feature
-- Heatmaps for correlation matrices
-- Performance attribution charts
-- Alert rules builder
-
 ### Low Priority 🟢
 
 #### Mobile App
@@ -209,14 +205,6 @@ This roadmap outlines the development history, current status, and future plans 
 - Real-time monitoring
 - Push notifications
 - Basic trade controls
-
-#### Web Dashboard
-**Status:** Not Started
-**Description:**
-- FastAPI or Django backend
-- React or Vue frontend
-- Real-time WebSocket updates
-- Multi-user support
 
 #### Trading Bot Marketplace
 **Status:** Not Started
@@ -264,49 +252,6 @@ This roadmap outlines the development history, current status, and future plans 
 
 ---
 
-## Dependencies & External Services
-
-### Current Dependencies
-- **Robinhood Crypto API** - Trading execution
-- **KuCoin API** - Primary price data
-- **Binance API** - Fallback price data
-- **Coinbase API** - Fallback price data
-- **SQLite** - Analytics and trade journal
-- **yagmail** - Gmail notifications
-- **discord-webhook** - Discord notifications
-- **python-telegram-bot** - Telegram notifications
-- **matplotlib** - Charting
-- **tkinter** - GUI framework
-- **pandas** - Data analysis
-- **numpy** - Numerical computing
-- **requests** - HTTP requests
-
-### Potential Future Integrations
-**MCP Servers (Model Context Protocol):**
-- OctagonAI MCP servers (stock market data, financials, transcripts, etc.)
-- Alpha Vantage MCP (technical indicators, forex, crypto data)
-- CoinGecko MCP (crypto market data)
-- Binance MCP (crypto trading)
-- Upbit MCP (Korean crypto market)
-- Uniswap MCP (DEX data)
-- CryptoPanic MCP (crypto news and sentiment)
-
-**Financial APIs:**
-- Alpha Vantage (already using, may expand)
-- TwelveData (alternative data provider)
-- CoinGecko API (crypto data)
-- Glassnode (on-chain analytics)
-- Messari (crypto research)
-- CoinMetrics (crypto market data)
-
-**Data Sources:**
-- Reddit API (sentiment)
-- Twitter API (sentiment)
-- Discord API (community sentiment)
-- News APIs (Bloomberg, Reuters)
-
----
-
 ## Testing & Quality Assurance
 
 ### Current Testing Status
@@ -323,102 +268,6 @@ This roadmap outlines the development history, current status, and future plans 
 - [ ] Continuous integration (GitHub Actions)
 - [ ] Automated testing on each PR
 - [ ] Staging environment for production testing
-
----
-
-## Security Considerations
-
-### Current Security Measures
-- [x] API key encryption at rest
-- [x] No hardcoded credentials
-- [x] Graceful error handling
-- [ ] Input validation
-- [ ] Rate limiting on API calls
-- [ ] SQL injection prevention
-- [ ] XSS prevention (if web dashboard added)
-
-### Security Goals for v3.0.0
-- [ ] Implement secrets management
-- [ ] Add audit logging
-- [ ] Implement 2FA for web interface
-- [ ] Security audit
-- [ ] Penetration testing
-
----
-
-## Documentation Roadmap
-
-### Current Documentation
-- [x] README.md (setup and basic usage)
-- [x] CHANGELOG.md (version history)
-- [x] ROADMAP.md (this file)
-- [x] NOTIFICATIONS_README.md (notification docs)
-- [x] NOTIFICATION_INTEGRATION.md (integration guide)
-
-### Documentation Goals for v3.0.0
-- [ ] API documentation for all modules
-- [ ] Developer guide
-- [ ] Contribution guide
-- [ ] Architecture diagrams
-- [ ] Troubleshooting guide
-- [ ] Video tutorials
-- [ ] Jupyter notebooks for data analysis
-
----
-
-## Community & Contribution
-
-### Current State
-- Open source (Apache 2.0 license)
-- Repository on GitHub
-- Issues and pull requests enabled
-
-### Goals for v3.0.0
-- [ ] Contributor guide
-- [ ] Code of conduct
-- [ ] Roadmap voting mechanism
-- [ ] Feature request template
-- [ ] Bug report template
-- [ ] Community Discord/Slack
-
----
-
-## Performance Targets
-
-### Current Performance
-- Prediction latency: ~1-2 seconds per coin
-- Trade execution latency: ~0.5-1 second
-- Memory usage: ~200-500MB (varies by coin count)
-
-### Targets for v3.0.0
-- [ ] Reduce prediction latency to <1 second
-- [ ] Support 50+ coins simultaneously
-- [ ] Optimize memory usage to <100MB per coin
-- [ ] Implement caching for price data
-- [ ] Database optimization for analytics queries
-
----
-
-## Known Issues
-
-### Current Issues
-- None documented
-
-### Technical Debt
-- Scattered configuration files (addressed in v3.0.0)
-- Limited error recovery mechanisms
-- No proper shutdown sequence
-- Testing coverage is low
-
----
-
-## Feedback & Suggestions
-
-We welcome feedback and suggestions! Please:
-1. Open an issue on GitHub for bug reports or feature requests
-2. Join our community Discord for discussions
-3. Check existing issues before creating new ones
-4. Provide clear descriptions and reproduction steps for bugs
 
 ---
 
