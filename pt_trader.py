@@ -13,6 +13,7 @@ from colorama import Fore, Style
 import traceback
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
+from pt_config import ConfigManager
 
 try:
     from pt_analytics import TradeJournal
@@ -38,203 +39,6 @@ ACCOUNT_VALUE_HISTORY_PATH = os.path.join(HUB_DATA_DIR, "account_value_history.j
 
 # Initialize colorama
 colorama.init(autoreset=True)
-
-# -----------------------------
-# GUI SETTINGS (coins list + main_neural_dir)
-# -----------------------------
-_GUI_SETTINGS_PATH = os.environ.get("POWERTRADER_GUI_SETTINGS") or os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "gui_settings.json"
-)
-
-_gui_settings_cache = {
-    "mtime": None,
-    "coins": ["BTC", "ETH", "XRP", "BNB", "DOGE"],  # fallback defaults
-    "main_neural_dir": None,
-    "trade_start_level": 3,
-    "start_allocation_pct": 0.005,
-    "dca_multiplier": 2.0,
-    "dca_levels": [-2.5, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0],
-    "max_dca_buys_per_24h": 2,
-    # Trailing PM settings (defaults match previous hardcoded behavior)
-    "pm_start_pct_no_dca": 5.0,
-    "pm_start_pct_with_dca": 2.5,
-    "trailing_gap_pct": 0.5,
-}
-
-
-def _load_gui_settings() -> dict:
-    """
-    Reads gui_settings.json and returns a dict with:
-    - coins: uppercased list
-    - main_neural_dir: string (may be None)
-    Caches by mtime so it is cheap to call frequently.
-    """
-    try:
-        if not os.path.isfile(_GUI_SETTINGS_PATH):
-            return dict(_gui_settings_cache)
-
-        mtime = os.path.getmtime(_GUI_SETTINGS_PATH)
-        if _gui_settings_cache["mtime"] == mtime:
-            return dict(_gui_settings_cache)
-
-        with open(_GUI_SETTINGS_PATH, "r", encoding="utf-8") as f:
-            data = json.load(f) or {}
-
-        coins = data.get("coins", None)
-        if not isinstance(coins, list) or not coins:
-            coins = list(_gui_settings_cache["coins"])
-        coins = [str(c).strip().upper() for c in coins if str(c).strip()]
-        if not coins:
-            coins = list(_gui_settings_cache["coins"])
-
-        main_neural_dir = data.get("main_neural_dir", None)
-        if isinstance(main_neural_dir, str):
-            main_neural_dir = main_neural_dir.strip() or None
-        else:
-            main_neural_dir = None
-
-        trade_start_level = data.get(
-            "trade_start_level", _gui_settings_cache.get("trade_start_level", 3)
-        )
-        try:
-            trade_start_level = int(float(trade_start_level))
-        except Exception:
-            trade_start_level = int(_gui_settings_cache.get("trade_start_level", 3))
-        trade_start_level = max(1, min(trade_start_level, 7))
-
-        start_allocation_pct = data.get(
-            "start_allocation_pct",
-            _gui_settings_cache.get("start_allocation_pct", 0.005),
-        )
-        try:
-            start_allocation_pct = float(
-                str(start_allocation_pct).replace("%", "").strip()
-            )
-        except Exception:
-            start_allocation_pct = float(
-                _gui_settings_cache.get("start_allocation_pct", 0.005)
-            )
-        if start_allocation_pct < 0.0:
-            start_allocation_pct = 0.0
-
-        dca_multiplier = data.get(
-            "dca_multiplier", _gui_settings_cache.get("dca_multiplier", 2.0)
-        )
-        try:
-            dca_multiplier = float(str(dca_multiplier).strip())
-        except Exception:
-            dca_multiplier = float(_gui_settings_cache.get("dca_multiplier", 2.0))
-        if dca_multiplier < 0.0:
-            dca_multiplier = 0.0
-
-        dca_levels = data.get(
-            "dca_levels",
-            _gui_settings_cache.get(
-                "dca_levels", [-2.5, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0]
-            ),
-        )
-        if not isinstance(dca_levels, list) or not dca_levels:
-            dca_levels = list(
-                _gui_settings_cache.get(
-                    "dca_levels", [-2.5, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0]
-                )
-            )
-        parsed = []
-        for v in dca_levels:
-            try:
-                parsed.append(float(v))
-            except Exception:
-                pass
-        if parsed:
-            dca_levels = parsed
-        else:
-            dca_levels = list(
-                _gui_settings_cache.get(
-                    "dca_levels", [-2.5, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0]
-                )
-            )
-
-        max_dca_buys_per_24h = data.get(
-            "max_dca_buys_per_24h", _gui_settings_cache.get("max_dca_buys_per_24h", 2)
-        )
-        try:
-            max_dca_buys_per_24h = int(float(max_dca_buys_per_24h))
-        except Exception:
-            max_dca_buys_per_24h = int(
-                _gui_settings_cache.get("max_dca_buys_per_24h", 2)
-            )
-        if max_dca_buys_per_24h < 0:
-            max_dca_buys_per_24h = 0
-
-        # --- Trailing PM settings ---
-        pm_start_pct_no_dca = data.get(
-            "pm_start_pct_no_dca", _gui_settings_cache.get("pm_start_pct_no_dca", 5.0)
-        )
-        try:
-            pm_start_pct_no_dca = float(
-                str(pm_start_pct_no_dca).replace("%", "").strip()
-            )
-        except Exception:
-            pm_start_pct_no_dca = float(
-                _gui_settings_cache.get("pm_start_pct_no_dca", 5.0)
-            )
-        if pm_start_pct_no_dca < 0.0:
-            pm_start_pct_no_dca = 0.0
-
-        pm_start_pct_with_dca = data.get(
-            "pm_start_pct_with_dca",
-            _gui_settings_cache.get("pm_start_pct_with_dca", 2.5),
-        )
-        try:
-            pm_start_pct_with_dca = float(
-                str(pm_start_pct_with_dca).replace("%", "").strip()
-            )
-        except Exception:
-            pm_start_pct_with_dca = float(
-                _gui_settings_cache.get("pm_start_pct_with_dca", 2.5)
-            )
-        if pm_start_pct_with_dca < 0.0:
-            pm_start_pct_with_dca = 0.0
-
-        trailing_gap_pct = data.get(
-            "trailing_gap_pct", _gui_settings_cache.get("trailing_gap_pct", 0.5)
-        )
-        try:
-            trailing_gap_pct = float(str(trailing_gap_pct).replace("%", "").strip())
-        except Exception:
-            trailing_gap_pct = float(_gui_settings_cache.get("trailing_gap_pct", 0.5))
-        if trailing_gap_pct < 0.0:
-            trailing_gap_pct = 0.0
-
-        _gui_settings_cache["mtime"] = mtime
-        _gui_settings_cache["coins"] = coins
-        _gui_settings_cache["main_neural_dir"] = main_neural_dir
-        _gui_settings_cache["trade_start_level"] = trade_start_level
-        _gui_settings_cache["start_allocation_pct"] = start_allocation_pct
-        _gui_settings_cache["dca_multiplier"] = dca_multiplier
-        _gui_settings_cache["dca_levels"] = dca_levels
-        _gui_settings_cache["max_dca_buys_per_24h"] = max_dca_buys_per_24h
-
-        _gui_settings_cache["pm_start_pct_no_dca"] = pm_start_pct_no_dca
-        _gui_settings_cache["pm_start_pct_with_dca"] = pm_start_pct_with_dca
-        _gui_settings_cache["trailing_gap_pct"] = trailing_gap_pct
-
-        return {
-            "mtime": mtime,
-            "coins": list(coins),
-            "main_neural_dir": main_neural_dir,
-            "trade_start_level": trade_start_level,
-            "start_allocation_pct": start_allocation_pct,
-            "dca_multiplier": dca_multiplier,
-            "dca_levels": list(dca_levels),
-            "max_dca_buys_per_24h": max_dca_buys_per_24h,
-            "pm_start_pct_no_dca": pm_start_pct_no_dca,
-            "pm_start_pct_with_dca": pm_start_pct_with_dca,
-            "trailing_gap_pct": trailing_gap_pct,
-        }
-
-    except Exception:
-        return dict(_gui_settings_cache)
 
 
 def _build_base_paths(main_dir_in: str, coins_in: list) -> dict:
@@ -279,12 +83,12 @@ PM_START_PCT_NO_DCA = 5.0
 PM_START_PCT_WITH_DCA = 2.5
 
 
-_last_settings_mtime = None
+_last_config_hash = None
 
 
 def _refresh_paths_and_symbols():
     """
-    Hot-reload GUI settings while trader is running.
+    Hot-reload settings from ConfigManager while trader is running.
     Updates globals: crypto_symbols, main_dir, base_paths,
                     TRADE_START_LEVEL, START_ALLOC_PCT, DCA_MULTIPLIER, DCA_LEVELS, MAX_DCA_BUYS_PER_24H,
                     TRAILING_GAP_PCT, PM_START_PCT_NO_DCA, PM_START_PCT_WITH_DCA
@@ -297,76 +101,39 @@ def _refresh_paths_and_symbols():
         DCA_LEVELS, \
         MAX_DCA_BUYS_PER_24H
     global TRAILING_GAP_PCT, PM_START_PCT_NO_DCA, PM_START_PCT_WITH_DCA
-    global _last_settings_mtime
-
-    s = _load_gui_settings()
-    mtime = s.get("mtime", None)
-
-    # If settings file doesn't exist, keep current defaults
-    if mtime is None:
-        return
-
-    if _last_settings_mtime == mtime:
-        return
-
-    _last_settings_mtime = mtime
-
-    coins = s.get("coins") or list(crypto_symbols)
-    mndir = s.get("main_neural_dir") or main_dir
-    TRADE_START_LEVEL = max(
-        1,
-        min(int(s.get("trade_start_level", TRADE_START_LEVEL) or TRADE_START_LEVEL), 7),
-    )
-    START_ALLOC_PCT = float(
-        s.get("start_allocation_pct", START_ALLOC_PCT) or START_ALLOC_PCT
-    )
-    if START_ALLOC_PCT < 0.0:
-        START_ALLOC_PCT = 0.0
-
-    DCA_MULTIPLIER = float(s.get("dca_multiplier", DCA_MULTIPLIER) or DCA_MULTIPLIER)
-    if DCA_MULTIPLIER < 0.0:
-        DCA_MULTIPLIER = 0.0
-
-    DCA_LEVELS = list(s.get("dca_levels", DCA_LEVELS) or DCA_LEVELS)
+    global _last_config_hash
 
     try:
-        MAX_DCA_BUYS_PER_24H = int(
-            float(
-                s.get("max_dca_buys_per_24h", MAX_DCA_BUYS_PER_24H)
-                or MAX_DCA_BUYS_PER_24H
-            )
-        )
-    except Exception:
-        MAX_DCA_BUYS_PER_24H = int(MAX_DCA_BUYS_PER_24H)
-    if MAX_DCA_BUYS_PER_24H < 0:
-        MAX_DCA_BUYS_PER_24H = 0
+        cm = ConfigManager()
+        cm.reload()
+        config = cm.get().trading
 
-    # Trailing PM hot-reload values
-    TRAILING_GAP_PCT = float(
-        s.get("trailing_gap_pct", TRAILING_GAP_PCT) or TRAILING_GAP_PCT
-    )
-    if TRAILING_GAP_PCT < 0.0:
-        TRAILING_GAP_PCT = 0.0
+        # Check if config actually changed (optional optimization, but good practice)
+        # For now we just apply it every time as reload() is cheap enough
 
-    PM_START_PCT_NO_DCA = float(
-        s.get("pm_start_pct_no_dca", PM_START_PCT_NO_DCA) or PM_START_PCT_NO_DCA
-    )
-    if PM_START_PCT_NO_DCA < 0.0:
-        PM_START_PCT_NO_DCA = 0.0
+        coins = config.coins
+        mndir = config.main_neural_dir
 
-    PM_START_PCT_WITH_DCA = float(
-        s.get("pm_start_pct_with_dca", PM_START_PCT_WITH_DCA) or PM_START_PCT_WITH_DCA
-    )
-    if PM_START_PCT_WITH_DCA < 0.0:
-        PM_START_PCT_WITH_DCA = 0.0
+        TRADE_START_LEVEL = max(1, min(config.trade_start_level, 7))
+        START_ALLOC_PCT = max(0.0, config.start_allocation_pct)
+        DCA_MULTIPLIER = max(0.0, config.dca_multiplier)
+        DCA_LEVELS = list(config.dca_levels)
+        MAX_DCA_BUYS_PER_24H = max(0, config.max_dca_buys_per_24h)
 
-    # Keep it safe if folder isn't real on this machine
-    if not os.path.isdir(mndir):
-        mndir = os.getcwd()
+        TRAILING_GAP_PCT = max(0.0, config.trailing_gap_pct)
+        PM_START_PCT_NO_DCA = max(0.0, config.pm_start_pct_no_dca)
+        PM_START_PCT_WITH_DCA = max(0.0, config.pm_start_pct_with_dca)
 
-    crypto_symbols = list(coins)
-    main_dir = mndir
-    base_paths = _build_base_paths(main_dir, crypto_symbols)
+        # Keep it safe if folder isn't real on this machine
+        if not mndir or not os.path.isdir(mndir):
+            mndir = os.getcwd()
+
+        crypto_symbols = list(coins)
+        main_dir = mndir
+        base_paths = _build_base_paths(main_dir, crypto_symbols)
+
+    except Exception as e:
+        print(f"Error refreshing settings: {e}")
 
 
 # API STUFF

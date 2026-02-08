@@ -408,11 +408,27 @@ class ConfigManager:
         """Convert dictionary to PowerTraderConfig dataclass."""
         config_dict = {}
 
-        for section_name, section_data in data.items():
-            if not isinstance(section_data, dict):
-                continue
+        # Explicitly convert each section to its dataclass
+        if "trading" in data and isinstance(data["trading"], dict):
+            config_dict["trading"] = TradingConfig(**data["trading"])
 
-            config_dict[section_name] = section_data
+        if "notifications" in data and isinstance(data["notifications"], dict):
+            config_dict["notifications"] = NotificationConfig(**data["notifications"])
+
+        if "exchanges" in data and isinstance(data["exchanges"], dict):
+            config_dict["exchanges"] = ExchangeConfig(**data["exchanges"])
+
+        if "analytics" in data and isinstance(data["analytics"], dict):
+            config_dict["analytics"] = AnalyticsConfig(**data["analytics"])
+
+        if "position_sizing" in data and isinstance(data["position_sizing"], dict):
+            config_dict["position_sizing"] = PositionSizingConfig(**data["position_sizing"])
+
+        if "correlation" in data and isinstance(data["correlation"], dict):
+            config_dict["correlation"] = CorrelationConfig(**data["correlation"])
+
+        if "system" in data and isinstance(data["system"], dict):
+            config_dict["system"] = SystemConfig(**data["system"])
 
         return PowerTraderConfig(**config_dict)
 
