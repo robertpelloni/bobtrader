@@ -1,1 +1,0 @@
-{"version":3,"file":"ConfigManager.d.ts","sourceRoot":"","sources":["ConfigManager.ts"],"names":[],"mappings":"AAIA,qBAAa,aAAa;IACtB,OAAO,CAAC,MAAM,CAAC,QAAQ,CAAgB;IACvC,OAAO,CAAC,MAAM,CAAW;IACzB,OAAO,CAAC,UAAU,CAAS;IAE3B,OAAO;WAKO,WAAW,IAAI,aAAa;IAOnC,IAAI,IAAI,IAAI;IAcZ,GAAG,CAAC,GAAG,EAAE,MAAM,GAAG,GAAG;IAI5B,OAAO,CAAC,aAAa;CAgBxB"}

@@ -231,6 +231,25 @@ notifications:
   telegram_chat_id: "YOUR_CHAT_ID"
 ```
 
+### Multi-Exchange Trading
+
+PowerTrader v2.6.0 now supports trading on **KuCoin** and **Binance.US** in addition to Robinhood.
+To switch exchanges, update `config.yaml`:
+
+```yaml
+trading:
+  active_exchange: "kucoin" # options: robinhood, kucoin, binance, paper
+
+exchanges:
+  kucoin:
+    key: "YOUR_API_KEY"
+    secret: "YOUR_API_SECRET"
+    passphrase: "YOUR_API_PASSPHRASE"
+  binance:
+    key: "YOUR_API_KEY"
+    secret: "YOUR_API_SECRET"
+```
+
 ---
 
 ## Trading Strategy

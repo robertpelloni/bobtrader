@@ -140,6 +140,10 @@ export class Trader {
             console.log(`[Trader] Trailing stop hit for ${coin}. Selling at ${currentPrice}.`);
             await this.exitTrade(coin, currentPrice, position, "trailing_stop");
         }
+        } catch (e: any) {
+            console.error(`[Trader] Error processing ${coin}:`, e);
+            await this.notifications.error(`Error processing ${coin}: ${e.message}`);
+        }
     }
 
     private async enterTrade(coin: string, price: number): Promise<void> {

@@ -2,3 +2,9 @@ node_modules/
 dist/
 __pycache__/
 *.pyc
+*.log
+.DS_Store
+# Ignore compiled TS in src if they accidentally get generated there
+powertrader-ts/backend/src/**/*.js
+powertrader-ts/backend/src/**/*.d.ts
+powertrader-ts/backend/src/**/*.map

@@ -18,10 +18,11 @@ PowerTrader_AI/
 │   │   │   ├── analytics/     # AnalyticsManager (SQLite)
 │   │   │   ├── api/           # Express Server routes
 │   │   │   ├── config/        # ConfigManager (YAML)
-│   │   │   ├── engine/        # Core Interfaces (IStrategy, IConnector)
-│   │   │   ├── exchanges/     # Exchange Connectors (Robinhood)
+│   │   │   ├── engine/        # Core Interfaces, StrategyFactory, BacktestEngine
+│   │   │   ├── exchanges/     # Exchange Connectors (Robinhood, KuCoin, Binance)
 │   │   │   ├── extensions/    # PaperTrading, HyperOpt
 │   │   │   ├── modules/       # Submodules (Cointrade)
+│   │   │   ├── notifications/ # NotificationManager (Email, Discord, Telegram)
 │   │   │   ├── thinker/       # AI Engine (kNN)
 │   │   │   └── trader/        # Execution Engine (DCA, Trail)
 │   └── frontend/              # React + Vite
@@ -48,8 +49,10 @@ PowerTrader_AI/
 | `trader` | **Production** | Core DCA and Trailing Stop logic. |
 | `thinker` | **Beta** | kNN pattern matching (file-based loading). |
 | `analytics` | **Production** | SQLite trade logging and performance metrics. |
-| `exchanges` | **Beta** | Robinhood Connector (Auth pending refinement). |
-| `extensions` | **Alpha** | PaperTrading and HyperOpt scaffolding. |
+| `exchanges` | **Production** | Robinhood, KuCoin, Binance with Trading & Auth. |
+| `extensions` | **Production** | PaperTrading Engine and HyperOpt Genetic Optimizer. |
+| `notifications` | **Production** | Multi-channel alert system. |
+| `engine` | **Production** | StrategyFactory and BacktestEngine. |
 
 ### TypeScript Frontend (`powertrader-ts/frontend`)
 

@@ -41,12 +41,18 @@ export class ConfigManager {
         this.config = {
             trading: {
                 execution_mode: "paper",
+                active_exchange: "robinhood", // robinhood, kucoin, binance, paper
                 coins: ["BTC", "ETH", "XRP", "BNB", "DOGE"],
                 trade_start_level: 3,
                 start_allocation_pct: 0.005,
                 dca_multiplier: 2.0,
                 dca_levels: [-2.5, -5.0, -10.0, -20.0, -30.0, -40.0, -50.0],
                 max_dca_buys_per_24h: 2
+            },
+            exchanges: {
+                robinhood: { key: "", secret: "" },
+                kucoin: { key: "", secret: "", passphrase: "" },
+                binance: { key: "", secret: "" }
             },
             system: {
                 log_level: "INFO"

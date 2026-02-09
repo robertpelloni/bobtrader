@@ -2,7 +2,25 @@
 
 This roadmap outlines the development history, current status, and future plans for PowerTrader AI.
 
-## Version 2.2.0 (In Development) - TypeScript Revolution
+## Version 2.6.0 (Released) - Strategy & Multi-Exchange
+
+### Completed Features ✅
+
+#### Advanced Strategy & Backtesting
+- [x] **Historical Backtesting Engine**: `BacktestEngine.ts` with equity curve and drawdown analysis.
+- [x] **Genetic Optimization**: `HyperOpt` engine for auto-tuning strategy parameters.
+- [x] **Strategy Sandbox**: Frontend UI for visualizing backtest results.
+- [x] **Implementations**: `SMAStrategy`, `RSIStrategy` utilizing native `TechnicalAnalysis` library.
+
+#### Multi-Exchange Trading
+- [x] **KuCoin Connector**: Full trading (Orders, Balance) with HMAC-SHA256 signing.
+- [x] **Binance Connector**: Full trading (Orders, Balance) with HMAC-SHA256 signing.
+- [x] **Paper Trading**: Configurable execution mode with fee simulation.
+
+#### Notification System
+- [x] **Multi-Channel**: Email, Discord, and Telegram integration.
+
+## Version 2.2.0 (Released) - TypeScript Revolution
 
 ### Completed Features ✅
 
@@ -33,37 +51,27 @@ This roadmap outlines the development history, current status, and future plans 
 
 ---
 
-## Upcoming Milestones (v2.3.0+)
+## Upcoming Milestones (v2.7.0+)
 
-### 1. Full Real-Time Integration
-**Goal:** Replace frontend polling with WebSocket streams for instant updates.
-- [ ] Connect `Dashboard.tsx` to `WebSocketManager`
-- [ ] Connect `VolumeDashboard.tsx` to live volume streams
-- [ ] Implement `useWebSocket` hook
-
-### 2. Advanced Strategy Engine
-**Goal:** Prove the platform's versatility beyond DCA/kNN.
-- [ ] Implement `SMAStrategy.ts` fully
-- [ ] Create "Strategy Sandbox" UI to backtest strategies in the browser
-- [ ] Build `HyperOpt` UI for parameter tuning
-
-### 3. Cointrade Submodule
-**Goal:** Fully integrate the external strategy engine.
-- [ ] Clone submodule code (when accessible)
-- [ ] Wire `CointradeAdapter` to real signals
-- [ ] Add specific Cointrade configuration panel
-
-### 4. Robustness & Testing
+### 1. Robustness & Unit Testing
 **Goal:** Ensure 99.9% uptime reliability.
 - [ ] Unit tests for `Trader.ts` logic (DCA triggers)
 - [ ] Unit tests for `Thinker.ts` pattern matching
-- [ ] End-to-end testing with `PaperExchange`
+- [ ] Integration tests for Exchange Connectors
 
-### 5. Multi-Exchange Expansion
-**Goal:** Move beyond Robinhood.
-- [ ] Implement `KuCoinConnector` (TypeScript)
-- [ ] Implement `BinanceConnector` (TypeScript)
+### 2. Full Real-Time Integration
+**Goal:** Replace frontend polling with WebSocket streams for instant updates.
+- [ ] Connect `Dashboard.tsx` to `WebSocketManager` (Partial)
+- [ ] Connect `VolumeDashboard.tsx` to live volume streams
+
+### 3. Coinbase Support
+**Goal:** Complete the "Big 3" US exchange support.
 - [ ] Implement `CoinbaseConnector` (TypeScript)
+
+### 4. AI Evolution
+**Goal:** Upgrade "The Thinker" from kNN to LSTM/Transformer.
+- [ ] Research TensorFlow.js integration
+- [ ] Implement Model Training UI
 
 ---
 

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-01-18
+
+### Added
+- **Multi-Exchange Trading**: Implemented full `createOrder`, `cancelOrder`, and `fetchBalance` for KuCoin and Binance with HMAC-SHA256 signing.
+- **Frontend Backtesting UI**: `StrategySandbox.tsx` now calls the real backend API and visualizes Equity Curve, Win Rate, and Drawdown.
+- **Dynamic Configuration**: `ConfigManager` updated to support `exchanges.kucoin` and `exchanges.binance` credentials.
+
 ## [2.6.0] - 2026-01-18
 
 ### Added

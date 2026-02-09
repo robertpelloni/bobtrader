@@ -1,0 +1,21 @@
+trading:
+  coins:
+    - BTC
+    - ETH
+    - XRP
+    - BNB
+    - DOGE
+  trade_start_level: 3
+  start_allocation_pct: 0.005
+  dca_multiplier: 2
+  dca_levels:
+    - -2.5
+    - -5
+    - -10
+    - -20
+    - -30
+    - -40
+    - -50
+  max_dca_buys_per_24h: 2
+system:
+  log_level: INFO

@@ -1,6 +1,8 @@
 import { startServer } from './api/server';
 import { Trader } from './trader/Trader';
 import { RobinhoodConnector } from './exchanges/RobinhoodConnector';
+import { KuCoinConnector } from './exchanges/KuCoinConnector';
+import { BinanceConnector } from './exchanges/BinanceConnector';
 import { PaperExchange } from './extensions/paper_trading/PaperExchange';
 import { ConfigManager } from './config/ConfigManager';
 
@@ -8,15 +10,39 @@ import { ConfigManager } from './config/ConfigManager';
 const config = ConfigManager.getInstance();
 const tradingConfig = config.get("trading");
 const mode = tradingConfig?.execution_mode || "paper";
+const activeExchange = tradingConfig?.active_exchange || "robinhood";
+const exchangeConfig = config.get("exchanges") || {};
 
 let exchange;
-if (mode === "live") {
-    // TODO: Load keys from secure storage or environment
-    exchange = new RobinhoodConnector(process.env.RH_KEY || "", process.env.RH_SECRET || "");
-    console.log("[System] Running in LIVE mode with RobinhoodConnector");
-} else {
+if (mode === "paper") {
     exchange = new PaperExchange(10000);
     console.log("[System] Running in PAPER mode");
+} else {
+    // LIVE MODE
+    console.log(`[System] Running in LIVE mode on ${activeExchange.toUpperCase()}`);
+
+    switch (activeExchange) {
+        case "kucoin":
+            exchange = new KuCoinConnector(
+                exchangeConfig.kucoin?.key,
+                exchangeConfig.kucoin?.secret,
+                exchangeConfig.kucoin?.passphrase
+            );
+            break;
+        case "binance":
+            exchange = new BinanceConnector(
+                exchangeConfig.binance?.key,
+                exchangeConfig.binance?.secret
+            );
+            break;
+        case "robinhood":
+        default:
+            exchange = new RobinhoodConnector(
+                exchangeConfig.robinhood?.key || process.env.RH_KEY || "",
+                exchangeConfig.robinhood?.secret || process.env.RH_SECRET || ""
+            );
+            break;
+    }
 }
 
 const trader = new Trader(exchange);
