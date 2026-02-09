@@ -1,34 +1,39 @@
 import { IExchangeConnector } from "../engine/connector/IExchangeConnector";
 import { ConfigManager } from "../config/ConfigManager";
 import { AnalyticsManager } from "../analytics/AnalyticsManager";
-import { SMAStrategy } from "../engine/strategy/implementations/SMAStrategy";
+import { StrategyFactory } from "../engine/strategy/StrategyFactory";
+import { IStrategy } from "../engine/strategy/IStrategy";
 import { KuCoinConnector } from "../exchanges/KuCoinConnector";
 
 export class Trader {
     private connector: IExchangeConnector;
-    private marketDataConnector: IExchangeConnector; // For strategy data
+    private marketDataConnector: IExchangeConnector;
     private config: ConfigManager;
     private analytics: AnalyticsManager;
     private activeTrades: Map<string, any> = new Map();
     private dcaLevels: number[];
     private maxDcaBuys: number;
-    private strategy: SMAStrategy; // POC Strategy
+    private strategy: IStrategy;
 
     constructor(connector: IExchangeConnector) {
         this.connector = connector;
-        this.marketDataConnector = new KuCoinConnector(); // Use KuCoin for reliable data
+        this.marketDataConnector = new KuCoinConnector();
         this.config = ConfigManager.getInstance();
         this.analytics = new AnalyticsManager();
-        this.strategy = new SMAStrategy();
 
         const cfg = this.config.get("trading");
         this.dcaLevels = cfg.dca_levels || [-2.5, -5.0, -10.0];
         this.maxDcaBuys = cfg.max_dca_buys_per_24h || 2;
+
+        // Load Strategy from Config
+        const strategyName = cfg.active_strategy || "SMAStrategy";
+        this.strategy = StrategyFactory.get(strategyName) || StrategyFactory.get("SMAStrategy")!;
+        console.log(`[Trader] Loaded Strategy: ${this.strategy.name}`);
     }
 
     public async start(): Promise<void> {
         console.log("Starting Trader Engine...");
-        setInterval(() => this.tick(), 10000); // 10 seconds tick
+        setInterval(() => this.tick(), 10000);
     }
 
     private async tick(): Promise<void> {
@@ -50,24 +55,23 @@ export class Trader {
 
         let position = this.activeTrades.get(coin);
 
-        // 1. Check for ENTRY (Strategy Mode)
+        // 1. Check for ENTRY
         if (!position) {
-            // Check strategy signal
             try {
                 // Fetch recent candles for strategy
                 const candles = await this.marketDataConnector.fetchOHLCV(`${coin}-USD`, '1h', 50);
                 if (candles.length > 0) {
-                    const analysis = await this.strategy.populateBuyTrend(candles);
-                    const lastCandle = analysis[analysis.length - 1];
+                    const withIndicators = await this.strategy.populateIndicators(candles);
+                    const withSignals = await this.strategy.populateBuyTrend(withIndicators);
+                    const lastCandle = withSignals[withSignals.length - 1];
 
                     if (lastCandle.buy_signal) {
-                        console.log(`[Trader] Strategy Buy Signal for ${coin}!`);
+                        console.log(`[Trader] ${this.strategy.name} Buy Signal for ${coin}!`);
                         await this.enterTrade(coin, currentPrice);
                         return;
                     }
                 }
             } catch (e) {
-                // Strategy failure shouldn't crash trader
                 console.error(`[Trader] Strategy check failed for ${coin}:`, e);
             }
             return;
@@ -75,7 +79,22 @@ export class Trader {
 
         // 2. Calculate PnL
         const pnlPct = ((currentPrice - position.avgPrice) / position.avgPrice) * 100;
-        console.log(`[Trader] ${coin} Price: ${currentPrice} PnL: ${pnlPct.toFixed(2)}%`);
+
+        // Check Strategy Exit
+        try {
+             const candles = await this.marketDataConnector.fetchOHLCV(`${coin}-USD`, '1h', 50);
+             if (candles.length > 0) {
+                 const withIndicators = await this.strategy.populateIndicators(candles);
+                 const withSignals = await this.strategy.populateSellTrend(withIndicators);
+                 const lastCandle = withSignals[withSignals.length - 1];
+
+                 if (lastCandle.sell_signal) {
+                     console.log(`[Trader] ${this.strategy.name} Sell Signal for ${coin}!`);
+                     await this.exitTrade(coin, currentPrice, position, "strategy_signal");
+                     return;
+                 }
+             }
+        } catch (e) {}
 
         // 3. Check for DCA (Dollar Cost Averaging)
         if (pnlPct < 0 && position.dcaCount < this.maxDcaBuys) {
@@ -119,10 +138,7 @@ export class Trader {
     }
 
     private async enterTrade(coin: string, price: number): Promise<void> {
-        const allocPct = this.config.get("trading.start_allocation_pct") || 0.01;
-        // Assume simplified balance check for now
-        const amount = 100 / price; // Fixed $100 entry for demo logic
-
+        const amount = 100 / price;
         console.log(`[Trader] Entering Trade: ${amount} ${coin} @ ${price}`);
         await this.connector.createOrder(`${coin}-USD`, 'market', 'buy', amount);
 
@@ -149,8 +165,6 @@ export class Trader {
         const dcaMultiplier = this.config.get("trading.dca_multiplier");
         const amount = position.amount * dcaMultiplier;
 
-        console.log(`[Trader] Executing DCA Buy: ${amount} ${coin} @ ${price}`);
-
         await this.connector.createOrder(`${coin}-USD`, 'market', 'buy', amount);
 
         const totalCost = (position.avgPrice * position.amount) + (price * amount);
@@ -171,8 +185,6 @@ export class Trader {
     }
 
     private async exitTrade(coin: string, price: number, position: any, reason: string): Promise<void> {
-        console.log(`[Trader] Executing Sell: ${position.amount} ${coin} @ ${price}`);
-
         await this.connector.createOrder(`${coin}-USD`, 'market', 'sell', position.amount);
 
         this.analytics.logTrade({

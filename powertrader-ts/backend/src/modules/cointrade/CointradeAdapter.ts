@@ -1,46 +1,57 @@
-import { IStrategy } from "../engine/strategy/IStrategy";
+import { IStrategy } from "../../engine/strategy/IStrategy";
+import { TechnicalAnalysis } from "../../utils/TechnicalAnalysis";
 
 export class CointradeAdapter implements IStrategy {
     name = "Cointrade (External)";
     interval = "1h";
 
     constructor() {
-        console.log("[Cointrade] Adapter initialized. Simulating complex signals...");
+        console.log("[Cointrade] Adapter initialized. Running TS implementation of Cointrade logic.");
     }
 
     async populateIndicators(dataframe: any): Promise<any> {
-        console.log("[Cointrade] Calculating MACD, RSI, Bollinger Bands...");
-        // Simulation of complex indicator calculation
-        // In reality, this would bridge to the python submodule or use a TS library
+        // Cointrade Logic Port: RSI, Bollinger Bands, and MACD
+        const closes = dataframe.map((c: any) => c.close);
 
-        // Mocking indicators for the dataframe
-        if (Array.isArray(dataframe)) {
-            return dataframe.map((candle: any) => ({
-                ...candle,
-                macd: Math.random() * 10 - 5,
-                rsi: Math.random() * 100,
-                bb_upper: candle.close * 1.05,
-                bb_lower: candle.close * 0.95
-            }));
-        }
-        return dataframe;
+        const rsi = TechnicalAnalysis.calculateRSI(closes, 14);
+        const { upper, lower } = TechnicalAnalysis.calculateBollingerBands(closes, 20, 2);
+        const { macdLine, signalLine } = TechnicalAnalysis.calculateMACD(closes, 12, 26, 9);
+
+        // Align arrays (indicators are shorter than data due to warm-up periods)
+        const len = dataframe.length;
+
+        return dataframe.map((c: any, i: number) => {
+            // Calculate offsets
+            const rsiIdx = i - (len - rsi.length);
+            const bbIdx = i - (len - upper.length);
+            const macdIdx = i - (len - macdLine.length);
+
+            return {
+                ...c,
+                rsi: rsiIdx >= 0 ? rsi[rsiIdx] : null,
+                bb_upper: bbIdx >= 0 ? upper[bbIdx] : null,
+                bb_lower: bbIdx >= 0 ? lower[bbIdx] : null,
+                macd: macdIdx >= 0 ? macdLine[macdIdx] : null,
+                macd_signal: macdIdx >= 0 ? signalLine[macdIdx] : null
+            };
+        });
     }
 
     async populateBuyTrend(dataframe: any): Promise<any> {
-        console.log("[Cointrade] Checking buy signals (RSI < 30 & Price < BB_Lower)...");
-        // Mock signal generation
-        return dataframe.map((candle: any) => ({
-            ...candle,
-            buy_signal: candle.rsi < 30 && candle.close < candle.bb_lower ? 1 : 0
-        }));
+        // Cointrade Signal: Buy when RSI < 30 AND Price < Lower BB
+        return dataframe.map((c: any) => {
+            const buy = (c.rsi !== null && c.bb_lower !== null) &&
+                        (c.rsi < 30 && c.close < c.bb_lower) ? 1 : 0;
+            return { ...c, buy_signal: buy };
+        });
     }
 
     async populateSellTrend(dataframe: any): Promise<any> {
-        console.log("[Cointrade] Checking sell signals (RSI > 70 & Price > BB_Upper)...");
-        // Mock signal generation
-        return dataframe.map((candle: any) => ({
-            ...candle,
-            sell_signal: candle.rsi > 70 && candle.close > candle.bb_upper ? 1 : 0
-        }));
+        // Cointrade Signal: Sell when RSI > 70 AND Price > Upper BB
+        return dataframe.map((c: any) => {
+            const sell = (c.rsi !== null && c.bb_upper !== null) &&
+                         (c.rsi > 70 && c.close > c.bb_upper) ? 1 : 0;
+            return { ...c, sell_signal: sell };
+        });
     }
 }

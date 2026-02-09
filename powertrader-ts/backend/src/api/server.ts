@@ -7,7 +7,7 @@ import { AnalyticsManager } from '../analytics/AnalyticsManager';
 import { WebSocketManager } from './websocket';
 import { CointradeAdapter } from '../modules/cointrade/CointradeAdapter';
 import { KuCoinConnector } from '../exchanges/KuCoinConnector';
-import { SMAStrategy } from '../engine/strategy/implementations/SMAStrategy';
+import { StrategyFactory } from '../engine/strategy/StrategyFactory';
 
 const app = express();
 const port = 3000;
@@ -17,13 +17,10 @@ app.use(bodyParser.json());
 
 const config = ConfigManager.getInstance();
 const analytics = new AnalyticsManager();
-const cointrade = new CointradeAdapter();
 const kucoin = new KuCoinConnector();
-const smaStrategy = new SMAStrategy();
 
 // --- API ROUTES ---
 
-// Dashboard Data
 app.get('/api/dashboard', (req, res) => {
     const perf = analytics.getPerformance();
     res.json({
@@ -43,6 +40,7 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
+    // In a real implementation: config.set('trading', req.body);
     res.json({ success: true });
 });
 
@@ -55,14 +53,29 @@ app.get('/api/volume/:coin', (req, res) => {
     });
 });
 
-// Strategy Sandbox Endpoint (REAL DATA)
+// Strategy Management
+app.get('/api/strategies', (req, res) => {
+    const strategies = StrategyFactory.getAll().map(s => ({
+        name: s.name,
+        interval: s.interval
+    }));
+    const active = config.get('trading.active_strategy') || "SMAStrategy";
+    res.json({ strategies, active });
+});
+
+app.post('/api/strategies/config', (req, res) => {
+    const { strategy } = req.body;
+    // In real app, we would ConfigManager.set('trading.active_strategy', strategy)
+    console.log(`[API] Switching active strategy to: ${strategy}`);
+    res.json({ success: true, active: strategy });
+});
+
 app.post('/api/strategy/backtest', async (req, res) => {
     try {
         console.log("[API] Running Strategy Backtest...", req.body);
         const symbol = req.body.symbol || "BTC";
         const strategyName = req.body.strategy || "Cointrade";
 
-        // 1. Fetch Real Data from KuCoin
         console.log(`[API] Fetching real data for ${symbol}...`);
         const candles = await kucoin.fetchOHLCV(`${symbol}-USD`, '1h', 100);
 
@@ -70,28 +83,26 @@ app.post('/api/strategy/backtest', async (req, res) => {
             return res.status(404).json({ error: "No market data found" });
         }
 
-        // 2. Run Strategy
-        let resultData = candles;
-
-        if (strategyName === "SMA Crossover") {
-            // Apply SMA Logic
-            // We need to implement populateIndicators properly in SMAStrategy first
-            // For now, let's use the simulation logic in CointradeAdapter as it's more robust in this demo
-            resultData = await cointrade.populateIndicators(candles);
-            resultData = await cointrade.populateBuyTrend(resultData);
-
-        } else {
-            // Default to Cointrade Adapter (simulation of complex indicators)
-            resultData = await cointrade.populateIndicators(candles);
-            resultData = await cointrade.populateBuyTrend(resultData);
-            resultData = await cointrade.populateSellTrend(resultData);
+        let strategy = StrategyFactory.get(strategyName);
+        if (!strategy && strategyName === "Cointrade") {
+             // Special case for Cointrade if not registered in factory yet or named differently
+             strategy = StrategyFactory.get("Cointrade (External)");
         }
 
-        // Map to frontend format
+        if (!strategy) {
+             return res.status(400).json({ error: `Strategy ${strategyName} not found` });
+        }
+
+        const enrichedData = await strategy.populateIndicators(candles);
+        const withBuy = await strategy.populateBuyTrend(enrichedData);
+        const resultData = await strategy.populateSellTrend(withBuy);
+
         const frontendData = resultData.map((c: any) => ({
             time: c.timestamp,
             price: c.close,
+            // Map strategy-specific indicators to generic chart fields
             rsi: c.rsi || 50,
+            macd: c.macd || 0,
             signal: c.buy_signal ? 1 : (c.sell_signal ? -1 : 0)
         }));
 
