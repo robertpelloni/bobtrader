@@ -4,12 +4,14 @@ import { AnalyticsManager } from "../analytics/AnalyticsManager";
 import { StrategyFactory } from "../engine/strategy/StrategyFactory";
 import { IStrategy } from "../engine/strategy/IStrategy";
 import { KuCoinConnector } from "../exchanges/KuCoinConnector";
+import { NotificationManager } from "../notifications/NotificationManager";
 
 export class Trader {
     private connector: IExchangeConnector;
     private marketDataConnector: IExchangeConnector;
     private config: ConfigManager;
     private analytics: AnalyticsManager;
+    private notifications: NotificationManager;
     private activeTrades: Map<string, any> = new Map();
     private dcaLevels: number[];
     private maxDcaBuys: number;
@@ -20,6 +22,7 @@ export class Trader {
         this.marketDataConnector = new KuCoinConnector();
         this.config = ConfigManager.getInstance();
         this.analytics = new AnalyticsManager();
+        this.notifications = NotificationManager.getInstance();
 
         const cfg = this.config.get("trading");
         this.dcaLevels = cfg.dca_levels || [-2.5, -5.0, -10.0];
@@ -50,10 +53,11 @@ export class Trader {
     }
 
     private async processCoin(coin: string): Promise<void> {
-        const pair = `${coin}-USD`;
-        const currentPrice = await this.connector.fetchTicker(pair);
+        try {
+            const pair = `${coin}-USD`;
+            const currentPrice = await this.connector.fetchTicker(pair);
 
-        let position = this.activeTrades.get(coin);
+            let position = this.activeTrades.get(coin);
 
         // 1. Check for ENTRY
         if (!position) {
@@ -71,8 +75,9 @@ export class Trader {
                         return;
                     }
                 }
-            } catch (e) {
+            } catch (e: any) {
                 console.error(`[Trader] Strategy check failed for ${coin}:`, e);
+                await this.notifications.error(`Strategy check failed for ${coin}: ${e.message}`);
             }
             return;
         }
@@ -139,7 +144,10 @@ export class Trader {
 
     private async enterTrade(coin: string, price: number): Promise<void> {
         const amount = 100 / price;
-        console.log(`[Trader] Entering Trade: ${amount} ${coin} @ ${price}`);
+        const message = `Entering Trade: ${amount.toFixed(4)} ${coin} @ $${price.toFixed(2)}`;
+        console.log(`[Trader] ${message}`);
+        await this.notifications.info(message);
+
         await this.connector.createOrder(`${coin}-USD`, 'market', 'buy', amount);
 
         this.activeTrades.set(coin, {
@@ -165,6 +173,10 @@ export class Trader {
         const dcaMultiplier = this.config.get("trading.dca_multiplier");
         const amount = position.amount * dcaMultiplier;
 
+        const message = `Executing DCA for ${coin}: ${amount.toFixed(4)} @ $${price.toFixed(2)}`;
+        console.log(`[Trader] ${message}`);
+        await this.notifications.info(message);
+
         await this.connector.createOrder(`${coin}-USD`, 'market', 'buy', amount);
 
         const totalCost = (position.avgPrice * position.amount) + (price * amount);
@@ -185,6 +197,10 @@ export class Trader {
     }
 
     private async exitTrade(coin: string, price: number, position: any, reason: string): Promise<void> {
+        const message = `Exiting Trade (${reason}): ${position.amount.toFixed(4)} ${coin} @ $${price.toFixed(2)}`;
+        console.log(`[Trader] ${message}`);
+        await this.notifications.info(message);
+
         await this.connector.createOrder(`${coin}-USD`, 'market', 'sell', position.amount);
 
         this.analytics.logTrade({

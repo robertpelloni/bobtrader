@@ -8,6 +8,8 @@ import { WebSocketManager } from './websocket';
 import { CointradeAdapter } from '../modules/cointrade/CointradeAdapter';
 import { KuCoinConnector } from '../exchanges/KuCoinConnector';
 import { StrategyFactory } from '../engine/strategy/StrategyFactory';
+import { BacktestEngine } from '../engine/backtest/BacktestEngine';
+import { HyperOpt } from '../extensions/hyperopt/HyperOpt';
 
 const app = express();
 const port = 3000;
@@ -70,22 +72,51 @@ app.post('/api/strategies/config', (req, res) => {
     res.json({ success: true, active: strategy });
 });
 
+app.post('/api/hyperopt/run', async (req, res) => {
+    try {
+        console.log("[API] Running HyperOpt...", req.body);
+        const config = req.body;
+
+        // Defaults
+        const hyperOptConfig = {
+            strategyName: config.strategy || "SMAStrategy",
+            pair: `${config.symbol || "BTC"}-USD`,
+            timeframe: config.timeframe || "1h",
+            startDate: config.startDate ? new Date(config.startDate).getTime() : (Date.now() - (30 * 24 * 60 * 60 * 1000)),
+            endDate: config.endDate ? new Date(config.endDate).getTime() : Date.now(),
+            populationSize: config.populationSize || 20,
+            generations: config.generations || 10,
+            parameterSpace: config.parameterSpace || {
+                period: { min: 5, max: 100, step: 1 }
+            }
+        };
+
+        const optimizer = new HyperOpt();
+        const result = await optimizer.optimize(hyperOptConfig);
+
+        res.json(result);
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message || "HyperOpt failed" });
+    }
+});
+
 app.post('/api/strategy/backtest', async (req, res) => {
     try {
-        console.log("[API] Running Strategy Backtest...", req.body);
+        console.log("[API] Running Full Backtest...", req.body);
         const symbol = req.body.symbol || "BTC";
-        const strategyName = req.body.strategy || "Cointrade";
+        const strategyName = req.body.strategy || "SMAStrategy";
+        const timeframe = req.body.timeframe || "1h";
 
-        console.log(`[API] Fetching real data for ${symbol}...`);
-        const candles = await kucoin.fetchOHLCV(`${symbol}-USD`, '1h', 100);
-
-        if (candles.length === 0) {
-            return res.status(404).json({ error: "No market data found" });
-        }
+        // Default to last 30 days if not specified
+        const now = Date.now();
+        const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+        const endDate = req.body.endDate ? new Date(req.body.endDate).getTime() : now;
+        const startDate = req.body.startDate ? new Date(req.body.startDate).getTime() : (now - thirtyDays);
+        const initialBalance = req.body.initialBalance || 10000;
 
         let strategy = StrategyFactory.get(strategyName);
         if (!strategy && strategyName === "Cointrade") {
-             // Special case for Cointrade if not registered in factory yet or named differently
              strategy = StrategyFactory.get("Cointrade (External)");
         }
 
@@ -93,23 +124,20 @@ app.post('/api/strategy/backtest', async (req, res) => {
              return res.status(400).json({ error: `Strategy ${strategyName} not found` });
         }
 
-        const enrichedData = await strategy.populateIndicators(candles);
-        const withBuy = await strategy.populateBuyTrend(enrichedData);
-        const resultData = await strategy.populateSellTrend(withBuy);
+        const engine = new BacktestEngine();
+        const result = await engine.run({
+            strategy: strategyName,
+            pair: `${symbol}-USD`,
+            startDate,
+            endDate,
+            initialBalance,
+            timeframe
+        }, strategy);
 
-        const frontendData = resultData.map((c: any) => ({
-            time: c.timestamp,
-            price: c.close,
-            // Map strategy-specific indicators to generic chart fields
-            rsi: c.rsi || 50,
-            macd: c.macd || 0,
-            signal: c.buy_signal ? 1 : (c.sell_signal ? -1 : 0)
-        }));
-
-        res.json(frontendData);
-    } catch (e) {
+        res.json(result);
+    } catch (e: any) {
         console.error(e);
-        res.status(500).json({ error: "Backtest failed" });
+        res.status(500).json({ error: e.message || "Backtest failed" });
     }
 });
 

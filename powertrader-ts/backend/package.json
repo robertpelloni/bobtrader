@@ -2,10 +2,12 @@
   "dependencies": {
     "@types/ws": "^8.18.1",
     "axios": "^1.13.4",
+    "better-sqlite3": "^12.6.2",
     "body-parser": "^2.2.2",
     "cors": "^2.8.6",
     "crypto-js": "^4.2.0",
     "express": "^5.2.1",
+    "nodemailer": "^8.0.1",
     "tweetnacl": "^1.0.3",
     "typescript": "^5.9.3",
     "uuid": "^13.0.0",
@@ -16,6 +18,7 @@
     "@types/body-parser": "^1.19.6",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/nodemailer": "^7.0.9",
     "@types/yaml": "^1.9.6"
   }
 }

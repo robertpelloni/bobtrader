@@ -40,6 +40,7 @@ export class ConfigManager {
     private createDefault(): void {
         this.config = {
             trading: {
+                execution_mode: "paper",
                 coins: ["BTC", "ETH", "XRP", "BNB", "DOGE"],
                 trade_start_level: 3,
                 start_allocation_pct: 0.005,

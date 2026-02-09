@@ -15,6 +15,9 @@ export interface IStrategy {
 
     // Position Sizing
     positionSize?: number; // 0.0 - 1.0 (percent of wallet)
+
+    // Optimization
+    setParameters?(params: any): void;
 }
 
 export interface IStrategyManager {

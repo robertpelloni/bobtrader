@@ -10,6 +10,12 @@ export class RSIStrategy implements IStrategy {
     buyThreshold = 30;
     sellThreshold = 70;
 
+    setParameters(params: any): void {
+        if (params.period) this.period = params.period;
+        if (params.buyThreshold) this.buyThreshold = params.buyThreshold;
+        if (params.sellThreshold) this.sellThreshold = params.sellThreshold;
+    }
+
     async populateIndicators(dataframe: any): Promise<any> {
         const closes = dataframe.map((c: any) => c.close);
         const rsi = TechnicalAnalysis.calculateRSI(closes, this.period);

@@ -7,6 +7,7 @@ export interface IBacktestConfig {
     endDate: number;
     initialBalance: number;
     timeframe: string;
+    data?: any[]; // Optional pre-fetched data
 }
 
 export interface IBacktestResult {
@@ -17,6 +18,7 @@ export interface IBacktestResult {
     sharpeRatio: number;
     trades: any[];
     equityCurve: { time: number, value: number }[];
+    chartData: any[]; // Enriched candles
 }
 
 export interface IBacktestEngine {

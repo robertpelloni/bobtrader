@@ -167,6 +167,72 @@ Access via `Settings...` in the top menu. Settings are saved to `config.yaml` (a
 
 ---
 
+## New in v2.6.0
+
+### Backtesting & Optimization
+
+PowerTrader now includes a powerful **Historical Backtesting Engine** and **Genetic Optimizer**.
+
+#### Running a Backtest
+Currently accessible via API (UI integration in progress):
+`POST /api/strategy/backtest`
+```json
+{
+  "strategy": "RSIStrategy",
+  "symbol": "BTC",
+  "timeframe": "1h",
+  "startDate": "2023-01-01",
+  "initialBalance": 10000
+}
+```
+
+#### Genetic Optimization (HyperOpt)
+To automatically tune strategy parameters (e.g., RSI Period, Thresholds):
+`POST /api/hyperopt/run`
+```json
+{
+  "strategy": "RSIStrategy",
+  "pair": "BTC-USD",
+  "generations": 10,
+  "populationSize": 20,
+  "parameterSpace": {
+    "period": { "min": 5, "max": 30, "step": 1 },
+    "buyThreshold": { "min": 20, "max": 40, "step": 1 }
+  }
+}
+```
+
+### Paper Trading Mode
+
+You can now simulate trading without risking real funds, using real market data.
+In `config.yaml`:
+```yaml
+trading:
+  execution_mode: "paper"  # vs "live"
+```
+The system will start with a virtual $10,000 balance and simulate fees (0.1%) and order fills.
+
+### Notification System
+
+The TypeScript backend now supports multi-channel notifications.
+Configure in `config.yaml` or through the Settings UI:
+
+```yaml
+notifications:
+  enabled: true
+  platforms:
+    email: true
+    discord: true
+    telegram: true
+  discord_webhook_url: "YOUR_WEBHOOK_URL"
+  email_address: "your@gmail.com"
+  email_app_password: "your_app_password"
+  telegram_bot_token: "YOUR_BOT_TOKEN"
+  telegram_chat_id: "YOUR_CHAT_ID"
+```
+
+---
+
 ## Trading Strategy
 
 ### Neural Levels
