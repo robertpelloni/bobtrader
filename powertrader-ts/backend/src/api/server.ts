@@ -10,6 +10,8 @@ import { KuCoinConnector } from '../exchanges/KuCoinConnector';
 import { StrategyFactory } from '../engine/strategy/StrategyFactory';
 import { BacktestEngine } from '../engine/backtest/BacktestEngine';
 import { HyperOpt } from '../extensions/hyperopt/HyperOpt';
+import { DeepThinker } from '../thinker/DeepThinker';
+import { HistoricalData } from '../engine/backtest/HistoricalData';
 
 const app = express();
 const port = 3000;
@@ -138,6 +140,58 @@ app.post('/api/strategy/backtest', async (req, res) => {
     } catch (e: any) {
         console.error(e);
         res.status(500).json({ error: e.message || "Backtest failed" });
+    }
+});
+
+// --- AI Evolution (DeepThinker) ---
+const deepThinker = new DeepThinker();
+
+app.post('/api/ai/train', async (req, res) => {
+    try {
+        const { symbol = "BTC", timeframe = "1h", lookback = 30 } = req.body;
+
+        console.log(`[API] Training DeepThinker for ${symbol} ${timeframe}...`);
+
+        const now = Date.now();
+        const start = now - (lookback * 24 * 60 * 60 * 1000); // Days
+        const candles = await HistoricalData.fetch(`${symbol}-USD`, timeframe, start, now);
+
+        if (candles.length < 100) {
+            return res.status(400).json({ error: "Insufficient data for training" });
+        }
+
+        // Run training in background (or await if simple)
+        const history = await deepThinker.train(candles);
+
+        res.json({ success: true, history });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/ai/predict', async (req, res) => {
+    try {
+        const { symbol = "BTC", timeframe = "1h" } = req.body;
+
+        // Fetch last 100 candles for context
+        const now = Date.now();
+        const start = now - (5 * 24 * 60 * 60 * 1000);
+        const candles = await HistoricalData.fetch(`${symbol}-USD`, timeframe, start, now);
+
+        const prediction = await deepThinker.predict(candles);
+        const lastClose = candles[candles.length - 1].close;
+        const direction = prediction > lastClose ? "UP" : "DOWN";
+
+        res.json({
+            prediction,
+            lastClose,
+            direction,
+            diff: prediction - lastClose
+        });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 });
 

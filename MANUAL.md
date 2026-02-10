@@ -252,28 +252,19 @@ exchanges:
 
 ---
 
-## New in v2.8.0
+## New in v3.0.0-alpha
 
-### Coinbase Support
+### AI Evolution: DeepThinker
 
-PowerTrader now supports **Coinbase Advanced Trade**. Configure in `config.yaml`:
+PowerTrader now features an advanced LSTM neural network engine ("DeepThinker") capable of learning complex price patterns.
 
-```yaml
-trading:
-  active_exchange: "coinbase"
-
-exchanges:
-  coinbase:
-    key: "YOUR_API_KEY"
-    secret: "YOUR_API_SECRET"
-```
-
-### Real-Time Dashboard
-
-The main dashboard now receives instant push updates for:
-- **Trade Execution**: See entries, DCA buys, and exits immediately.
-- **PnL Tracking**: Profit percentages update tick-by-tick.
-- **Account Value**: Total balance reflects market moves in real-time.
+#### AI Lab
+A new "AI Lab" page allows you to train models directly from the browser:
+1.  Navigate to **AI Lab**.
+2.  Enter a symbol (e.g., `ETH`).
+3.  Click **Start Training Loop**.
+4.  Watch the Loss Curve decrease as the model learns.
+5.  Click **Test Inference** to see real-time price predictions.
 
 ---
 

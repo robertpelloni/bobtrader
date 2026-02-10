@@ -42,6 +42,7 @@ export class ConfigManager {
             trading: {
                 execution_mode: "paper",
                 active_exchange: "robinhood", // robinhood, kucoin, binance, paper
+                active_ai: "DeepThinker", // DeepThinker, Thinker (kNN)
                 coins: ["BTC", "ETH", "XRP", "BNB", "DOGE"],
                 trade_start_level: 3,
                 start_allocation_pct: 0.005,

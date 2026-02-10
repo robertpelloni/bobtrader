@@ -2,21 +2,6 @@
 
 This roadmap outlines the development history, current status, and future plans for PowerTrader AI.
 
-## Version 2.8.0 (Released) - The "Big 3" & Real-Time
-
-### Completed Features ✅
-
-#### Multi-Exchange Completion
-- [x] **Coinbase Connector**: Full trading via Advanced Trade API with HMAC-SHA256.
-- [x] **Universal Support**: Logic now seamlessly switches between Robinhood, KuCoin, Binance, and Coinbase.
-
-#### Real-Time Core
-- [x] **WebSocket Integration**: `Trader.ts` broadcasts `TRADE_UPDATE` and `ACCOUNT_UPDATE` events.
-- [x] **Live Dashboard**: Frontend updates immediately on trade execution.
-
-#### Robustness
-- [x] **Unit Testing**: Jest test suite for `Trader` logic (Entry, DCA, Exit).
-
 ## Version 2.6.0 (Released) - Strategy & Multi-Exchange
 
 ### Completed Features ✅
@@ -66,22 +51,27 @@ This roadmap outlines the development history, current status, and future plans 
 
 ---
 
-## Upcoming Milestones (v3.0.0+)
+## Upcoming Milestones (v2.7.0+)
 
-### 1. AI Evolution (The Next Frontier)
+### 1. Robustness & Unit Testing
+**Goal:** Ensure 99.9% uptime reliability.
+- [ ] Unit tests for `Trader.ts` logic (DCA triggers)
+- [ ] Unit tests for `Thinker.ts` pattern matching
+- [ ] Integration tests for Exchange Connectors
+
+### 2. Full Real-Time Integration
+**Goal:** Replace frontend polling with WebSocket streams for instant updates.
+- [ ] Connect `Dashboard.tsx` to `WebSocketManager` (Partial)
+- [ ] Connect `VolumeDashboard.tsx` to live volume streams
+
+### 3. Coinbase Support
+**Goal:** Complete the "Big 3" US exchange support.
+- [ ] Implement `CoinbaseConnector` (TypeScript)
+
+### 4. AI Evolution
 **Goal:** Upgrade "The Thinker" from kNN to LSTM/Transformer.
-- [ ] Research TensorFlow.js / ONNX integration.
-- [ ] Implement `DeepThinker` module replacing kNN.
-- [ ] Create Model Training UI in the frontend.
-
-### 2. DeFi Integration
-**Goal:** Decentralized trading via RPC.
-- [ ] Implement `UniswapConnector`.
-- [ ] Add WalletConnect support to frontend.
-
-### 3. Mobile App
-**Goal:** Manage trades on the go.
-- [ ] Port `powertrader-ts/frontend` to React Native.
+- [ ] Research TensorFlow.js integration
+- [ ] Implement Model Training UI
 
 ---
 

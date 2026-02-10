@@ -6,6 +6,7 @@ import { IStrategy } from "../engine/strategy/IStrategy";
 import { KuCoinConnector } from "../exchanges/KuCoinConnector";
 import { NotificationManager } from "../notifications/NotificationManager";
 import { WebSocketManager } from "../api/websocket";
+import { DeepThinker } from "../thinker/DeepThinker";
 
 export class Trader {
     private connector: IExchangeConnector;
@@ -18,6 +19,7 @@ export class Trader {
     private dcaLevels: number[];
     private maxDcaBuys: number;
     private strategy: IStrategy;
+    private ai: DeepThinker | null = null;
 
     constructor(connector: IExchangeConnector) {
         this.connector = connector;
@@ -30,6 +32,12 @@ export class Trader {
         const cfg = this.config.get("trading");
         this.dcaLevels = cfg.dca_levels || [-2.5, -5.0, -10.0];
         this.maxDcaBuys = cfg.max_dca_buys_per_24h || 2;
+
+        // AI Integration
+        if (cfg.active_ai === "DeepThinker") {
+            this.ai = new DeepThinker();
+            console.log("[Trader] AI Engine: DeepThinker (LSTM)");
+        }
 
         // Load Strategy from Config
         const strategyName = cfg.active_strategy || "SMAStrategy";
@@ -87,9 +95,23 @@ export class Trader {
                     const lastCandle = withSignals[withSignals.length - 1];
 
                     if (lastCandle.buy_signal) {
-                        console.log(`[Trader] ${this.strategy.name} Buy Signal for ${coin}!`);
-                        await this.enterTrade(coin, currentPrice);
-                        return;
+                        // AI Confirmation
+                        let aiConfirm = true;
+                        if (this.ai) {
+                            const pred = await this.ai.predict(candles);
+                            if (pred < currentPrice) {
+                                console.log(`[Trader] AI Rejection: Predicted ${pred.toFixed(2)} < Current ${currentPrice}`);
+                                aiConfirm = false;
+                            } else {
+                                console.log(`[Trader] AI Confirmation: Predicted ${pred.toFixed(2)} > Current ${currentPrice}`);
+                            }
+                        }
+
+                        if (aiConfirm) {
+                            console.log(`[Trader] ${this.strategy.name} Buy Signal for ${coin}!`);
+                            await this.enterTrade(coin, currentPrice);
+                            return;
+                        }
                     }
                 }
             } catch (e: any) {
