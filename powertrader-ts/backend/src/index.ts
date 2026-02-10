@@ -3,6 +3,7 @@ import { Trader } from './trader/Trader';
 import { RobinhoodConnector } from './exchanges/RobinhoodConnector';
 import { KuCoinConnector } from './exchanges/KuCoinConnector';
 import { BinanceConnector } from './exchanges/BinanceConnector';
+import { CoinbaseConnector } from './exchanges/CoinbaseConnector';
 import { PaperExchange } from './extensions/paper_trading/PaperExchange';
 import { ConfigManager } from './config/ConfigManager';
 
@@ -33,6 +34,12 @@ if (mode === "paper") {
             exchange = new BinanceConnector(
                 exchangeConfig.binance?.key,
                 exchangeConfig.binance?.secret
+            );
+            break;
+        case "coinbase":
+            exchange = new CoinbaseConnector(
+                exchangeConfig.coinbase?.key,
+                exchangeConfig.coinbase?.secret
             );
             break;
         case "robinhood":

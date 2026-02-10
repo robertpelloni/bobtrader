@@ -1,4 +1,4 @@
-import { IExchangeConnector } from "../../engine/connector/IExchangeConnector";
+import { IExchangeConnector } from "../engine/connector/IExchangeConnector";
 import axios from 'axios';
 import crypto from 'crypto-js';
 

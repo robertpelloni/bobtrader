@@ -5,6 +5,7 @@ import { StrategyFactory } from "../engine/strategy/StrategyFactory";
 import { IStrategy } from "../engine/strategy/IStrategy";
 import { KuCoinConnector } from "../exchanges/KuCoinConnector";
 import { NotificationManager } from "../notifications/NotificationManager";
+import { WebSocketManager } from "../api/websocket";
 
 export class Trader {
     private connector: IExchangeConnector;
@@ -12,6 +13,7 @@ export class Trader {
     private config: ConfigManager;
     private analytics: AnalyticsManager;
     private notifications: NotificationManager;
+    private wsManager: WebSocketManager;
     private activeTrades: Map<string, any> = new Map();
     private dcaLevels: number[];
     private maxDcaBuys: number;
@@ -23,6 +25,7 @@ export class Trader {
         this.config = ConfigManager.getInstance();
         this.analytics = new AnalyticsManager();
         this.notifications = NotificationManager.getInstance();
+        this.wsManager = WebSocketManager.getInstance();
 
         const cfg = this.config.get("trading");
         this.dcaLevels = cfg.dca_levels || [-2.5, -5.0, -10.0];
@@ -49,6 +52,20 @@ export class Trader {
             } catch (e) {
                 console.error(`Error processing ${coin}:`, e);
             }
+        }
+
+        // Broadcast Account Update
+        try {
+            const balance = await this.connector.fetchBalance();
+            // Estimate total value in USD
+            let total = balance['USD'] || balance['USDT'] || 0;
+            // Add value of positions... simplified for now
+            this.wsManager.broadcast('ACCOUNT_UPDATE', {
+                total: total,
+                pnl: this.analytics.getPerformance().pnl // Cumulative PnL
+            });
+        } catch (e) {
+            // console.error("Error broadcasting account update:", e);
         }
     }
 
@@ -154,13 +171,20 @@ export class Trader {
 
         await this.connector.createOrder(`${coin}-USD`, 'market', 'buy', amount);
 
-        this.activeTrades.set(coin, {
+        const position = {
             amount: amount,
             avgPrice: price,
             dcaCount: 0,
             trailActive: false,
             trailPeak: 0,
             trailLine: 0
+        };
+        this.activeTrades.set(coin, position);
+
+        this.wsManager.broadcast('TRADE_UPDATE', {
+            symbol: coin,
+            pnl: 0,
+            stage: 0
         });
 
         this.analytics.logTrade({
@@ -190,6 +214,12 @@ export class Trader {
         position.avgPrice = totalCost / totalAmount;
         position.dcaCount++;
 
+        this.wsManager.broadcast('TRADE_UPDATE', {
+            symbol: coin,
+            pnl: ((price - position.avgPrice) / position.avgPrice) * 100,
+            stage: position.dcaCount
+        });
+
         this.analytics.logTrade({
             symbol: coin,
             side: 'buy',
@@ -206,6 +236,13 @@ export class Trader {
         await this.notifications.info(message);
 
         await this.connector.createOrder(`${coin}-USD`, 'market', 'sell', position.amount);
+
+        this.wsManager.broadcast('TRADE_UPDATE', {
+            symbol: coin,
+            pnl: 0, // Reset display
+            stage: 0,
+            status: 'CLOSED'
+        });
 
         this.analytics.logTrade({
             symbol: coin,

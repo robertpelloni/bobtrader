@@ -52,7 +52,8 @@ export class ConfigManager {
             exchanges: {
                 robinhood: { key: "", secret: "" },
                 kucoin: { key: "", secret: "", passphrase: "" },
-                binance: { key: "", secret: "" }
+                binance: { key: "", secret: "" },
+                coinbase: { key: "", secret: "" }
             },
             system: {
                 log_level: "INFO"

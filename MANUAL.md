@@ -252,6 +252,31 @@ exchanges:
 
 ---
 
+## New in v2.8.0
+
+### Coinbase Support
+
+PowerTrader now supports **Coinbase Advanced Trade**. Configure in `config.yaml`:
+
+```yaml
+trading:
+  active_exchange: "coinbase"
+
+exchanges:
+  coinbase:
+    key: "YOUR_API_KEY"
+    secret: "YOUR_API_SECRET"
+```
+
+### Real-Time Dashboard
+
+The main dashboard now receives instant push updates for:
+- **Trade Execution**: See entries, DCA buys, and exits immediately.
+- **PnL Tracking**: Profit percentages update tick-by-tick.
+- **Account Value**: Total balance reflects market moves in real-time.
+
+---
+
 ## Trading Strategy
 
 ### Neural Levels

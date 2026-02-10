@@ -1,4 +1,4 @@
-import { IStrategy } from "../IStrategy";
+import { IStrategy } from "./IStrategy";
 import { SMAStrategy } from "./implementations/SMAStrategy";
 import { RSIStrategy } from "./implementations/RSIStrategy";
 import { MACDStrategy } from "./implementations/MACDStrategy";

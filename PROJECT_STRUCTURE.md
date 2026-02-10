@@ -46,10 +46,10 @@ PowerTrader_AI/
 | Module | Status | Description |
 | :--- | :--- | :--- |
 | `config` | **Production** | Centralized YAML config management. |
-| `trader` | **Production** | Core DCA and Trailing Stop logic. |
+| `trader` | **Production** | Core DCA, Trailing Stop, and Real-time WebSocket events. |
 | `thinker` | **Beta** | kNN pattern matching (file-based loading). |
 | `analytics` | **Production** | SQLite trade logging and performance metrics. |
-| `exchanges` | **Production** | Robinhood, KuCoin, Binance with Trading & Auth. |
+| `exchanges` | **Production** | Robinhood, KuCoin, Binance, Coinbase. |
 | `extensions` | **Production** | PaperTrading Engine and HyperOpt Genetic Optimizer. |
 | `notifications` | **Production** | Multi-channel alert system. |
 | `engine` | **Production** | StrategyFactory and BacktestEngine. |
