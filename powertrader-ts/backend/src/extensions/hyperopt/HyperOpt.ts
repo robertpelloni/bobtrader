@@ -30,7 +30,7 @@ export class HyperOpt {
         console.log(`[HyperOpt] Loaded ${candles.length} candles.`);
 
         // 2. Initialize Population
-        let population = this.generatePopulation(config.populationSize, config.parameterSpace);
+        let population: any[] = this.generatePopulation(config.populationSize, config.parameterSpace);
 
         const engine = new BacktestEngine();
         const backtestConfig: IBacktestConfig = {
@@ -43,7 +43,7 @@ export class HyperOpt {
             data: candles
         };
 
-        let bestResult = null;
+        let bestResult: any = null;
         let bestParams = null;
 
         // Track stats
@@ -106,7 +106,7 @@ export class HyperOpt {
             population = [...survivors, ...offspring];
 
             // Mutate (10% rate)
-            population = population.map(p => this.mutate(p, config.parameterSpace, 0.1));
+            population = (population as any[]).map((p: any) => this.mutate(p, config.parameterSpace, 0.1));
         }
 
         return {
@@ -124,7 +124,7 @@ export class HyperOpt {
     }
 
     private generatePopulation(size: number, space: any): any[] {
-        const pop = [];
+        const pop: any[] = [];
         for (let i = 0; i < size; i++) {
             const ind: any = {};
             for (const key in space) {

@@ -268,6 +268,34 @@ A new "AI Lab" page allows you to train models directly from the browser:
 
 ---
 
+## New in v3.1.0
+
+### DeFi Integration
+
+PowerTrader now supports decentralized trading on **Uniswap V3** (Polygon/Ethereum).
+
+#### Configuration
+Update `config.yaml` to enable the Uniswap connector:
+
+```yaml
+trading:
+  active_exchange: "uniswap"
+
+exchanges:
+  uniswap:
+    # No API Key needed, but RPC URL and Private Key are required
+    dummy: "placeholder"
+
+defi:
+  rpc_url: "https://polygon-rpc.com"
+  private_key: "YOUR_WALLET_PRIVATE_KEY"
+  chain_id: 137 # Polygon Mainnet
+```
+
+**Note:** Ensure your wallet has MATIC for gas fees.
+
+---
+
 ## Trading Strategy
 
 ### Neural Levels

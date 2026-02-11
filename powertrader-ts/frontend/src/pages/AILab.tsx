@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const AILab: React.FC = () => {
     const [training, setTraining] = useState(false);
     const [history, setHistory] = useState<any>(null);
     const [prediction, setPrediction] = useState<any>(null);
     const [symbol, setSymbol] = useState("BTC");
-    const [epochs, setEpochs] = useState(20);
+    const [epochs] = useState(20);
 
     const startTraining = async () => {
         setTraining(true);

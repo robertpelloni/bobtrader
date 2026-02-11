@@ -4,6 +4,7 @@ import { RobinhoodConnector } from './exchanges/RobinhoodConnector';
 import { KuCoinConnector } from './exchanges/KuCoinConnector';
 import { BinanceConnector } from './exchanges/BinanceConnector';
 import { CoinbaseConnector } from './exchanges/CoinbaseConnector';
+import { UniswapConnector } from './exchanges/UniswapConnector';
 import { PaperExchange } from './extensions/paper_trading/PaperExchange';
 import { ConfigManager } from './config/ConfigManager';
 
@@ -13,6 +14,7 @@ const tradingConfig = config.get("trading");
 const mode = tradingConfig?.execution_mode || "paper";
 const activeExchange = tradingConfig?.active_exchange || "robinhood";
 const exchangeConfig = config.get("exchanges") || {};
+const defiConfig = config.get("defi") || {};
 
 let exchange;
 if (mode === "paper") {
@@ -40,6 +42,12 @@ if (mode === "paper") {
             exchange = new CoinbaseConnector(
                 exchangeConfig.coinbase?.key,
                 exchangeConfig.coinbase?.secret
+            );
+            break;
+        case "uniswap":
+            exchange = new UniswapConnector(
+                defiConfig.rpc_url,
+                defiConfig.private_key
             );
             break;
         case "robinhood":

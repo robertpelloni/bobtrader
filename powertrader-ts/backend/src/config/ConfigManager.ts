@@ -56,6 +56,11 @@ export class ConfigManager {
                 binance: { key: "", secret: "" },
                 coinbase: { key: "", secret: "" }
             },
+            defi: {
+                rpc_url: "https://polygon-rpc.com",
+                private_key: "",
+                chain_id: 137
+            },
             system: {
                 log_level: "INFO"
             }
