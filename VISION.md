@@ -26,13 +26,16 @@ The project is currently transitioning from a monolithic Python desktop app to a
 *   **Runtime:** Node.js + TypeScript.
 *   **Role:** The brain and execution engine.
 *   **Core Modules:**
-    *   **Thinker:** Runs the kNN algorithm, analyzing OHLCV data to generate `LONG`/`SHORT` signals and price bounds.
+    *   **Thinker:** Dual-engine AI.
+        *   **Legacy:** kNN pattern matching.
+        *   **DeepThinker:** LSTM Neural Network (TensorFlow.js) for sequence prediction.
     *   **Trader:** Executes orders. Manages state (DCA levels, Trailing Stops). Connects to exchanges.
     *   **Analytics:** Stores every trade, calculates Sharpe Ratio, Win Rate, and PnL. Uses SQLite for persistence.
     *   **Config:** Centralized YAML configuration with hot-reload.
 *   **Extensions:**
     *   **HyperOpt:** Genetic algorithm for parameter tuning.
     *   **PaperTrading:** Risk-free simulation.
+    *   **Notifications:** Multi-channel alerts (Discord, Telegram, Email).
 
 ### 2.2. The Frontend (`powertrader-ts/frontend`)
 *   **Runtime:** React + Vite.
@@ -66,8 +69,8 @@ The project is currently transitioning from a monolithic Python desktop app to a
 
 *   **Universal Exchange Support:** Support all major CCXT exchanges.
 *   **Social Sentiment:** Integrate Twitter/Reddit sentiment analysis into `Thinker`.
-*   **DeFi Integration:** Direct trading on DEXs (Uniswap) via RPC.
-*   **AI Evolution:** Move from simple kNN to hybrid Transformer/LSTM models for sequence prediction.
-*   **Mobile App:** React Native port of the frontend.
+*   **Advanced DeFi:** Liquidity Provisioning (LP) and Flash Loans on Uniswap.
+*   **Mobile App:** React Native port of the frontend (Expo).
+*   **Institutional Tools:** Multi-account management and sub-accounts.
 
 PowerTrader AI is not just a bot; it is a financial sovereignty tool.

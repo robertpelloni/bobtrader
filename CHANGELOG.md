@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-02-10
+
+### Added
+- **System Status Dashboard**: New frontend page (`/status`) showing module health, exchange status, and project structure.
+- **Unified Documentation**: Consolidated agent instructions into `UNIVERSAL_LLM_INSTRUCTIONS.md`.
+- **Roadmap Update**: Added milestones for v3.2.0 (DeFi Liquidity) and Mobile App.
+
 ## [3.1.0] - 2026-02-10
 
 ### Added

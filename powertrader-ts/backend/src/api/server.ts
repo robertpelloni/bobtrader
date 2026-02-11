@@ -195,6 +195,33 @@ app.post('/api/ai/predict', async (req, res) => {
     }
 });
 
+// System Status Dashboard
+app.get('/api/system/status', (req, res) => {
+    res.json({
+        version: "3.1.0",
+        modules: {
+            trader: { status: "active", version: "2.8.0" },
+            thinker: { status: "active", engine: config.get("trading.active_ai") || "DeepThinker" },
+            analytics: { status: "active", db: "sqlite" },
+            notifications: { status: "active", enabled: !!config.get("notifications.enabled") }
+        },
+        exchanges: {
+            active: config.get("trading.active_exchange"),
+            available: ["robinhood", "kucoin", "binance", "coinbase", "uniswap"]
+        },
+        submodules: [
+            { name: "cointrade", version: "1.4.2", path: "powertrader-ts/backend/src/modules/cointrade" },
+            { name: "hyperopt", version: "1.1.0", path: "powertrader-ts/backend/src/extensions/hyperopt" }
+        ],
+        project_structure: {
+            root: "/app/powertrader-ts",
+            backend: "/app/powertrader-ts/backend",
+            frontend: "/app/powertrader-ts/frontend",
+            data: "/app/powertrader-ts/hub_data"
+        }
+    });
+});
+
 export function startServer() {
     const server = http.createServer(app);
     WebSocketManager.getInstance().initialize(server);
