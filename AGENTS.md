@@ -4,5 +4,11 @@
 
 Please refer to [UNIVERSAL_LLM_INSTRUCTIONS.md](UNIVERSAL_LLM_INSTRUCTIONS.md) for the core operating protocols, coding standards, and directives for PowerTrader AI.
 
+**System Analysis & Architecture:**
+For a deep dive into the system architecture, core modules (`Trader`, `Thinker`, `LiquidityManager`), data flow, and future roadmap, please consult [DEEP_ANALYSIS.md](DEEP_ANALYSIS.md).
+
+**Project Structure:**
+Refer to [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for the directory layout and module inventory.
+
 ---
 *Specific generic agent notes can be appended below.*
