@@ -12,6 +12,8 @@ import { BacktestEngine } from '../engine/backtest/BacktestEngine';
 import { HyperOpt } from '../extensions/hyperopt/HyperOpt';
 import { DeepThinker } from '../thinker/DeepThinker';
 import { HistoricalData } from '../engine/backtest/HistoricalData';
+import { UniswapConnector } from '../exchanges/UniswapConnector';
+import { LiquidityManager } from '../defi/LiquidityManager';
 
 const app = express();
 const port = 3000;
@@ -100,6 +102,50 @@ app.post('/api/hyperopt/run', async (req, res) => {
     } catch (e: any) {
         console.error(e);
         res.status(500).json({ error: e.message || "HyperOpt failed" });
+    }
+});
+
+// --- Advanced DeFi (Liquidity) ---
+const defiConfig = config.get("defi") || {};
+// We instantiate a specific Uniswap connector for DeFi operations even if active_exchange is different
+const uniswap = new UniswapConnector(defiConfig.rpc_url, defiConfig.private_key);
+const liquidityManager = new LiquidityManager(uniswap);
+
+app.get('/api/defi/positions', async (req, res) => {
+    try {
+        const positions = await uniswap.fetchPositions();
+        res.json({ positions });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/defi/liquidity/add', async (req, res) => {
+    try {
+        const { pair, amount0, amount1, rangeWidth = 2 } = req.body;
+        // Calculate range based on recent history
+        // Fetch last 100 candles
+        const candles = await kucoin.fetchOHLCV(pair, '1h', 100); // Using KuCoin data for calc
+        const prices = candles.map((c: any) => c.close);
+        const { lower, upper } = liquidityManager.calculateOptimalRange(prices, rangeWidth);
+
+        const tx = await uniswap.addLiquidity(pair, amount0, amount1, lower, upper);
+        res.json({ success: true, txHash: tx, range: { lower, upper } });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/defi/liquidity/remove', async (req, res) => {
+    try {
+        const { tokenId, percent } = req.body;
+        const tx = await uniswap.removeLiquidity(Number(tokenId), Number(percent));
+        res.json({ success: true, txHash: tx });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
     }
 });
 

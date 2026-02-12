@@ -1,7 +1,7 @@
 # PowerTrader AI - Project Structure & Modules
 
-**Version:** 2.0.0
-**Last Updated:** 2026-01-18
+**Version:** 3.2.0
+**Last Updated:** 2026-02-10
 
 This document outlines the directory structure, modules, and their current versions.
 
@@ -18,6 +18,7 @@ PowerTrader_AI/
 │   │   │   ├── analytics/     # AnalyticsManager (SQLite)
 │   │   │   ├── api/           # Express Server routes
 │   │   │   ├── config/        # ConfigManager (YAML)
+│   │   │   ├── defi/          # LiquidityManager (Uniswap V3)
 │   │   │   ├── engine/        # Core Interfaces, StrategyFactory, BacktestEngine
 │   │   │   ├── exchanges/     # Exchange Connectors (Robinhood, KuCoin, Binance)
 │   │   │   ├── extensions/    # PaperTrading, HyperOpt
@@ -50,6 +51,7 @@ PowerTrader_AI/
 | `thinker` | **Production** | Hybrid Engine: `Thinker` (kNN) and `DeepThinker` (LSTM/TensorFlow). |
 | `analytics` | **Production** | SQLite trade logging and performance metrics. |
 | `exchanges` | **Production** | Robinhood, KuCoin, Binance, Coinbase, Uniswap (DeFi). |
+| `defi` | **Production** | `LiquidityManager` for Uniswap V3 position management. |
 | `extensions` | **Production** | PaperTrading Engine and HyperOpt Genetic Optimizer. |
 | `notifications` | **Production** | Multi-channel alert system. |
 | `engine` | **Production** | StrategyFactory and BacktestEngine. |
@@ -62,6 +64,7 @@ PowerTrader_AI/
 | `Settings` | **Beta** | Configuration editor. |
 | `Volume` | **Beta** | Volume Profile analysis visualization. |
 | `Risk` | **Beta** | Correlation matrix and position sizing. |
+| `Liquidity` | **New** | Uniswap V3 position manager and fee collector. |
 
 ### Legacy Python Core (`Root`)
 

@@ -1,7 +1,7 @@
 # PowerTrader AI - User Manual
 
-**Version:** 2.0.0
-**Last Updated:** 2026-01-18
+**Version:** 3.2.0
+**Last Updated:** 2026-02-10
 
 ---
 
@@ -293,6 +293,30 @@ defi:
 ```
 
 **Note:** Ensure your wallet has MATIC for gas fees.
+
+---
+
+## New in v3.2.0
+
+### Advanced DeFi: Liquidity Manager
+
+PowerTrader now allows you to become a Market Maker on Uniswap V3 (Polygon).
+
+#### Liquidity Dashboard
+Navigate to **DeFi > Liquidity** in the frontend to access the new dashboard.
+*   **Mint Position**: Add liquidity to a pool (e.g., WETH/USDC).
+    *   **Auto-Ranging**: The system automatically calculates the optimal price range (Upper/Lower ticks) using Bollinger Bands (20, 2) on the last 20 candles.
+    *   **Input**: Simply provide the amount of Token0 and Token1 you wish to deposit.
+*   **Monitor Positions**: View your active NFT positions.
+    *   **Stats**: See current liquidity, price range, and **Unclaimed Fees**.
+*   **Collect & Remove**:
+    *   **Remove**: Withdraw 100% of liquidity and collect all accrued fees in one transaction.
+
+#### Strategy: Bollinger Band Ranging
+The `LiquidityManager` uses statistical volatility to set ranges:
+*   **Lower Tick**: Corresponds to the Lower Bollinger Band.
+*   **Upper Tick**: Corresponds to the Upper Bollinger Band.
+*   **Goal**: Capture fees while the price remains within "normal" volatility bounds, minimizing Impermanent Loss risk compared to full-range positions.
 
 ---
 

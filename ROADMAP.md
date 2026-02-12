@@ -63,15 +63,24 @@ This roadmap outlines the development history, current status, and future plans 
 
 ---
 
-## Upcoming Milestones (v3.2.0+)
+## Version 3.2.0 (Released) - Advanced DeFi & Liquidity
 
-### 1. Advanced DeFi (Liquidity Provisioning)
-**Goal:** Earn fees by providing liquidity on Uniswap V3.
-- [ ] Implement `LiquidityManager` module.
-- [ ] Add `addLiquidity` and `removeLiquidity` to `UniswapConnector`.
-- [ ] Create "Liquidity Dashboard" frontend page.
+### Completed Features ✅
 
-### 2. Mobile App Ecosystem
+#### Liquidity Provisioning
+- [x] **Liquidity Manager**: Logic to calculate optimal Uniswap V3 ranges using Bollinger Bands.
+- [x] **Dashboard UI**: Dedicated frontend for adding/removing liquidity and monitoring positions.
+- [x] **Auto-Compounding (Base)**: Infrastructure for collecting fees (manual trigger implemented).
+
+#### Uniswap V3 Integration
+- [x] **Mint/Burn**: Full support for `mint` (add liquidity) and `burn` (remove liquidity).
+- [x] **Position Tracking**: Fetch and display active NFT positions with unclaimed fees.
+
+---
+
+## Upcoming Milestones (v3.3.0+)
+
+### 1. Mobile App Ecosystem
 **Goal:** Manage trades on the go.
 - [ ] Port `powertrader-ts/frontend` to React Native (Expo).
 - [ ] Implement Push Notifications via Expo server.
@@ -92,4 +101,4 @@ This roadmap outlines the development history, current status, and future plans 
 ---
 
 **Last Updated:** 2026-02-10
-**Current Version:** 3.1.0
+**Current Version:** 3.2.0

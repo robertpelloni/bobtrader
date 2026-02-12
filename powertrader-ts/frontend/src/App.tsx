@@ -6,6 +6,7 @@ import { RiskDashboard } from './pages/RiskDashboard';
 import { VolumeDashboard } from './pages/VolumeDashboard';
 import { AILab } from './pages/AILab';
 import { SystemStatus } from './pages/SystemStatus';
+import { LiquidityDashboard } from './pages/LiquidityDashboard';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <nav className="space-y-2">
             <Link to="/" className="block py-2 px-4 rounded hover:bg-gray-800">Dashboard</Link>
             <Link to="/ai-lab" className="block py-2 px-4 rounded hover:bg-gray-800 text-purple-300">AI Lab</Link>
+            <Link to="/defi/liquidity" className="block py-2 px-4 rounded hover:bg-gray-800 text-pink-300">Liquidity</Link>
             <Link to="/strategy-sandbox" className="block py-2 px-4 rounded hover:bg-gray-800">Backtest</Link>
             <Link to="/risk" className="block py-2 px-4 rounded hover:bg-gray-800">Risk</Link>
             <Link to="/volume" className="block py-2 px-4 rounded hover:bg-gray-800">Volume</Link>
@@ -30,6 +32,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/ai-lab" element={<AILab />} />
+            <Route path="/defi/liquidity" element={<LiquidityDashboard />} />
             <Route path="/strategy-sandbox" element={<StrategySandbox />} />
             <Route path="/risk" element={<RiskDashboard />} />
             <Route path="/volume" element={<VolumeDashboard />} />
