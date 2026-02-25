@@ -121,6 +121,22 @@ app.get('/api/defi/positions', async (req, res) => {
     }
 });
 
+app.post('/api/defi/liquidity/compound', async (req, res) => {
+    try {
+        const { tokenId } = req.body;
+        // Re-use existing connector instance if possible, or create new.
+        // Ideally, we should have a Singleton 'LiquidityManager' service.
+        // For MVP, recreating.
+        const connector = new UniswapConnector(config.get("defi.rpc_url"), config.get("defi.private_key"));
+        const manager = new LiquidityManager(connector);
+
+        const result = await manager.autoCompound(Number(tokenId));
+        res.json(result);
+    } catch (e: any) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 app.post('/api/defi/liquidity/add', async (req, res) => {
     try {
         const { pair, amount0, amount1, rangeWidth = 2 } = req.body;

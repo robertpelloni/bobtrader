@@ -187,6 +187,26 @@ export class UniswapConnector implements IExchangeConnector {
         return tx.hash;
     }
 
+    async increaseLiquidity(tokenId: number, amount0: number, amount1: number): Promise<any> {
+        if (!this.wallet) throw new Error("Wallet not configured");
+        const pm = new ethers.Contract(this.positionManagerAddress, POSITION_MANAGER_ABI, this.wallet);
+
+        // Approve tokens first (Assuming already approved for MVP simplicity, or re-approve here)
+        // In prod, check allowance.
+
+        const params = {
+            tokenId: tokenId,
+            amount0Desired: ethers.parseEther(amount0.toString()), // Assume 18 decimals (WETH)
+            amount1Desired: ethers.parseUnits(amount1.toString(), 6), // Assume 6 decimals (USDC)
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: Math.floor(Date.now() / 1000) + 60 * 20
+        };
+
+        const tx = await pm.increaseLiquidity(params);
+        return tx.hash;
+    }
+
     async collectFees(tokenId: number): Promise<any> {
         if (!this.wallet) throw new Error("Wallet not configured");
         const pm = new ethers.Contract(this.positionManagerAddress, POSITION_MANAGER_ABI, this.wallet);

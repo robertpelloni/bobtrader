@@ -61,6 +61,29 @@ export const LiquidityDashboard: React.FC = () => {
         }
     };
 
+    const autoCompound = async (tokenId: number) => {
+        if (!confirm("Compound unclaimed fees into position?")) return;
+        setIsLoading(true);
+        try {
+            const res = await fetch('http://localhost:3000/api/defi/liquidity/compound', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tokenId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`Compounded Successfully! TX: ${data.txHash}`);
+                fetchPositions();
+            } else {
+                alert("Compound failed or no fees to collect.");
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="p-6">
             <h1 className="text-3xl font-bold mb-6 text-pink-600">DeFi Liquidity Manager</h1>
@@ -138,12 +161,21 @@ export const LiquidityDashboard: React.FC = () => {
                                         <div className="text-sm font-semibold text-green-600 mb-2">
                                             Unclaimed Fees: {pos.fees0} / {pos.fees1}
                                         </div>
-                                        <button
-                                            onClick={() => removeLiquidity(pos.tokenId)}
-                                            className="text-red-600 text-sm hover:text-red-800 border border-red-200 px-3 py-1 rounded hover:bg-red-50"
-                                        >
-                                            Remove & Collect
-                                        </button>
+                                        <div className="space-x-2">
+                                            <button
+                                                onClick={() => autoCompound(pos.tokenId)}
+                                                disabled={isLoading}
+                                                className="text-purple-600 text-sm hover:text-purple-800 border border-purple-200 px-3 py-1 rounded hover:bg-purple-50"
+                                            >
+                                                Compound
+                                            </button>
+                                            <button
+                                                onClick={() => removeLiquidity(pos.tokenId)}
+                                                className="text-red-600 text-sm hover:text-red-800 border border-red-200 px-3 py-1 rounded hover:bg-red-50"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
