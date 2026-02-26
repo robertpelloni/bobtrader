@@ -82,10 +82,19 @@ export class DeepThinker {
         // 3. Save
         const dir = path.dirname(this.modelPath);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        await this.model.save(`file://${this.modelPath}`);
 
-        // Save normalization params
+        // Save main "latest" model
+        await this.model.save(`file://${this.modelPath}`);
         fs.writeFileSync(`${this.modelPath}/meta.json`, JSON.stringify({ max, min }));
+
+        // Save versioned backup
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const versionDir = path.join(dir, `deep_thinker_${timestamp}`);
+        if (!fs.existsSync(versionDir)) fs.mkdirSync(versionDir, { recursive: true });
+        await this.model.save(`file://${versionDir}`);
+        fs.writeFileSync(`${versionDir}/meta.json`, JSON.stringify({ max, min }));
+
+        console.log(`[DeepThinker] Model saved to ${this.modelPath} and backup at ${versionDir}`);
 
         inputs.dispose();
         labels.dispose();

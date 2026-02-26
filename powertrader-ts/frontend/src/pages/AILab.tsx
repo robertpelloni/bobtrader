@@ -3,13 +3,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export const AILab: React.FC = () => {
     const [training, setTraining] = useState(false);
-    const [history, setHistory] = useState<any>(null);
+    const [history, setHistory] = useState<any[]>([]);
     const [prediction, setPrediction] = useState<any>(null);
     const [symbol, setSymbol] = useState("BTC");
-    const [epochs] = useState(20);
+    const [epochs, setEpochs] = useState(20);
+    const [error, setError] = useState<string | null>(null);
 
     const startTraining = async () => {
         setTraining(true);
+        setError(null);
+        setHistory([]);
         try {
             const res = await fetch('http://localhost:3000/api/ai/train', {
                 method: 'POST',
@@ -17,6 +20,9 @@ export const AILab: React.FC = () => {
                 body: JSON.stringify({ symbol, epochs })
             });
             const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || "Training request failed");
+
             if (data.history) {
                 // Format history for chart (loss per epoch)
                 const chartData = data.history.loss.map((loss: number, i: number) => ({
@@ -25,9 +31,9 @@ export const AILab: React.FC = () => {
                 }));
                 setHistory(chartData);
             }
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
-            alert("Training failed");
+            setError(e.message);
         } finally {
             setTraining(false);
         }
@@ -65,6 +71,20 @@ export const AILab: React.FC = () => {
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Epochs</label>
+                            <input
+                                type="number"
+                                value={epochs}
+                                onChange={(e) => setEpochs(Number(e.target.value))}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
+                            />
+                        </div>
+                        {error && (
+                            <div className="p-3 bg-red-100 text-red-700 rounded text-sm">
+                                Error: {error}
+                            </div>
+                        )}
                         <button
                             onClick={startTraining}
                             disabled={training}
