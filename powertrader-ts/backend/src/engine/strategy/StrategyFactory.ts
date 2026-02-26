@@ -2,6 +2,7 @@ import { IStrategy } from "./IStrategy";
 import { SMAStrategy } from "./implementations/SMAStrategy";
 import { RSIStrategy } from "./implementations/RSIStrategy";
 import { MACDStrategy } from "./implementations/MACDStrategy";
+import { GridStrategy } from "./implementations/GridStrategy";
 import { CointradeAdapter } from "../../modules/cointrade/CointradeAdapter";
 
 type StrategyConstructor = new () => IStrategy;
@@ -14,6 +15,7 @@ export class StrategyFactory {
         this.register(SMAStrategy);
         this.register(RSIStrategy);
         this.register(MACDStrategy);
+        this.register(GridStrategy);
         this.register(CointradeAdapter);
     }
 

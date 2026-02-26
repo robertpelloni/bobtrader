@@ -7,6 +7,7 @@ import { VolumeDashboard } from './pages/VolumeDashboard';
 import { AILab } from './pages/AILab';
 import { SystemStatus } from './pages/SystemStatus';
 import { LiquidityDashboard } from './pages/LiquidityDashboard';
+import { ArbitrageDashboard } from './pages/ArbitrageDashboard';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Link to="/strategy-sandbox" className="block py-2 px-4 rounded hover:bg-gray-800">Backtest</Link>
             <Link to="/risk" className="block py-2 px-4 rounded hover:bg-gray-800">Risk</Link>
             <Link to="/volume" className="block py-2 px-4 rounded hover:bg-gray-800">Volume</Link>
+            <Link to="/arbitrage" className="block py-2 px-4 rounded hover:bg-gray-800 text-green-300">Arbitrage</Link>
             <Link to="/status" className="block py-2 px-4 rounded hover:bg-gray-800">System Status</Link>
             <Link to="/settings" className="block py-2 px-4 rounded hover:bg-gray-800">Settings</Link>
           </nav>
@@ -36,6 +38,7 @@ function App() {
             <Route path="/strategy-sandbox" element={<StrategySandbox />} />
             <Route path="/risk" element={<RiskDashboard />} />
             <Route path="/volume" element={<VolumeDashboard />} />
+            <Route path="/arbitrage" element={<ArbitrageDashboard />} />
             <Route path="/status" element={<SystemStatus />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

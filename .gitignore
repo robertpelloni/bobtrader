@@ -8,3 +8,7 @@ __pycache__/
 powertrader-ts/backend/src/**/*.js
 powertrader-ts/backend/src/**/*.d.ts
 powertrader-ts/backend/src/**/*.map
+powertrader-ts/backend/trades.db
+powertrader-ts/backend/notifications.db
+powertrader-ts/hub_data/*.db
+*.log

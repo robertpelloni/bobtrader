@@ -14,6 +14,7 @@ import { DeepThinker } from '../thinker/DeepThinker';
 import { HistoricalData } from '../engine/backtest/HistoricalData';
 import { UniswapConnector } from '../exchanges/UniswapConnector';
 import { LiquidityManager } from '../defi/LiquidityManager';
+import { ArbitrageScanner } from '../engine/ArbitrageScanner';
 
 const app = express();
 const port = 3000;
@@ -251,6 +252,27 @@ app.post('/api/ai/predict', async (req, res) => {
             direction,
             diff: prediction - lastClose
         });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Arbitrage ---
+const arbScanner = new ArbitrageScanner();
+
+app.get('/api/arbitrage/opportunities', async (req, res) => {
+    try {
+        const { coins = "BTC,ETH,SOL,MATIC" } = req.query;
+        const symbols = (coins as string).split(',');
+        const opportunities: any[] = [];
+
+        for (const sym of symbols) {
+            const opp = await arbScanner.scan(sym);
+            if (opp) opportunities.push(opp);
+        }
+
+        res.json({ opportunities });
     } catch (e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });
