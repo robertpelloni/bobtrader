@@ -15,6 +15,7 @@ import { HistoricalData } from '../engine/backtest/HistoricalData';
 import { UniswapConnector } from '../exchanges/UniswapConnector';
 import { LiquidityManager } from '../defi/LiquidityManager';
 import { ArbitrageScanner } from '../engine/ArbitrageScanner';
+import { CorrelationMatrix } from '../engine/risk/CorrelationMatrix';
 
 const app = express();
 const port = 3000;
@@ -273,6 +274,22 @@ app.get('/api/arbitrage/opportunities', async (req, res) => {
         }
 
         res.json({ opportunities });
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Risk Analysis ---
+const correlationEngine = new CorrelationMatrix(kucoin); // Use KuCoin for price data
+
+app.get('/api/risk/correlation', async (req, res) => {
+    try {
+        const { coins = "BTC,ETH,SOL,MATIC,DOGE" } = req.query;
+        const symbolList = (coins as string).split(',');
+
+        const data = await correlationEngine.generateMatrix(symbolList);
+        res.json(data);
     } catch (e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });

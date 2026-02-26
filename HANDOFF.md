@@ -1,49 +1,56 @@
-# Session Handoff - PowerTrader AI v2.5.0
+# AI Handoff Protocol
 
-**Date:** 2026-01-18
-**Status:** Advanced Strategy Engine & Risk Management Complete
+**Date:** 2026-02-25
+**From:** Google Jules (v3.2.4 Implementer)
+**To:** Next Model (Gemini 3 / Claude Opus / GPT-5)
+
+## 1. Current State Summary
+
+The project `PowerTrader AI` has successfully migrated from a legacy Python desktop app to a robust TypeScript Web Architecture (`powertrader-ts`).
+
+*   **Version:** v3.2.4
+*   **Core Stack:** Node.js, Express, TypeScript, React, Vite, TensorFlow.js, Ethers.js.
+*   **Key Modules Active:**
+    *   `Trader`: DCA & Trailing Stop engine.
+    *   `Thinker`: kNN & LSTM (`DeepThinker`) prediction engines.
+    *   `DeFi`: `LiquidityManager` for Uniswap V3 (Auto-Compound active).
+    *   `Strategies`: SMA, RSI, MACD, Grid.
+    *   `Tools`: Backtest Engine, HyperOpt, Arbitrage Scanner.
+
+## 2. Recent Accomplishments
+
+1.  **Arbitrage Scanner:** Implemented multi-exchange price comparison and a new Dashboard page.
+2.  **Grid Strategy:** Implemented a new strategy class for grid trading logic.
+3.  **AI Lab:** Enhanced with Training Loss charts, Test Inference, and Model Versioning.
+4.  **Refactoring:** Centralized `StrategyFactory` and `TechnicalAnalysis` utils.
+
+## 3. Immediate Next Steps (The "Task List")
+
+The current user request requires **"Extreme Depth"** and **"Total Completion"**.
+
+1.  **Risk Analysis:**
+    *   **Task:** Implement `CorrelationMatrix.ts` in the backend.
+    *   **Task:** Build the Heatmap visualization in `RiskDashboard.tsx`.
+    *   **Goal:** Warn users if they are holding highly correlated assets (e.g., BTC & ETH often > 0.9).
+
+2.  **Settings & Configuration:**
+    *   **Task:** The `Settings` page is currently basic. It needs a full form for Notifications (Discord/Telegram) and Exchange API Keys.
+    *   **Goal:** User should never have to touch `config.yaml` manually.
+
+3.  **Security:**
+    *   **Task:** Review where Private Keys are stored. Currently in `config.yaml` or Env.
+    *   **Idea:** Implement an encrypted vault or simple password protection for the UI.
+
+## 4. Known Quirks
+
+*   **Repo Hygiene:** There might be some `*.log` or `*.db` files in the history. `gitignore` was recently updated, but check for stragglers.
+*   **Submodules:** The user mentions `cointrade` as a submodule. We implemented its features via `CointradeAdapter` because we couldn't clone it. Continue this pattern if "submodules" are requested but inaccessible.
+
+## 5. Deployment
+
+*   **Docker:** The `docker-compose.yml` is the source of truth for running the stack.
+*   **Local:** `cd powertrader-ts/backend && npm run build` + `cd powertrader-ts/frontend && npm run dev`.
 
 ---
 
-## 1. Summary of Achievements
-
-This session completed the "Advanced Strategy Engine" and "Risk Management" milestones, delivering a fully pluggable strategy system and portfolio rebalancing tools.
-
-### Core Deliverables
-1.  **Strategy Engine 2.0**:
-    *   **StrategyFactory**: Dynamic registry for loading strategies by name.
-    *   **New Strategies**: `RSIStrategy` and `MACDStrategy` implemented in pure TypeScript.
-    *   **Cointrade Port**: `CointradeAdapter` now contains the *actual* logic (RSI/BB/MACD) ported to TypeScript, removing the need for the external Python submodule.
-
-2.  **Risk Management**:
-    *   **PortfolioRebalancer**: Engine that analyzes current holdings against target allocations and emits `BUY`/`SELL` rebalancing signals.
-
-3.  **Frontend Enhancements**:
-    *   **Strategy Manager**: New UI page to view, configure, and activate strategies.
-
----
-
-## 2. Current State
-
-*   **Version:** 2.5.0
-*   **Build Status:**
-    *   Backend: **Compiles** (Verified).
-    *   Frontend: **Ready**.
-*   **Active Strategy:** Default is `SMAStrategy`, configurable via API.
-
----
-
-## 3. Next Steps (For Next Agent)
-
-1.  **Production Deployment**:
-    *   The system is now feature-complete for v2.5.0. Focus should shift to **Deployment Automation** (CI/CD pipelines, refined Docker compose).
-
-2.  **Backtesting Engine**:
-    *   The `Strategy Sandbox` visualizes signals on *recent* data. The next major milestone (v3.0) should implement a full **Historical Backtester** that runs over months of data and calculates Sharpe/Drawdown.
-
-3.  **Live Trading**:
-    *   With `RobinhoodConnector` having real auth and `Trader` having real logic, the system is ready for **Live Testing** with small amounts.
-
----
-
-**"Don't ever stop. Keep on goin'."**
+*Proceed with the "High Priority" items in `TODO.md`.*

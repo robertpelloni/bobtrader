@@ -12,3 +12,5 @@ powertrader-ts/backend/trades.db
 powertrader-ts/backend/notifications.db
 powertrader-ts/hub_data/*.db
 *.log
+powertrader-ts/backend/dist
+powertrader-ts/frontend/dist
