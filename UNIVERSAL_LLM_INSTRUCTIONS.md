@@ -1,7 +1,7 @@
 # Universal AI Agent Instructions
 
-**Version:** 3.1.0
-**Last Updated:** 2026-02-10
+**Version:** 3.3.0
+**Last Updated:** 2026-02-25
 
 This document serves as the **Universal Truth** for all AI agents (Claude, GPT, Gemini, Copilot, etc.) working on PowerTrader AI. It defines the core principles, coding standards, and operational protocols that **MUST** be followed.
 
@@ -15,7 +15,7 @@ This document serves as the **Universal Truth** for all AI agents (Claude, GPT, 
 4.  **No Bugs:** Verify every change. Run tests. Ensure robustness.
 5.  **Full Representation:** Every backend feature must have a corresponding UI element (Label, Tooltip, Control). No "hidden" functionality.
 6.  **Documentation:** Every new feature must be documented in `MANUAL.md`. Update `VERSION.md`, `CHANGELOG.md`, `ROADMAP.md` and `PROJECT_STRUCTURE.md` with every major set of changes.
-7.  **Versioning:** Every build/session should increment the version number. Use Semantic Versioning (Major.Minor.Patch).
+7.  **Versioning:** Every build/session should increment the version number. Use Semantic Versioning (Major.Minor.Patch). The version must be bumped in `VERSION.md` and referenced in the git commit message.
 
 ---
 
@@ -40,13 +40,14 @@ This document serves as the **Universal Truth** for all AI agents (Claude, GPT, 
 *   `powertrader-ts/`: The active development target (Web Architecture).
 *   `hub_data/`: Shared runtime data (Databases, Configs, Logs).
 *   `AGENTS.md`, `CLAUDE.md`, `GPT.md`: These files simply reference **THIS** file (`UNIVERSAL_LLM_INSTRUCTIONS.md`) to maintain consistency.
+*   `DEEP_ANALYSIS.md`: Detailed architectural breakdown and module guide.
 
 ---
 
 ## 4. Operational Protocols
 
 ### Feature Implementation Cycle
-1.  **Analyze:** Read `VISION.md` and `ROADMAP.md` in detail.
+1.  **Analyze:** Read `VISION.md`, `ROADMAP.md`, and `DEEP_ANALYSIS.md` in detail.
 2.  **Plan:** Check dependencies, existing code, and submodules.
 3.  **Implement:** Write code (Frontend + Backend). Ensure full UI representation.
 4.  **Verify:** Compile, Run Tests, Verify UI (Playwright/Screenshot).
@@ -58,6 +59,7 @@ This document serves as the **Universal Truth** for all AI agents (Claude, GPT, 
 ### Submodule Handling
 *   If a feature requires a submodule (e.g., `cointrade`), create a clean Adapter/Interface in `powertrader-ts/backend/src/modules/` so the system can work even if the submodule is missing or empty.
 *   Document all submodule references in `PROJECT_STRUCTURE.md`.
+*   Maintain a dashboard or documentation page listing all submodules, their versions, dates, and locations in the directory structure.
 
 ---
 

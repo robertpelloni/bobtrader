@@ -84,6 +84,10 @@ export const SystemStatus: React.FC = () => {
                             </div>
                         ))}
                     </div>
+                    <div className="mt-4 pt-4 border-t border-gray-700 text-xs text-gray-500">
+                        * Virtual Submodules (Cointrade, HyperOpt) are integrated directly into the TypeScript build.
+                    </div>
+                    </div>
                 </div>
             </div>
         </div>

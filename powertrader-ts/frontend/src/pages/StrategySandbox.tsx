@@ -17,6 +17,9 @@ export const StrategySandbox: React.FC = () => {
     const [symbol, setSymbol] = useState("BTC");
     const [isRunning, setIsRunning] = useState(false);
 
+    // Dynamic Strategy Params
+    const [params, setParams] = useState<any>({});
+
     useEffect(() => {
         // Fetch strategies
         fetch('http://localhost:3000/api/strategies')
@@ -91,6 +94,48 @@ export const StrategySandbox: React.FC = () => {
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
                             />
                         </div>
+
+                        {/* Dynamic Params Form */}
+                        {selectedStrategy === "GridStrategy" && (
+                            <div className="p-3 bg-gray-50 rounded border text-sm space-y-2">
+                                <h3 className="font-bold text-gray-600">Grid Settings</h3>
+                                <div>
+                                    <label>Lower Price</label>
+                                    <input type="number" className="w-full border rounded p-1"
+                                        defaultValue={20000}
+                                        onChange={(e) => setParams({...params, lowerPrice: Number(e.target.value)})}
+                                    />
+                                </div>
+                                <div>
+                                    <label>Upper Price</label>
+                                    <input type="number" className="w-full border rounded p-1"
+                                        defaultValue={25000}
+                                        onChange={(e) => setParams({...params, upperPrice: Number(e.target.value)})}
+                                    />
+                                </div>
+                                <div>
+                                    <label>Grid Lines</label>
+                                    <input type="number" className="w-full border rounded p-1"
+                                        defaultValue={10}
+                                        onChange={(e) => setParams({...params, gridLines: Number(e.target.value)})}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {selectedStrategy === "MACDStrategy" && (
+                            <div className="p-3 bg-gray-50 rounded border text-sm space-y-2">
+                                <h3 className="font-bold text-gray-600">MACD Settings</h3>
+                                <div className="grid grid-cols-3 gap-1">
+                                    <input type="number" placeholder="Fast" className="border rounded p-1"
+                                        defaultValue={12} onChange={(e) => setParams({...params, fastPeriod: Number(e.target.value)})} />
+                                    <input type="number" placeholder="Slow" className="border rounded p-1"
+                                        defaultValue={26} onChange={(e) => setParams({...params, slowPeriod: Number(e.target.value)})} />
+                                    <input type="number" placeholder="Sig" className="border rounded p-1"
+                                        defaultValue={9} onChange={(e) => setParams({...params, signalPeriod: Number(e.target.value)})} />
+                                </div>
+                            </div>
+                        )}
 
                         <div className="pt-4 border-t">
                             <button
