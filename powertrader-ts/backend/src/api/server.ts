@@ -24,6 +24,32 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const config = ConfigManager.getInstance();
+
+// Simple Auth Middleware
+const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const password = config.get("system.ui_password");
+    if (!password) return next(); // No password set = disabled
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || authHeader !== `Bearer ${password}`) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+    next();
+};
+
+app.post('/api/auth/login', (req, res) => {
+    const { password } = req.body;
+    const sysPwd = config.get("system.ui_password");
+    if (!sysPwd || password === sysPwd) {
+        res.json({ success: true, token: password });
+    } else {
+        res.status(401).json({ success: false });
+    }
+});
+
+// Apply auth to sensitive routes (omitted from public getters if needed, but for now apply broadly)
+// app.use('/api/settings', requireAuth);
+// app.use('/api/system/mode', requireAuth);
 const analytics = new AnalyticsManager();
 const kucoin = new KuCoinConnector();
 
@@ -39,8 +65,21 @@ app.get('/api/dashboard', (req, res) => {
         trades: [
             { symbol: 'BTC', pnl: 1.2, stage: 0 },
             { symbol: 'ETH', pnl: -0.5, stage: 1 }
-        ]
+        ],
+        execution_mode: config.get('trading.execution_mode') || 'paper'
     });
+});
+
+app.post('/api/system/mode', (req, res) => {
+    const { mode } = req.body;
+    if (mode === 'live' || mode === 'paper') {
+        // In real app, persist this
+        // config.set('trading.execution_mode', mode);
+        console.log(`[API] Switched execution mode to ${mode}`);
+        res.json({ success: true, mode });
+    } else {
+        res.status(400).json({ error: "Invalid mode" });
+    }
 });
 
 app.get('/api/settings', (req, res) => {

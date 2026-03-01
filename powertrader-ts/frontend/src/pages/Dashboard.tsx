@@ -1,107 +1,112 @@
-import React, { useEffect, useState } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
-
-interface Trade {
-    symbol: string;
-    pnl: number;
-    stage: number;
-}
+import React, { useState, useEffect } from 'react';
+import { useWallet } from '../context/WalletContext';
 
 export const Dashboard: React.FC = () => {
-    const [trades, setTrades] = useState<Trade[]>([]);
-    const [account, setAccount] = useState({ total: 0, pnl: 0 });
-    const { isConnected, lastMessage } = useWebSocket('ws://localhost:3000');
+    const [data, setData] = useState<any>(null);
+    const { address, balance } = useWallet();
 
-    // Handle real-time updates
     useEffect(() => {
-        if (lastMessage) {
-            if (lastMessage.type === 'TRADE_UPDATE') {
-                // Update specific trade in list
-                const update = lastMessage.payload;
-                setTrades(prev => {
-                    const idx = prev.findIndex(t => t.symbol === update.symbol);
-                    if (idx >= 0) {
-                        const next = [...prev];
-                        next[idx] = update;
-                        return next;
-                    } else {
-                        return [...prev, update];
-                    }
-                });
-            } else if (lastMessage.type === 'ACCOUNT_UPDATE') {
-                setAccount(lastMessage.payload);
-            }
-        }
-    }, [lastMessage]);
-
-    // Initial fetch (fallback/hydration)
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch('http://localhost:3000/api/dashboard');
-                const data = await res.json();
-                setAccount(data.account);
-                setTrades(data.trades);
-            } catch (e) {
-                console.error(e);
-            }
-        };
-        fetchData();
+        fetchDashboard();
     }, []);
+
+    const fetchDashboard = () => {
+        fetch('http://localhost:3000/api/dashboard')
+            .then(res => res.json())
+            .then(setData)
+            .catch(console.error);
+    }
+
+    const toggleMode = async () => {
+        const newMode = data.execution_mode === 'live' ? 'paper' : 'live';
+        if (newMode === 'live' && !confirm("WARNING: Switching to LIVE mode will execute real trades. Proceed?")) {
+            return;
+        }
+        try {
+            await fetch('http://localhost:3000/api/system/mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: newMode })
+            });
+            fetchDashboard(); // Refresh
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    if (!data) return <div className="p-4">Loading...</div>;
 
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">PowerTrader Dashboard</h1>
-                <span className={`px-3 py-1 rounded text-sm ${isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {isConnected ? 'Live Connected' : 'Disconnected'}
-                </span>
+                <h1 className="text-3xl font-bold">Dashboard</h1>
+
+                <div className="flex items-center space-x-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-200">
+                    <span className="text-sm font-medium text-gray-600 uppercase">Mode:</span>
+                    <button
+                        onClick={toggleMode}
+                        className={`px-3 py-1 rounded-full text-xs font-bold text-white transition-colors ${data.execution_mode === 'live' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}
+                    >
+                        {data.execution_mode === 'live' ? '🔴 LIVE' : '🔵 PAPER'}
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Account Card */}
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-xl font-semibold mb-4">Account Overview</h2>
-                    <div className="space-y-2">
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">Total Value</span>
-                            <span className="font-bold text-lg">${account.total.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-gray-600">PnL (Realized)</span>
-                            <span className={`font-bold ${account.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {account.pnl >= 0 ? '+' : ''}${account.pnl.toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+                    <h3 className="text-gray-500 text-sm font-medium">Bot Balance (Exchange)</h3>
+                    <p className="text-3xl font-bold">${data.account.total.toLocaleString()}</p>
                 </div>
+                <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+                    <h3 className="text-gray-500 text-sm font-medium">Total PnL</h3>
+                    <p className={`text-3xl font-bold ${data.account.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {data.account.pnl >= 0 ? '+' : ''}${data.account.pnl.toFixed(2)}
+                    </p>
+                </div>
+                {/* Web3 Wallet Card */}
+                <div className={`p-6 rounded-lg shadow border-l-4 ${address ? 'bg-gray-900 text-white border-purple-500' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
+                    <h3 className="text-sm font-medium mb-1">Web3 Wallet (DeFi)</h3>
+                    {address ? (
+                        <>
+                            <p className="text-2xl font-bold text-purple-400">{balance ? parseFloat(balance).toFixed(4) : '0'} ETH</p>
+                            <p className="text-xs font-mono mt-2 truncate text-gray-400">{address}</p>
+                        </>
+                    ) : (
+                        <div className="mt-2 text-sm">Not Connected. Use Sidebar to connect MetaMask.</div>
+                    )}
+                </div>
+            </div>
 
-                {/* Active Trades Card */}
-                <div className="bg-white p-6 rounded-lg shadow">
-                    <h2 className="text-xl font-semibold mb-4">Active Trades</h2>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                            <thead>
-                                <tr className="border-b">
-                                    <th className="text-left py-2">Coin</th>
-                                    <th className="text-right py-2">PnL %</th>
-                                    <th className="text-right py-2">DCA Stage</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {trades.map(t => (
-                                    <tr key={t.symbol} className="border-b last:border-0">
-                                        <td className="py-2">{t.symbol}</td>
-                                        <td className={`text-right py-2 ${t.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {t.pnl.toFixed(2)}%
-                                        </td>
-                                        <td className="text-right py-2">{t.stage}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <h2 className="text-xl font-bold mb-4">Active Trades</h2>
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PnL %</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DCA Stage</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {data.trades.map((t: any, i: number) => (
+                            <tr key={i}>
+                                <td className="px-6 py-4 whitespace-nowrap font-medium">{t.symbol}</td>
+                                <td className={`px-6 py-4 whitespace-nowrap font-bold ${t.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {t.pnl.toFixed(2)}%
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 py-1 rounded text-xs ${t.stage > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}`}>
+                                        {t.stage}/2
+                                    </span>
+                                </td>
+                            </tr>
+                        ))}
+                        {data.trades.length === 0 && (
+                            <tr>
+                                <td colSpan={3} className="px-6 py-8 text-center text-gray-500">No active trades.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );
