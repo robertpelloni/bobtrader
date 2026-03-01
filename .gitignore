@@ -14,3 +14,5 @@ powertrader-ts/hub_data/*.db
 *.log
 powertrader-ts/backend/dist
 powertrader-ts/frontend/dist
+node_modules/
+.DS_Store

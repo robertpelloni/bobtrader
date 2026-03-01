@@ -8,6 +8,7 @@ import { AILab } from './pages/AILab';
 import { SystemStatus } from './pages/SystemStatus';
 import { LiquidityDashboard } from './pages/LiquidityDashboard';
 import { ArbitrageDashboard } from './pages/ArbitrageDashboard';
+import { SentimentDashboard } from './pages/SentimentDashboard';
 import { WalletProvider, useWallet } from './context/WalletContext';
 
 const WalletButton = () => {
@@ -52,6 +53,7 @@ function App() {
             <Link to="/defi/liquidity" className="block py-2 px-4 rounded hover:bg-gray-800 text-pink-300">Liquidity</Link>
             <Link to="/strategy-sandbox" className="block py-2 px-4 rounded hover:bg-gray-800">Backtest</Link>
             <Link to="/risk" className="block py-2 px-4 rounded hover:bg-gray-800">Risk</Link>
+            <Link to="/sentiment" className="block py-2 px-4 rounded hover:bg-gray-800 text-indigo-300">Social Sentiment</Link>
             <Link to="/volume" className="block py-2 px-4 rounded hover:bg-gray-800">Volume</Link>
             <Link to="/arbitrage" className="block py-2 px-4 rounded hover:bg-gray-800 text-green-300">Arbitrage</Link>
             <Link to="/status" className="block py-2 px-4 rounded hover:bg-gray-800">System Status</Link>
@@ -67,6 +69,7 @@ function App() {
             <Route path="/defi/liquidity" element={<LiquidityDashboard />} />
             <Route path="/strategy-sandbox" element={<StrategySandbox />} />
             <Route path="/risk" element={<RiskDashboard />} />
+            <Route path="/sentiment" element={<SentimentDashboard />} />
             <Route path="/volume" element={<VolumeDashboard />} />
             <Route path="/arbitrage" element={<ArbitrageDashboard />} />
             <Route path="/status" element={<SystemStatus />} />

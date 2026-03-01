@@ -7,6 +7,7 @@ import { KuCoinConnector } from "../exchanges/KuCoinConnector";
 import { NotificationManager } from "../notifications/NotificationManager";
 import { WebSocketManager } from "../api/websocket";
 import { DeepThinker } from "../thinker/DeepThinker";
+import { SentimentScanner } from "../engine/risk/SentimentScanner";
 
 export class Trader {
     private connector: IExchangeConnector;
@@ -20,6 +21,7 @@ export class Trader {
     private maxDcaBuys: number;
     private strategy: IStrategy;
     private ai: DeepThinker | null = null;
+    private sentimentScanner: SentimentScanner;
 
     constructor(connector: IExchangeConnector) {
         this.connector = connector;
@@ -38,6 +40,8 @@ export class Trader {
             this.ai = new DeepThinker();
             console.log("[Trader] AI Engine: DeepThinker (LSTM)");
         }
+
+        this.sentimentScanner = new SentimentScanner();
 
         // Load Strategy from Config
         const strategyName = cfg.active_strategy || "SMAStrategy";

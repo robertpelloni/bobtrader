@@ -16,6 +16,7 @@ import { UniswapConnector } from '../exchanges/UniswapConnector';
 import { LiquidityManager } from '../defi/LiquidityManager';
 import { ArbitrageScanner } from '../engine/ArbitrageScanner';
 import { CorrelationMatrix } from '../engine/risk/CorrelationMatrix';
+import { SentimentScanner } from '../engine/risk/SentimentScanner';
 
 const app = express();
 const port = 3000;
@@ -319,8 +320,28 @@ app.get('/api/arbitrage/opportunities', async (req, res) => {
     }
 });
 
-// --- Risk Analysis ---
+// --- Risk & Sentiment Analysis ---
 const correlationEngine = new CorrelationMatrix(kucoin); // Use KuCoin for price data
+const sentimentScanner = new SentimentScanner();
+
+app.get('/api/sentiment/:symbol', async (req, res) => {
+    try {
+        const symbol = req.params.symbol;
+        const result = await sentimentScanner.scan(symbol);
+        res.json(result);
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/sentiment/market/fng', async (req, res) => {
+    try {
+        const result = await sentimentScanner.getMarketFearAndGreed();
+        res.json(result);
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 app.get('/api/risk/correlation', async (req, res) => {
     try {
