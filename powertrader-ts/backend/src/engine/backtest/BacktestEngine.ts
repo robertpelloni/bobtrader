@@ -33,6 +33,9 @@ export class BacktestEngine implements IBacktestEngine {
         let maxEquity = balance;
         let maxDrawdown = 0;
 
+        // Use global config fee if not provided (default 0.1%)
+        const defaultFeeRate = 0.001;
+
         // Start after warmup period (e.g. 50 candles for SMA/RSI)
         const warmup = 50;
 
@@ -59,34 +62,54 @@ export class BacktestEngine implements IBacktestEngine {
 
             if (position === 0) {
                 if (candle.buy_signal) {
-                    // Buy 99% of balance
-                    const amountToSpend = balance * 0.99;
-                    const amount = amountToSpend / price;
-                    const fee = amountToSpend * 0.001; // 0.1% fee
+                    // Use configurable position sizing, default to 99% of balance
+                    const sizePct = strategy.positionSize || 0.99;
+                    const amountToSpend = balance * sizePct;
 
-                    balance -= (amountToSpend + fee);
-                    position = amount;
-                    entryPrice = price;
+                    if (amountToSpend > 10) { // Minimum trade size
+                        const amount = amountToSpend / price;
+                        const fee = amountToSpend * defaultFeeRate;
 
-                    trades.push({
-                        type: 'buy',
-                        price,
-                        time: date,
-                        amount,
-                        fee
-                    });
+                        balance -= (amountToSpend + fee);
+                        position = amount;
+                        entryPrice = price;
+
+                        trades.push({
+                            type: 'buy',
+                            price,
+                            time: date,
+                            amount,
+                            fee
+                        });
+                    }
                 }
             } else {
+                // Check trailing stop or strategy sell
+                let shouldSell = false;
+                let sellReason = "";
+
                 if (candle.sell_signal) {
-                    // Sell all
+                    shouldSell = true;
+                    sellReason = "strategy_signal";
+                }
+
+                // If strategy implements hard stop loss
+                if (!shouldSell && strategy.stopLoss && strategy.stopLoss > 0) {
+                    const currentLoss = (price - entryPrice) / entryPrice;
+                    if (currentLoss <= -Math.abs(strategy.stopLoss)) {
+                        shouldSell = true;
+                        sellReason = "stop_loss";
+                    }
+                }
+
+                if (shouldSell) {
                     const proceeds = position * price;
-                    const fee = proceeds * 0.001;
+                    const fee = proceeds * defaultFeeRate;
 
                     balance += (proceeds - fee);
 
-                    // Calculate PnL for this trade
                     const entryCost = position * entryPrice;
-                    const pnl = proceeds - entryCost - fee; // Simple PnL
+                    const pnl = proceeds - entryCost - fee;
 
                     trades.push({
                         type: 'sell',
@@ -94,7 +117,8 @@ export class BacktestEngine implements IBacktestEngine {
                         time: date,
                         amount: position,
                         fee,
-                        pnl
+                        pnl,
+                        note: sellReason
                     });
 
                     position = 0;

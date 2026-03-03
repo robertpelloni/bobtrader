@@ -5,19 +5,21 @@
 
 ## 🔴 High Priority (Immediate)
 
-- [ ] **Risk Engine - Correlation Matrix:** Implement `CorrelationMatrix.ts` to calculate Pearson coefficients between monitored assets. Visualize in `RiskDashboard.tsx`.
-- [ ] **Settings UI - Notifications:** Add a form to `Settings.tsx` to configure Discord/Telegram webhooks/keys without editing YAML.
-- [ ] **Wallet Connect:** Allow users to connect their Web3 wallet (MetaMask/Rabby) in the frontend for "View Only" portfolio tracking alongside the bot's internal wallet.
+- [x] **Risk Engine - Correlation Matrix:** Implemented `CorrelationMatrix.ts` & UI.
+- [x] **Settings UI - Notifications:** Fully implemented in `Settings.tsx`.
+- [x] **Wallet Connect:** Implemented globally via `WalletContext`.
 
 ## 🟡 Medium Priority (Polishing)
 
-- [ ] **Paper Trading Toggle:** Ensure the Dashboard has a clear visual indicator of "LIVE" vs "PAPER" mode, with a quick toggle (requiring restart).
-- [ ] **Strategy Params UI:** `StrategySandbox` allows selecting strategies, but passing custom parameters (period, thresholds) via UI is currently limited. Add a dynamic form builder based on strategy `setParameters`.
+- [x] **Paper Trading Toggle:** Implemented with `/api/system/mode`.
+- [x] **Strategy Params UI:** Dynamic form added to `StrategySandbox.tsx`.
 - [ ] **Mobile Responsive Tweaks:** Ensure `LiquidityDashboard` and `ArbitrageDashboard` tables stack correctly on mobile screens.
+- [ ] **Core Engine Robustness:** Refactor `TechnicalAnalysis.ts` for speed and ensure `BacktestEngine.ts` supports dynamic fees and better edge cases.
 
 ## 🟢 Low Priority (Future Features)
 
-- [ ] **Social Sentiment Module:** Implement the "Socializer" (Twitter/Reddit scraper).
+- [x] **Social Sentiment Module:** Implemented "The Socializer".
+- [ ] **Order Book Arbitrage:** Upgrade Arbitrage Scanner to use Order Book depth (slippage) instead of just top-of-book ticker.
 - [ ] **Grid Bot Visualization:** Show the grid lines on the main price chart.
 - [ ] **Exchange "Fill" Websockets:** Currently we rely on polling/simulated fills. Listen to real "Order Update" websockets from Binance/KuCoin.
 

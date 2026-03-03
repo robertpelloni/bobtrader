@@ -64,9 +64,15 @@ export const SystemStatus: React.FC = () => {
                         <tbody>
                             {status.submodules.map((sub: any) => (
                                 <tr key={sub.name} className="border-t">
-                                    <td className="py-3 font-medium capitalize">{sub.name}</td>
-                                    <td className="py-3 text-gray-600">v{sub.version}</td>
-                                    <td className="py-3 text-sm text-gray-400 font-mono">{sub.path}</td>
+                                    <td className="py-3">
+                                        <div className="font-bold capitalize">{sub.name}</div>
+                                        <div className="text-xs text-gray-500">{sub.description}</div>
+                                    </td>
+                                    <td className="py-3">
+                                        <span className="font-medium">v{sub.version}</span>
+                                        <div className="text-xs text-gray-400">Build: {sub.build} ({sub.date})</div>
+                                    </td>
+                                    <td className="py-3 text-sm text-gray-500 font-mono">{sub.path}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -74,7 +80,7 @@ export const SystemStatus: React.FC = () => {
                 </div>
 
                 {/* Directory Structure */}
-                <div className="bg-gray-900 text-green-400 p-6 rounded-lg shadow md:col-span-2 font-mono text-sm">
+                <div className="bg-gray-900 text-green-400 p-6 rounded-lg shadow md:col-span-2 font-mono text-sm mb-12">
                     <h2 className="text-xl font-semibold mb-4 border-b border-gray-700 pb-2 text-white">Project Structure</h2>
                     <div className="space-y-1">
                         <div>/ (Root)</div>

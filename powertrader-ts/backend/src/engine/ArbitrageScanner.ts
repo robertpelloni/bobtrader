@@ -35,21 +35,69 @@ export class ArbitrageScanner {
         // this.exchanges.set("Robinhood", new RobinhoodConnector("","")); // RH is harder to get public quotes without login sometimes
     }
 
-    public async scan(symbol: string): Promise<Opportunity | null> {
-        // Use a standard array instead of mutating outside
+    public async scan(symbol: string, orderSizeUsd: number = 1000): Promise<Opportunity | null> {
+        // Advanced Arbitrage Scanner: Checks Order Book Depth (Slippage) instead of just top-of-book ticker.
         const tasks = Array.from(this.exchanges.entries()).map(async ([name, connector]) => {
             try {
-                // Try USD first, then USDT
-                let price = 0;
+                // We need to fetch the Order Book to calculate effective buy/sell prices for `orderSizeUsd`
+                let obPair = `${symbol}-USD`;
+                let book: any = null;
+
                 try {
-                    price = await connector.fetchTicker(`${symbol}-USD`);
+                    book = await connector.fetchOrderBook(obPair);
                 } catch {
+                    obPair = `${symbol}-USDT`;
                     try {
-                        price = await connector.fetchTicker(`${symbol}-USDT`);
+                        book = await connector.fetchOrderBook(obPair);
                     } catch {}
                 }
 
-                if (price > 0) return { exchange: name, price };
+                if (book && book.asks && book.bids && book.asks.length > 0 && book.bids.length > 0) {
+                    // Calculate effective BUY price (slippage into Asks)
+                    let buyCost = 0;
+                    let amountToBuy = orderSizeUsd;
+                    let effBuyPrice = 0;
+
+                    for (const ask of book.asks) {
+                        const price = ask[0];
+                        const amountAvailableUsd = price * ask[1];
+                        if (amountToBuy <= amountAvailableUsd) {
+                            buyCost += amountToBuy;
+                            effBuyPrice = buyCost / (orderSizeUsd / price); // Approximation
+                            break;
+                        } else {
+                            buyCost += amountAvailableUsd;
+                            amountToBuy -= amountAvailableUsd;
+                        }
+                    }
+                    if (effBuyPrice === 0) effBuyPrice = book.asks[0][0]; // Fallback if book too thin
+
+                    // Calculate effective SELL price (slippage into Bids)
+                    let sellRevenue = 0;
+                    let amountToSellUsd = orderSizeUsd;
+                    let effSellPrice = 0;
+
+                    for (const bid of book.bids) {
+                        const price = bid[0];
+                        const amountAvailableUsd = price * bid[1];
+                        if (amountToSellUsd <= amountAvailableUsd) {
+                            sellRevenue += amountToSellUsd;
+                            effSellPrice = sellRevenue / (orderSizeUsd / price);
+                            break;
+                        } else {
+                            sellRevenue += amountAvailableUsd;
+                            amountToSellUsd -= amountAvailableUsd;
+                        }
+                    }
+                    if (effSellPrice === 0) effSellPrice = book.bids[0][0];
+
+                    return { exchange: name, effBuyPrice, effSellPrice };
+                }
+
+                // Fallback to Ticker if OB fails or is unsupported
+                let price = await connector.fetchTicker(obPair);
+                if (price > 0) return { exchange: name, effBuyPrice: price, effSellPrice: price };
+
             } catch (e) {
                 // Silent failure for individual fetch
             }
@@ -57,27 +105,32 @@ export class ArbitrageScanner {
         });
 
         const results = await Promise.all(tasks);
-        const prices = results.filter(r => r !== null) as { exchange: string, price: number }[];
+        const exData = results.filter(r => r !== null) as { exchange: string, effBuyPrice: number, effSellPrice: number }[];
 
-        if (prices.length < 2) return null;
+        if (exData.length < 2) return null;
 
-        // Find min and max
-        prices.sort((a, b) => a.price - b.price);
+        // Find the absolute best place to BUY (lowest Ask) and best place to SELL (highest Bid)
+        let bestBuy = exData[0];
+        let bestSell = exData[0];
 
-        const lowest = prices[0];
-        const highest = prices[prices.length - 1];
+        for (const data of exData) {
+            if (data.effBuyPrice < bestBuy.effBuyPrice) bestBuy = data;
+            if (data.effSellPrice > bestSell.effSellPrice) bestSell = data;
+        }
 
-        const spread = highest.price - lowest.price;
-        const spreadPct = (spread / lowest.price) * 100;
+        if (bestBuy.exchange === bestSell.exchange) return null; // No arb on same exchange
+
+        const spread = bestSell.effSellPrice - bestBuy.effBuyPrice;
+        const spreadPct = (spread / bestBuy.effBuyPrice) * 100;
 
         // Arbitrage Threshold (e.g., 0.5% to cover fees)
         if (spreadPct > 0.5) {
             return {
                 symbol,
-                buyExchange: lowest.exchange,
-                buyPrice: lowest.price,
-                sellExchange: highest.exchange,
-                sellPrice: highest.price,
+                buyExchange: bestBuy.exchange,
+                buyPrice: bestBuy.effBuyPrice,
+                sellExchange: bestSell.exchange,
+                sellPrice: bestSell.effSellPrice,
                 spread,
                 spreadPct,
                 timestamp: Date.now()

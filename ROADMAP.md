@@ -54,4 +54,4 @@
 ---
 
 **Last Updated:** 2026-02-25
-**Current Version:** 3.3.0
+**Current Version:** 3.5.0

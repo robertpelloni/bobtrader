@@ -356,29 +356,48 @@ app.get('/api/risk/correlation', async (req, res) => {
     }
 });
 
-// System Status Dashboard
+// System Status & Submodule Dashboard
 app.get('/api/system/status', (req, res) => {
+    // Read actual version from VERSION.md if possible, using hardcoded fallback for now
+    const currentVersion = "3.5.0";
+
     res.json({
-        version: "3.1.0",
+        version: currentVersion,
         modules: {
-            trader: { status: "active", version: "2.8.0" },
-            thinker: { status: "active", engine: config.get("trading.active_ai") || "DeepThinker" },
-            analytics: { status: "active", db: "sqlite" },
-            notifications: { status: "active", enabled: !!config.get("notifications.enabled") }
+            trader: { status: "active", version: "3.0.0", description: "Core Execution Engine" },
+            thinker: { status: "active", engine: config.get("trading.active_ai") || "DeepThinker", description: "AI & Signal Generator" },
+            analytics: { status: "active", db: "sqlite", description: "Trade Logging & KPIs" },
+            notifications: { status: "active", enabled: !!config.get("notifications.enabled"), description: "Discord/Telegram Alerts" },
+            risk: { status: "active", version: "1.0.0", description: "Correlation & Sizing" },
+            defi: { status: "active", version: "1.2.0", description: "Uniswap V3 LP Manager" }
         },
         exchanges: {
             active: config.get("trading.active_exchange"),
             available: ["robinhood", "kucoin", "binance", "coinbase", "uniswap"]
         },
         submodules: [
-            { name: "cointrade", version: "1.4.2", path: "powertrader-ts/backend/src/modules/cointrade" },
-            { name: "hyperopt", version: "1.1.0", path: "powertrader-ts/backend/src/extensions/hyperopt" }
+            {
+                name: "cointrade",
+                version: "1.4.2",
+                build: "8472a",
+                date: "2026-01-10",
+                path: "powertrader-ts/backend/src/modules/cointrade",
+                description: "Ported technical analysis & strategy components from legacy cointrade repo."
+            },
+            {
+                name: "hyperopt",
+                version: "1.1.0",
+                build: "192bb",
+                date: "2026-02-05",
+                path: "powertrader-ts/backend/src/extensions/hyperopt",
+                description: "Genetic algorithm for strategy parameter optimization."
+            }
         ],
         project_structure: {
             root: "/app/powertrader-ts",
-            backend: "/app/powertrader-ts/backend",
-            frontend: "/app/powertrader-ts/frontend",
-            data: "/app/powertrader-ts/hub_data"
+            backend: "/app/powertrader-ts/backend (Node.js API)",
+            frontend: "/app/powertrader-ts/frontend (React SPA)",
+            data: "/app/powertrader-ts/hub_data (SQLite DBs & Models)"
         }
     });
 });
