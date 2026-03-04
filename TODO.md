@@ -14,13 +14,14 @@
 - [x] **Paper Trading Toggle:** Implemented with `/api/system/mode`.
 - [x] **Strategy Params UI:** Dynamic form added to `StrategySandbox.tsx`.
 - [ ] **Mobile Responsive Tweaks:** Ensure `LiquidityDashboard` and `ArbitrageDashboard` tables stack correctly on mobile screens.
-- [ ] **Core Engine Robustness:** Refactor `TechnicalAnalysis.ts` for speed and ensure `BacktestEngine.ts` supports dynamic fees and better edge cases.
+- [x] **Core Engine Robustness:** Refactor `TechnicalAnalysis.ts` for speed and ensure `BacktestEngine.ts` supports dynamic fees and better edge cases.
 
 ## 🟢 Low Priority (Future Features)
 
 - [x] **Social Sentiment Module:** Implemented "The Socializer".
-- [ ] **Order Book Arbitrage:** Upgrade Arbitrage Scanner to use Order Book depth (slippage) instead of just top-of-book ticker.
+- [x] **Order Book Arbitrage:** Upgraded Arbitrage Scanner to use Order Book depth.
 - [ ] **Grid Bot Visualization:** Show the grid lines on the main price chart.
+- [ ] **On-Chain Whale Watcher:** Monitor large ERC20 stablecoin transfers to gauge institutional money flow.
 - [ ] **Exchange "Fill" Websockets:** Currently we rely on polling/simulated fills. Listen to real "Order Update" websockets from Binance/KuCoin.
 
 ## 🔵 Documentation & Maintenance

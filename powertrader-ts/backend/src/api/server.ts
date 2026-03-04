@@ -17,6 +17,7 @@ import { LiquidityManager } from '../defi/LiquidityManager';
 import { ArbitrageScanner } from '../engine/ArbitrageScanner';
 import { CorrelationMatrix } from '../engine/risk/CorrelationMatrix';
 import { SentimentScanner } from '../engine/risk/SentimentScanner';
+import { WhaleWatcher } from '../engine/risk/WhaleWatcher';
 
 const app = express();
 const port = 3000;
@@ -350,6 +351,18 @@ app.get('/api/risk/correlation', async (req, res) => {
 
         const data = await correlationEngine.generateMatrix(symbolList);
         res.json(data);
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+const whaleWatcher = new WhaleWatcher();
+
+app.get('/api/risk/whales', async (req, res) => {
+    try {
+        const events = await whaleWatcher.scanRecentWhaleActivity();
+        res.json({ events });
     } catch (e: any) {
         console.error(e);
         res.status(500).json({ error: e.message });

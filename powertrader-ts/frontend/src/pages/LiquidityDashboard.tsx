@@ -90,7 +90,7 @@ export const LiquidityDashboard: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Control Panel */}
-                <div className="bg-white p-6 rounded-lg shadow">
+                <div className="bg-white p-4 sm:p-6 rounded-lg shadow order-2 lg:order-1">
                     <h2 className="text-xl font-semibold mb-4">Add Liquidity (Uniswap V3)</h2>
                     <div className="space-y-4">
                         <div>
@@ -102,7 +102,7 @@ export const LiquidityDashboard: React.FC = () => {
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Amount 0 (ETH)</label>
                                 <input
@@ -136,8 +136,8 @@ export const LiquidityDashboard: React.FC = () => {
                 </div>
 
                 {/* Positions List */}
-                <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
-                    <div className="flex justify-between items-center mb-4">
+                <div className="bg-white p-4 sm:p-6 rounded-lg shadow lg:col-span-2 order-1 lg:order-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                         <h2 className="text-xl font-semibold">Your Positions</h2>
                         <button onClick={fetchPositions} className="text-sm text-blue-600 hover:underline">Refresh</button>
                     </div>
@@ -149,29 +149,29 @@ export const LiquidityDashboard: React.FC = () => {
                     ) : (
                         <div className="space-y-4">
                             {positions.map((pos) => (
-                                <div key={pos.tokenId} className="border rounded-lg p-4 flex justify-between items-center hover:bg-gray-50">
-                                    <div>
+                                <div key={pos.tokenId} className="border rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center hover:bg-gray-50 gap-4">
+                                    <div className="w-full sm:w-auto break-all">
                                         <div className="font-bold text-lg">Token #{pos.tokenId}</div>
-                                        <div className="text-sm text-gray-600">Liquidity: {pos.liquidity}</div>
-                                        <div className="text-xs text-gray-400 mt-1">
+                                        <div className="text-sm text-gray-600">Liquidity: <span className="font-mono text-xs">{pos.liquidity}</span></div>
+                                        <div className="text-xs text-gray-400 mt-1 bg-gray-100 p-1 rounded inline-block">
                                             Range: {pos.tickLower} &lt;-&gt; {pos.tickUpper}
                                         </div>
                                     </div>
-                                    <div className="text-right">
+                                    <div className="text-left sm:text-right w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 mt-2 sm:mt-0">
                                         <div className="text-sm font-semibold text-green-600 mb-2">
-                                            Unclaimed Fees: {pos.fees0} / {pos.fees1}
+                                            Fees: {pos.fees0} / {pos.fees1}
                                         </div>
-                                        <div className="space-x-2">
+                                        <div className="flex gap-2">
                                             <button
                                                 onClick={() => autoCompound(pos.tokenId)}
                                                 disabled={isLoading}
-                                                className="text-purple-600 text-sm hover:text-purple-800 border border-purple-200 px-3 py-1 rounded hover:bg-purple-50"
+                                                className="flex-1 sm:flex-none text-purple-600 text-sm hover:text-purple-800 border border-purple-200 px-3 py-1 rounded hover:bg-purple-50 transition-colors text-center"
                                             >
                                                 Compound
                                             </button>
                                             <button
                                                 onClick={() => removeLiquidity(pos.tokenId)}
-                                                className="text-red-600 text-sm hover:text-red-800 border border-red-200 px-3 py-1 rounded hover:bg-red-50"
+                                                className="flex-1 sm:flex-none text-red-600 text-sm hover:text-red-800 border border-red-200 px-3 py-1 rounded hover:bg-red-50 transition-colors text-center"
                                             >
                                                 Remove
                                             </button>

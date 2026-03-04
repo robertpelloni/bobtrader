@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 
 interface KPI {
     totalTrades: number;
@@ -227,6 +227,12 @@ export const StrategySandbox: React.FC = () => {
                                     )}
                                     {selectedStrategy.includes('RSI') && (
                                         <Line yAxisId="right" type="monotone" dataKey="rsi" stroke="#EC4899" name="RSI" dot={false} />
+                                    )}
+                                    {/* Grid Bot Visualization */}
+                                    {selectedStrategy === 'GridStrategy' && results.chartData && results.chartData[0] && results.chartData[0].grid_levels && (
+                                        results.chartData[0].grid_levels.map((level: number, i: number) => (
+                                            <ReferenceLine key={i} yAxisId="left" y={level} stroke="#9CA3AF" strokeDasharray="3 3" strokeOpacity={0.5} />
+                                        ))
                                     )}
                                 </LineChart>
                             </ResponsiveContainer>
