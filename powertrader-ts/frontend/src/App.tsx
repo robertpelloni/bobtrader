@@ -10,6 +10,8 @@ import { LiquidityDashboard } from './pages/LiquidityDashboard';
 import { ArbitrageDashboard } from './pages/ArbitrageDashboard';
 import { SentimentDashboard } from './pages/SentimentDashboard';
 import { WalletProvider, useWallet } from './context/WalletContext';
+import { Login } from './pages/Login';
+import { useState, useEffect } from 'react';
 
 const WalletButton = () => {
     const { address, connect, disconnect, isConnecting, balance } = useWallet();
@@ -37,6 +39,36 @@ const WalletButton = () => {
 };
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+      // Check if backend requires auth by trying a dummy login
+      fetch('http://localhost:3000/api/auth/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ password: '' })
+      }).then(res => res.json()).then(data => {
+          if (data.success) {
+              setIsAuthenticated(true); // No password set
+          } else {
+              const savedToken = localStorage.getItem('pt_token');
+              if (savedToken) setIsAuthenticated(true);
+              else setIsAuthenticated(false);
+          }
+      }).catch(() => {
+          // If backend down, just let them in to see errors
+          setIsAuthenticated(true);
+      });
+  }, []);
+
+  const handleLogin = (token: string) => {
+      localStorage.setItem('pt_token', token);
+      setIsAuthenticated(true);
+  };
+
+  if (isAuthenticated === null) return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">Loading PowerTrader AI...</div>;
+  if (!isAuthenticated) return <Login onLogin={handleLogin} />;
+
   return (
     <WalletProvider>
     <Router>

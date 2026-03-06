@@ -12,6 +12,9 @@ export interface IExchangeConnector {
     cancelOrder(id: string, pair: string): Promise<boolean>;
     fetchOrder(id: string, pair: string): Promise<any>;
     fetchOpenOrders(pair?: string): Promise<any[]>;
+
+    // WebSockets
+    onOrderUpdate?(callback: (update: any) => void): void;
 }
 
 export interface IConnectorManager {

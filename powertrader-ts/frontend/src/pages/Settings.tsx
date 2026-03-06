@@ -73,16 +73,21 @@ export const Settings: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">DCA Multiplier</label>
+                                <label className="block text-sm font-medium text-gray-700" title="How much larger each subsequent DCA buy should be compared to the last.">
+                                    DCA Multiplier <span className="text-blue-500 cursor-help">ℹ️</span>
+                                </label>
                                 <input
                                     type="number"
+                                    step="0.1"
                                     className="mt-1 border p-2 w-full rounded"
                                     value={config.dca_multiplier || 2.0}
                                     onChange={(e) => handleRootChange('dca_multiplier', parseFloat(e.target.value))}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Max DCA Buys</label>
+                                <label className="block text-sm font-medium text-gray-700" title="Maximum number of times the bot will average down in a 24-hour period per coin.">
+                                    Max DCA Buys <span className="text-blue-500 cursor-help">ℹ️</span>
+                                </label>
                                 <input
                                     type="number"
                                     className="mt-1 border p-2 w-full rounded"

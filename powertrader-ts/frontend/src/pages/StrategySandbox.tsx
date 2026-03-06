@@ -114,7 +114,9 @@ export const StrategySandbox: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label>Grid Lines</label>
+                                    <label title="Number of intervals between lower and upper price bounds.">
+                                        Grid Lines <span className="cursor-help">ℹ️</span>
+                                    </label>
                                     <input type="number" className="w-full border rounded p-1"
                                         defaultValue={10}
                                         onChange={(e) => setParams({...params, gridLines: Number(e.target.value)})}

@@ -1,0 +1,97 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PowerTrader AI API",
+    "description": "API documentation for the PowerTrader AI backend.",
+    "version": "4.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local server"
+    }
+  ],
+  "paths": {
+    "/dashboard": {
+      "get": {
+        "summary": "Get dashboard metrics",
+        "description": "Returns account balance, total PnL, active trades, and current execution mode.",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/system/mode": {
+      "post": {
+        "summary": "Toggle Execution Mode",
+        "description": "Switch between 'live' and 'paper' trading.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": { "type": "string", "enum": ["live", "paper"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Mode updated" }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get system settings",
+        "responses": {
+          "200": { "description": "Returns trading and notification config" }
+        }
+      },
+      "post": {
+        "summary": "Update system settings",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Settings saved" }
+        }
+      }
+    },
+    "/risk/correlation": {
+      "get": {
+        "summary": "Get Correlation Matrix",
+        "parameters": [
+          { "name": "coins", "in": "query", "schema": { "type": "string" }, "description": "Comma separated coin symbols" }
+        ],
+        "responses": {
+          "200": { "description": "Matrix data" }
+        }
+      }
+    },
+    "/arbitrage/opportunities": {
+      "get": {
+        "summary": "Scan for Arbitrage",
+        "responses": {
+          "200": { "description": "Array of opportunities > 0.5% spread" }
+        }
+      }
+    },
+    "/sentiment/{symbol}": {
+      "get": {
+        "summary": "Get Social Sentiment",
+        "parameters": [
+          { "name": "symbol", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Sentiment score and trend" }
+        }
+      }
+    }
+  }
+}

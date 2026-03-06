@@ -18,6 +18,9 @@ import { ArbitrageScanner } from '../engine/ArbitrageScanner';
 import { CorrelationMatrix } from '../engine/risk/CorrelationMatrix';
 import { SentimentScanner } from '../engine/risk/SentimentScanner';
 import { WhaleWatcher } from '../engine/risk/WhaleWatcher';
+import swaggerUi from 'swagger-ui-express';
+import fs from 'fs';
+import path from 'path';
 
 const app = express();
 const port = 3000;
@@ -26,6 +29,14 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const config = ConfigManager.getInstance();
+
+// OpenAPI Docs
+try {
+    const swaggerDoc = JSON.parse(fs.readFileSync(path.join(__dirname, '../../swagger.json'), 'utf-8'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));
+} catch (e) {
+    console.warn("Could not load swagger.json");
+}
 
 // Simple Auth Middleware
 const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
