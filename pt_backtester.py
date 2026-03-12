@@ -85,6 +85,7 @@ class Candle:
 class Trade:
     """Completed trade record."""
 
+    coin: str
     entry_time: datetime
     exit_time: datetime
     entry_price: float
@@ -141,7 +142,7 @@ class Position:
 class BacktestResult:
     """Backtest performance summary."""
 
-    coin: str
+    coins: str
     start_date: str
     end_date: str
     initial_capital: float
@@ -364,7 +365,7 @@ class BacktestEngine:
 
     def __init__(self, config: BacktestConfig):
         self.config = config
-        self.predictor = PatternPredictor("")
+        self.predictors = {}
 
     def _apply_fee_and_slippage(self, price: float, is_buy: bool) -> float:
         """Apply trading fees and slippage to price."""
@@ -375,15 +376,15 @@ class BacktestEngine:
             return price * (1 - total_pct / 100)  # Receive less when selling
 
     def _should_enter(
-        self, candle: Candle, recent_candles: List[Candle], position: Position
+        self, candle: Candle, recent_candles: List[Candle], position: Position, predictor: PatternPredictor
     ) -> bool:
         """Check if entry conditions are met."""
         if position.is_open:
             return False
 
         # Get predicted levels
-        levels = self.predictor.predict_levels(recent_candles, candle.close)
-        levels_below = self.predictor.count_levels_below_price(levels, candle.close)
+        levels = predictor.predict_levels(recent_candles, candle.close)
+        levels_below = predictor.count_levels_below_price(levels, candle.close)
 
         # Entry when price drops below N predicted support levels
         return levels_below >= self.config.trade_start_level
@@ -466,83 +467,108 @@ class BacktestEngine:
 
         return False
 
-    def run(self, coin: str, candles: List[Candle]) -> BacktestResult:
+    def run(self, symbol_candles: Dict[str, List[Candle]]) -> BacktestResult:
         """
-        Run backtest simulation on historical candles.
+        Run backtest simulation concurrently on multiple symbols' historical candles.
 
         Args:
-            coin: Coin symbol
-            candles: List of historical candles (sorted ascending)
+            symbol_candles: Dict mapping coin symbol -> List of historical candles (sorted ascending)
 
         Returns:
-            BacktestResult with performance metrics
+            BacktestResult with portfolio performance metrics
         """
-        if len(candles) < 50:
-            raise ValueError("Need at least 50 candles for backtest")
-
-        self.predictor.coin = coin
-        self.predictor.load_memories()
+        if not symbol_candles:
+            raise ValueError("No candles provided for backtest")
+            
+        coins = list(symbol_candles.keys())
+        all_candles = []
+        for coin, cls in symbol_candles.items():
+            if len(cls) < 50:
+                print(f"Warning: Not enough candles for {coin}, skipping.")
+                continue
+            pred = PatternPredictor(coin)
+            pred.load_memories()
+            self.predictors[coin] = pred
+            
+            # Label candles with coin
+            for i, c in enumerate(cls):
+               all_candles.append((c.timestamp, coin, c, i, cls))
+               
+        # Sort universally by timestamp
+        all_candles.sort(key=lambda x: x[0])
 
         # Initialize state
         capital = self.config.initial_capital
-        position = Position(coin=coin)
+        positions: Dict[str, Position] = {coin: Position(coin=coin) for coin in coins}
         trades: List[Trade] = []
         equity_curve: List[Tuple[datetime, float]] = []
         total_fees = 0.0
         peak_equity = capital
         max_drawdown = 0.0
 
-        # Warmup period for pattern detection
+        # Warmup period 
         warmup = 50
 
-        print(f"\nRunning backtest for {coin}...")
-        print(
-            f"Period: {candles[warmup].datetime.date()} to {candles[-1].datetime.date()}"
-        )
+        print(f"\nRunning portfolio backtest for {', '.join(coins)}...")
+        first_candle = all_candles[0][2] if all_candles else None
+        last_candle = all_candles[-1][2] if all_candles else None
+        if first_candle and last_candle:
+            print(f"Period: {first_candle.datetime.date()} to {last_candle.datetime.date()}")
         print(f"Initial capital: ${capital:,.2f}")
         print("-" * 50)
+        
+        last_curve_time = None
 
-        for i in range(warmup, len(candles)):
-            candle = candles[i]
-            recent = candles[max(0, i - 50) : i]
+        for idx in range(len(all_candles)):
+            c_ts, coin, candle, local_i, coin_candles = all_candles[idx]
+            if local_i < warmup:
+                continue
+                
+            recent = coin_candles[max(0, local_i - 50) : local_i]
             current_time = candle.datetime
+            pos = positions[coin]
+            pred = self.predictors[coin]
 
-            # Calculate current equity
-            if position.is_open:
-                position_value = position.quantity * candle.close
-                equity = capital + position_value
-            else:
+            # Equity Curve Record
+            if last_curve_time != current_time:
+                # Sum capital + all open position values 
+                # (For speed, we technically should check concurrent candle close, but this approximation is okay)
                 equity = capital
+                for pos_c in positions.values():
+                    if pos_c.is_open:
+                        equity += pos_c.quantity * candle.close # approx using current acting candle
+                
+                equity_curve.append((current_time, equity))
+                last_curve_time = current_time
 
-            equity_curve.append((current_time, equity))
-
-            # Track max drawdown
-            if equity > peak_equity:
-                peak_equity = equity
-            drawdown = (peak_equity - equity) / peak_equity * 100
-            max_drawdown = max(max_drawdown, drawdown)
+                # Track max drawdown
+                if equity > peak_equity:
+                    peak_equity = equity
+                drawdown = (peak_equity - equity) / peak_equity * 100
+                max_drawdown = max(max_drawdown, drawdown)
 
             # Check exit first (before entry/DCA)
-            if self._should_exit(candle, position):
+            if self._should_exit(candle, pos):
                 exit_price = self._apply_fee_and_slippage(candle.close, is_buy=False)
-                proceeds = position.quantity * exit_price
+                proceeds = pos.quantity * exit_price
                 fee = proceeds * (self.config.fee_pct / 100)
                 total_fees += fee
                 proceeds -= fee
 
-                pnl = proceeds - position.cost_basis
-                pnl_pct = (pnl / position.cost_basis) * 100
+                pnl = proceeds - pos.cost_basis
+                pnl_pct = (pnl / pos.cost_basis) * 100
                 holding_hours = (
-                    current_time - position.entry_time
+                    current_time - pos.entry_time
                 ).total_seconds() / 3600
 
                 trade = Trade(
-                    entry_time=position.entry_time,
+                    coin=coin,
+                    entry_time=pos.entry_time,
                     exit_time=current_time,
-                    entry_price=position.avg_price,
+                    entry_price=pos.avg_price,
                     exit_price=exit_price,
-                    quantity=position.quantity,
-                    dca_count=position.dca_count,
+                    quantity=pos.quantity,
+                    dca_count=pos.dca_count,
                     pnl=pnl,
                     pnl_pct=pnl_pct,
                     fees_paid=fee,
@@ -551,14 +577,14 @@ class BacktestEngine:
                 trades.append(trade)
 
                 capital += proceeds
-                position.reset()
+                pos.reset()
                 continue
 
             # Check DCA
-            dca_level = self._should_dca(candle, position, current_time)
+            dca_level = self._should_dca(candle, pos, current_time)
             if dca_level is not None:
                 # DCA size doubles each time
-                dca_size = position.last_buy_size * self.config.dca_multiplier
+                dca_size = pos.last_buy_size * self.config.dca_multiplier
                 dca_size = min(dca_size, capital * 0.25)  # Max 25% of remaining capital
 
                 if dca_size > 10 and capital >= dca_size:
@@ -567,13 +593,13 @@ class BacktestEngine:
                     total_fees += fee
                     quantity = (dca_size - fee) / buy_price
 
-                    position.add(quantity, buy_price, current_time)
-                    position.dca_count += 1
-                    position.dca_times.append(current_time)
+                    pos.add(quantity, buy_price, current_time)
+                    pos.dca_count += 1
+                    pos.dca_times.append(current_time)
                     capital -= dca_size
 
             # Check entry
-            elif self._should_enter(candle, recent, position):
+            elif self._should_enter(candle, recent, pos, pred):
                 entry_size = self.config.initial_capital * (
                     self.config.start_alloc_pct / 100
                 )
@@ -587,39 +613,42 @@ class BacktestEngine:
                     total_fees += fee
                     quantity = (entry_size - fee) / buy_price
 
-                    position.add(quantity, buy_price, current_time)
-                    position.highest_price_since_entry = candle.high
+                    pos.add(quantity, buy_price, current_time)
+                    pos.highest_price_since_entry = candle.high
                     capital -= entry_size
 
         # Close any open position at end
-        if position.is_open:
-            final_candle = candles[-1]
-            exit_price = self._apply_fee_and_slippage(final_candle.close, is_buy=False)
-            proceeds = position.quantity * exit_price
-            fee = proceeds * (self.config.fee_pct / 100)
-            total_fees += fee
-            proceeds -= fee
+        for coin, pos in positions.items():
+            if pos.is_open:
+                # find last candle for this coin
+                final_candle = [c[2] for c in all_candles if c[1] == coin][-1]
+                exit_price = self._apply_fee_and_slippage(final_candle.close, is_buy=False)
+                proceeds = pos.quantity * exit_price
+                fee = proceeds * (self.config.fee_pct / 100)
+                total_fees += fee
+                proceeds -= fee
 
-            pnl = proceeds - position.cost_basis
-            pnl_pct = (pnl / position.cost_basis) * 100
-            holding_hours = (
-                final_candle.datetime - position.entry_time
-            ).total_seconds() / 3600
+                pnl = proceeds - pos.cost_basis
+                pnl_pct = (pnl / pos.cost_basis) * 100
+                holding_hours = (
+                    final_candle.datetime - pos.entry_time
+                ).total_seconds() / 3600
 
-            trade = Trade(
-                entry_time=position.entry_time,
-                exit_time=final_candle.datetime,
-                entry_price=position.avg_price,
-                exit_price=exit_price,
-                quantity=position.quantity,
-                dca_count=position.dca_count,
-                pnl=pnl,
-                pnl_pct=pnl_pct,
-                fees_paid=fee,
-                holding_hours=holding_hours,
-            )
-            trades.append(trade)
-            capital += proceeds
+                trade = Trade(
+                    coin=coin,
+                    entry_time=pos.entry_time,
+                    exit_time=final_candle.datetime,
+                    entry_price=pos.avg_price,
+                    exit_price=exit_price,
+                    quantity=pos.quantity,
+                    dca_count=pos.dca_count,
+                    pnl=pnl,
+                    pnl_pct=pnl_pct,
+                    fees_paid=fee,
+                    holding_hours=holding_hours,
+                )
+                trades.append(trade)
+                capital += proceeds
 
         # Calculate metrics
         total_trades = len(trades)
@@ -659,9 +688,9 @@ class BacktestEngine:
             sharpe = 0
 
         return BacktestResult(
-            coin=coin,
-            start_date=candles[warmup].datetime.strftime("%Y-%m-%d"),
-            end_date=candles[-1].datetime.strftime("%Y-%m-%d"),
+            coins=",".join(coins),
+            start_date=first_candle.datetime.strftime("%Y-%m-%d") if first_candle else "",
+            end_date=last_candle.datetime.strftime("%Y-%m-%d") if last_candle else "",
             initial_capital=self.config.initial_capital,
             final_capital=capital,
             total_return_pct=total_return_pct,
@@ -682,14 +711,353 @@ class BacktestEngine:
 
 
 # =============================================================================
+
+# =============================================================================
+# OPTIMIZATION
+# =============================================================================
+
+def run_optimization(coins: List[str], start_date: datetime, end_date: datetime, timeframe: str):
+    """Run a grid search over key parameters to find the best configuration."""
+    from itertools import product
+    import concurrent.futures
+
+    print(f"\nRunning Parameter Optimization for {','.join(coins)}...")
+    
+    # 1. Fetch all data first
+    fetcher = KuCoinDataFetcher()
+    symbol_candles = {}
+    for coin in coins:
+        candles = fetcher.fetch_candles(coin, start_date, end_date, timeframe)
+        if candles:
+            symbol_candles[coin] = candles
+
+    if not symbol_candles:
+        print("ERROR: No valid candles fetched for optimization.")
+        return
+
+    # 2. Define Parameter Grid
+    grid = {
+        "trade_start_level": [2, 3, 4],
+        "dca_multiplier": [1.5, 2.0],
+        "pm_start_pct_no_dca": [3.0, 5.0, 7.0],
+        "trailing_gap_pct": [1.0, 1.5]
+    }
+
+    # Generate all combinations
+    keys = list(grid.keys())
+    values = list(grid.values())
+    combinations = list(product(*values))
+    
+    print(f"Testing {len(combinations)} parameter combinations...")
+    
+    results = []
+
+    def evaluate_params(params_tuple):
+        # Create config override
+        param_dict = dict(zip(keys, params_tuple))
+        config = BacktestConfig(
+            initial_capital=10000.0,
+            fee_pct=0.075,
+            slippage_pct=0.05,
+            **param_dict
+        )
+        
+        # We need a new engine for each thread to avoid state pollution in Predictor memory (if any)
+        # Assuming PatternPredictor is mostly stateless per evaluation, or we recreate it
+        engine = BacktestEngine(config)
+        
+        try:
+            # We must pass a copy of symbol_candles to avoid any weird shared references if mutated
+            res = engine.run(symbol_candles)
+            return (param_dict, res)
+        except Exception as e:
+            print(f"Error evaluating {param_dict}: {e}")
+            return (param_dict, None)
+
+    # 3. Execute in Parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(evaluate_params, p) for p in combinations]
+        for future in concurrent.futures.as_completed(futures):
+            param_dict, res = future.result()
+            if res:
+                results.append((param_dict, res))
+                print(f"Tested combination: StartLvl={param_dict['trade_start_level']}, DCA={param_dict['dca_multiplier']}, PM={param_dict['pm_start_pct_no_dca']}, Trail={param_dict['trailing_gap_pct']} -> Return: {res.total_return_pct:.2f}%, Sharpe: {res.sharpe_ratio:.2f}")
+
+    if not results:
+        print("Optimization failed to produce results.")
+        return
+
+    # 4. Sort and Display Best Results
+    # Sort by Sharpe Ratio (or total return)
+    results.sort(key=lambda x: x[1].total_return_pct, reverse=True)
+
+    print("\n" + "=" * 60)
+    print("OPTIMIZATION TOP 5 RESULTS (By Total Return)")
+    print("=" * 60)
+    
+    for i, (params, res) in enumerate(results[:5]):
+        print(f"\nRank {i+1}:")
+        print(f"  Params: StartLvl={params['trade_start_level']}, DCA={params['dca_multiplier']}, PM={params['pm_start_pct_no_dca']}, Trail={params['trailing_gap_pct']}")
+        print(f"  Return: {res.total_return_pct:.2f}%")
+        print(f"  Sharpe: {res.sharpe_ratio:.2f}")
+        print(f"  Win Rate: {res.win_rate:.1f}%")
+        print(f"  Max Drawdown: {res.max_drawdown_pct:.2f}%")
+        print(f"  Total Trades: {res.total_trades}")
+        print("-" * 40)
+
+
+def run_monte_carlo(coins: List[str], start_date: datetime, end_date: datetime, timeframe: str, num_simulations: int = 100):
+    """Run Monte Carlo simulations by randomly shuffling historical trades."""
+    import random
+    import numpy as np
+    
+    print(f"\nRunning Monte Carlo Simulation ({num_simulations} runs) for {','.join(coins)}...")
+    
+    # 1. Fetch data and run a single baseline backtest to get the trades
+    fetcher = KuCoinDataFetcher()
+    symbol_candles = {}
+    for coin in coins:
+        candles = fetcher.fetch_candles(coin, start_date, end_date, timeframe)
+        if candles:
+            symbol_candles[coin] = candles
+
+    if not symbol_candles:
+        print("ERROR: No valid candles fetched for Monte Carlo.")
+        return
+
+    config = BacktestConfig(
+        initial_capital=10000.0,
+        fee_pct=0.075,
+        slippage_pct=0.05
+    )
+    engine = BacktestEngine(config)
+    try:
+        baseline_result = engine.run(symbol_candles)
+    except Exception as e:
+        print(f"Failed to run baseline for Monte Carlo: {e}")
+        return
+        
+    base_trades = baseline_result.trades
+    if not base_trades:
+        print("No trades generated in baseline backtest to simulate.")
+        return
+        
+    print(f"Baseline generated {len(base_trades)} trades. Starting simulations...")
+    
+    final_capitals = []
+    max_drawdowns = []
+    
+    for i in range(num_simulations):
+        # Shuffle the trades to simulate alternative sequence of returns
+        sim_trades = base_trades.copy()
+        random.shuffle(sim_trades)
+        
+        capital = config.initial_capital
+        peak_capital = capital
+        sim_max_drawdown = 0.0
+        
+        for t in sim_trades:
+            # We apply the raw PnL of each trade sequentially
+            capital += t.pnl
+            
+            if capital > peak_capital:
+                peak_capital = capital
+            
+            drawdown = (peak_capital - capital) / peak_capital * 100 if peak_capital > 0 else 0
+            sim_max_drawdown = max(sim_max_drawdown, drawdown)
+            
+            # Risk of ruin
+            if capital <= 0:
+                capital = 0
+                break
+                
+        final_capitals.append(capital)
+        max_drawdowns.append(sim_max_drawdown)
+        
+    # 2. Analyze Results
+    final_capitals = np.array(final_capitals)
+    max_drawdowns = np.array(max_drawdowns)
+    
+    median_cap = np.median(final_capitals)
+    mean_cap = np.mean(final_capitals)
+    percentile_5 = np.percentile(final_capitals, 5)
+    percentile_95 = np.percentile(final_capitals, 95)
+    
+    risk_of_ruin = np.sum(final_capitals <= 0) / len(final_capitals) * 100
+    
+    print("\n" + "=" * 60)
+    print("MONTE CARLO SIMULATION RESULTS")
+    print("=" * 60)
+    print(f"Simulations Run:     {num_simulations}")
+    print(f"Initial Capital:     ${config.initial_capital:,.2f}")
+    print(f"\nBaseline Capital:    ${baseline_result.final_capital:,.2f}")
+    print(f"Mean Final Cap:      ${mean_cap:,.2f}")
+    print(f"Median Final Cap:    ${median_cap:,.2f}")
+    print(f"5th Percentile:      ${percentile_5:,.2f}  (Worst Case Scenario)")
+    print(f"95th Percentile:     ${percentile_95:,.2f}  (Best Case Scenario)")
+    print(f"\nAvg Max Drawdown:    {np.mean(max_drawdowns):.2f}%")
+    print(f"Worst Max Drawdown:  {np.max(max_drawdowns):.2f}%")
+    print(f"Risk of Ruin:        {risk_of_ruin:.1f}%")
+    print("=" * 60)
+
+
+
+
+def run_walk_forward_optimization(coins: List[str], start_date: datetime, end_date: datetime, timeframe: str):
+    """
+    Perform Walk-Forward Optimization across multiple time windows.
+    Splits the timeframe into training and testing periods, optimizing parameters
+    on the train set and evaluating on the test set to measure robustness.
+    """
+    print(f"\nRunning Walk-Forward Optimization for {','.join(coins)}...")
+    
+    # 1. Fetch Complete Dataset
+    fetcher = KuCoinDataFetcher()
+    symbol_candles = {}
+    
+    for coin in coins:
+        print(f"Fetching {coin} data from {start_date.date()} to {end_date.date()}...")
+        candles = fetcher.fetch_candles(coin, start_date, end_date, timeframe)
+        if candles:
+            symbol_candles[coin] = candles
+            print(f"Fetched {len(candles)} candles")
+
+    if not symbol_candles:
+        print("ERROR: No data fetched.")
+        return
+
+    # Check minimum timeframe length for meaningful walk-forward
+    base_coin = list(symbol_candles.keys())[0]
+    total_days = (end_date - start_date).days
+    
+    # Needs at least ~60 days to have meaningful windows
+    if total_days < 60:
+        print("ERROR: Timeframe too short for Walk-Forward Optimization. Include at least 60 days.")
+        return
+
+    # Walk-Forward Configuration:
+    # 4 windows, 50% training, 50% testing per window overlapping
+    num_windows = 4
+    window_days = total_days // num_windows
+    train_days = int(window_days * 0.6)
+    test_days = window_days - train_days
+
+    # Define Parameter Grid (slightly smaller than full optimize to save time)
+    param_grid = {
+        "trade_start_level": [2, 3],
+        "dca_multiplier": [1.5, 2.0],
+        "pm_start_pct_no_dca": [3.0, 5.0],
+        "trailing_gap_pct": [1.0, 1.5]
+    }
+    
+    import itertools
+    keys = list(param_grid.keys())
+    combinations = list(itertools.product(*[param_grid[k] for k in keys]))
+    
+    print(f"\nConfiguration:")
+    print(f"Total Period: {total_days} days")
+    print(f"Windows: {num_windows} (Train: {train_days}d | Test: {test_days}d)")
+    print(f"Parameter Combinations: {len(combinations)}")
+    print("-" * 60)
+
+    total_test_return = 0.0
+    total_test_trades = 0
+    all_test_results = []
+
+    # Iterate through chronological windows
+    for i in range(num_windows):
+        window_start = start_date + timedelta(days=i * window_days)
+        train_end = window_start + timedelta(days=train_days)
+        test_end = train_end + timedelta(days=test_days)
+
+        print(f"\n--- Window {i+1}/{num_windows} ---")
+        print(f"TRAIN: {window_start.date()} to {train_end.date()}")
+        print(f"TEST:  {train_end.date()} to {test_end.date()}")
+
+        # 2. Slice Data for Train and Test
+        train_data = {}
+        test_data = {}
+        
+        for coin, candles in symbol_candles.items():
+            train_c = [c for c in candles if window_start <= datetime.fromtimestamp(c.timestamp) < train_end]
+            test_c = [c for c in candles if train_end <= datetime.fromtimestamp(c.timestamp) < test_end]
+            
+            if train_c: train_data[coin] = train_c
+            if test_c: test_data[coin] = test_c
+
+        if not train_data or not test_data:
+            print("  Skipping window: Insufficient data")
+            continue
+
+        # 3. Optimize on Train Set
+        best_params = None
+        best_return = -999.0
+        
+        # Suppress printing during optimization loop by redirecting stdout temporarily
+        import os
+        old_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        
+        try:
+            for combo in combinations:
+                kwargs = dict(zip(keys, combo))
+                config = BacktestConfig(initial_capital=10000.0, **kwargs)
+                engine = BacktestEngine(config)
+                result = engine.run(train_data)
+                
+                if result.total_return_pct > best_return:
+                    best_return = result.total_return_pct
+                    best_params = kwargs
+        finally:
+            sys.stdout.close()
+            sys.stdout = old_stdout
+
+        if best_params is None:
+            print("  Failed to find optimal parameters.")
+            continue
+            
+        print(f"  Best Train Params: Lvl={best_params['trade_start_level']}, DCA={best_params['dca_multiplier']}, PM={best_params['pm_start_pct_no_dca']}, Trail={best_params['trailing_gap_pct']}")
+        print(f"  Best Train Return: {best_return:.2f}%")
+
+        # 4. Evaluate on Test Set using Best Params from Train Set
+        config = BacktestConfig(initial_capital=10000.0, **best_params)
+        engine = BacktestEngine(config)
+        test_result = engine.run(test_data)
+        
+        all_test_results.append(test_result)
+        total_test_return += test_result.total_return_pct
+        total_test_trades += test_result.total_trades
+        
+        print(f"  Out-of-Sample Test Return: {test_result.total_return_pct:.2f}% ({test_result.total_trades} trades)")
+        print(f"  Test Max Drawdown:         {test_result.max_drawdown_pct:.2f}%")
+
+    # 5. Aggregate Results
+    if all_test_results:
+        print("\n" + "=" * 60)
+        print("WALK-FORWARD OPTIMIZATION SUMMARY")
+        print("=" * 60)
+        print(f"Total Out-of-Sample Return: {total_test_return:.2f}%")
+        print(f"Total Out-of-Sample Trades: {total_test_trades}")
+        
+        avg_test_return = total_test_return / len(all_test_results)
+        print(f"Average Return per Window:  {avg_test_return:.2f}%")
+        
+        # Calculate consistency (% of test windows that were profitable)
+        profitable_windows = sum(1 for r in all_test_results if r.total_return_pct > 0)
+        consistency = (profitable_windows / len(all_test_results)) * 100
+        print(f"Strategy Consistency:       {consistency:.1f}% ({profitable_windows}/{len(all_test_results)} windows profitable)")
+        print("=" * 60)
+
+
 # REPORTING
 # =============================================================================
+
 
 
 def print_report(result: BacktestResult):
     """Print formatted backtest report."""
     print("\n" + "=" * 60)
-    print(f"BACKTEST REPORT: {result.coin}")
+    print(f"BACKTEST REPORT: {result.coins}")
     print("=" * 60)
 
     print(f"\nPeriod: {result.start_date} to {result.end_date}")
@@ -723,7 +1091,7 @@ def print_report(result: BacktestResult):
         for trade in result.trades[-10:]:
             status = "WIN" if trade.pnl > 0 else "LOSS"
             print(
-                f"  {trade.entry_time.strftime('%Y-%m-%d')} -> "
+                f"  [{trade.coin}] {trade.entry_time.strftime('%Y-%m-%d')} -> "
                 f"{trade.exit_time.strftime('%Y-%m-%d')}: "
                 f"${trade.pnl:>8.2f} ({trade.pnl_pct:>5.1f}%) "
                 f"[{status}] DCAs:{trade.dca_count}"
@@ -734,13 +1102,15 @@ def print_report(result: BacktestResult):
 
 def save_results(result: BacktestResult, output_dir: str = "backtest_results"):
     """Save backtest results to JSON file."""
+    from pathlib import Path
     Path(output_dir).mkdir(exist_ok=True)
 
-    filename = f"{output_dir}/{result.coin}_{result.start_date}_{result.end_date}.json"
+    combo_name = result.coins.replace(",", "_")
+    filename = f"{output_dir}/{combo_name}_{result.start_date}_{result.end_date}.json"
 
     # Convert to serializable format
     data = {
-        "coin": result.coin,
+        "coins": result.coins,
         "start_date": result.start_date,
         "end_date": result.end_date,
         "initial_capital": result.initial_capital,
@@ -759,6 +1129,7 @@ def save_results(result: BacktestResult, output_dir: str = "backtest_results"):
         "avg_dca_per_trade": result.avg_dca_per_trade,
         "trades": [
             {
+                "coin": t.coin,
                 "entry_time": t.entry_time.isoformat(),
                 "exit_time": t.exit_time.isoformat(),
                 "entry_price": t.entry_price,
@@ -774,6 +1145,7 @@ def save_results(result: BacktestResult, output_dir: str = "backtest_results"):
         ],
     }
 
+    import json
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
 
@@ -786,18 +1158,21 @@ def save_results(result: BacktestResult, output_dir: str = "backtest_results"):
 
 
 def main():
+    import argparse
+    from datetime import datetime
+    
     parser = argparse.ArgumentParser(
         description="PowerTrader AI Backtesting Engine",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python pt_backtester.py BTC 2024-01-01 2024-12-31
-  python pt_backtester.py ETH 2024-06-01 2024-12-31 --initial-capital 5000
+  python pt_backtester.py BTC,ETH,SOL 2024-06-01 2024-12-31 --initial-capital 5000
   python pt_backtester.py SOL 2024-01-01 2024-06-30 --fee-pct 0.1 --save
         """,
     )
 
-    parser.add_argument("coin", help="Coin symbol (e.g., BTC, ETH, SOL)")
+    parser.add_argument("coins", help="Comma-separated coin symbols (e.g., BTC,ETH,SOL)")
     parser.add_argument("start_date", help="Start date (YYYY-MM-DD)")
     parser.add_argument("end_date", help="End date (YYYY-MM-DD)")
     parser.add_argument(
@@ -827,7 +1202,12 @@ Examples:
     parser.add_argument(
         "--timeframe", default="1hour", help="Candle timeframe (default: 1hour)"
     )
+
+
     parser.add_argument("--save", action="store_true", help="Save results to JSON file")
+    parser.add_argument("--optimize", action="store_true", help="Run parameter optimization grid search")
+    parser.add_argument("--monte-carlo", type=int, metavar="NUM", help="Run Monte Carlo simulation with NUM runs")
+    parser.add_argument("--walk-forward", action="store_true", help="Run walk-forward optimization")
 
     args = parser.parse_args()
 
@@ -843,6 +1223,22 @@ Examples:
         print("ERROR: Start date must be before end date")
         sys.exit(1)
 
+
+    coin_list = [c.strip().upper() for c in args.coins.split(',')]
+
+    if args.optimize:
+        run_optimization(coin_list, start_date, end_date, args.timeframe)
+        return
+        
+    if args.walk_forward:
+        run_walk_forward_optimization(coin_list, start_date, end_date, args.timeframe)
+        return
+
+    if args.monte_carlo:
+        run_monte_carlo(coin_list, start_date, end_date, args.timeframe, args.monte_carlo)
+        return
+
+    # Normal Backtest
     # Configure backtest
     config = BacktestConfig(
         initial_capital=args.initial_capital,
@@ -853,17 +1249,22 @@ Examples:
 
     # Fetch data
     fetcher = KuCoinDataFetcher()
-    candles = fetcher.fetch_candles(
-        args.coin.upper(), start_date, end_date, args.timeframe
-    )
+    symbol_candles = {}
+    
+    for coin in coin_list:
+        candles = fetcher.fetch_candles(
+            coin, start_date, end_date, args.timeframe
+        )
+        if candles:
+            symbol_candles[coin] = candles
 
-    if len(candles) < 50:
-        print(f"ERROR: Only fetched {len(candles)} candles. Need at least 50.")
+    if not symbol_candles:
+        print(f"ERROR: No valid candles fetched for any coins.")
         sys.exit(1)
 
     # Run backtest
     engine = BacktestEngine(config)
-    result = engine.run(args.coin.upper(), candles)
+    result = engine.run(symbol_candles)
 
     # Output
     print_report(result)

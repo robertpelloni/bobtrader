@@ -1,0 +1,12 @@
+{
+  "test_strat": {
+    "config": {
+      "timeframe": "1hour"
+    },
+    "return_pct": 25,
+    "win_rate": 0.6,
+    "sharpe": 1.8,
+    "max_drawdown": 8,
+    "timestamp": "2026-03-07T15:02:45.890010"
+  }
+}

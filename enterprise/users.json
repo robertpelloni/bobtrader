@@ -1,0 +1,32 @@
+{
+  "d4e0ac25": {
+    "user_id": "d4e0ac25",
+    "username": "admin_user",
+    "role": "admin",
+    "email": "admin@trading.com",
+    "created_at": "2026-03-07T15:02:51.212550",
+    "last_login": "",
+    "is_active": true,
+    "api_key": "594225090349371997a4b6fa997114c7"
+  },
+  "80381322": {
+    "user_id": "80381322",
+    "username": "trader1",
+    "role": "trader",
+    "email": "t1@trading.com",
+    "created_at": "2026-03-07T15:02:51.240415",
+    "last_login": "",
+    "is_active": true,
+    "api_key": "96b489d05df665f04a20c8c779045d3c"
+  },
+  "43bba245": {
+    "user_id": "43bba245",
+    "username": "viewer1",
+    "role": "viewer",
+    "email": "",
+    "created_at": "2026-03-07T15:02:51.268085",
+    "last_login": "",
+    "is_active": true,
+    "api_key": "be5205195ef90b8fea393b7c2e138096"
+  }
+}

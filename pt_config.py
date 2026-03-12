@@ -89,20 +89,42 @@ class NotificationConfig:
     discord_webhook_url: Optional[str] = None
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
+    slack_webhook_url: Optional[str] = None
+    teams_webhook_url: Optional[str] = None
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_from_number: Optional[str] = None
+    twilio_to_number: Optional[str] = None
+    onesignal_app_id: Optional[str] = None
+    onesignal_rest_api_key: Optional[str] = None
+    custom_webhook_url: Optional[str] = None
+    
     rate_limit_emails_per_minute: int = 5
     rate_limit_discord_per_minute: int = 10
     rate_limit_telegram_per_minute: int = 10
+    rate_limit_slack_per_minute: int = 10
+    rate_limit_teams_per_minute: int = 10
+    rate_limit_twilio_per_minute: int = 1
+    rate_limit_onesignal_per_minute: int = 10
+    rate_limit_webhook_per_minute: int = 10
+    
     level_platforms: Dict[str, Dict[str, bool]] = None
 
     def __post_init__(self):
+        default_platforms = {
+            "email": True, "discord": True, "telegram": True,
+            "slack": False, "teams": False, "twilio": False,
+            "onesignal": False, "webhook": False
+        }
         if self.platforms is None:
-            self.platforms = {"email": True, "discord": True, "telegram": True}
+            self.platforms = default_platforms.copy()
+        
         if self.level_platforms is None:
             self.level_platforms = {
-                "info": {"email": True, "discord": True, "telegram": True},
-                "warning": {"email": True, "discord": True, "telegram": True},
-                "error": {"email": True, "discord": True, "telegram": True},
-                "critical": {"email": True, "discord": True, "telegram": True},
+                "info": default_platforms.copy(),
+                "warning": default_platforms.copy(),
+                "error": default_platforms.copy(),
+                "critical": default_platforms.copy(),
             }
 
 
@@ -146,6 +168,46 @@ class CorrelationConfig:
 
 
 @dataclass
+class RiskManagementConfig:
+    enabled: bool = False
+    max_portfolio_drawdown_pct: float = 15.0
+    max_coin_concentration_pct: float = 25.0
+    min_liquidity_multiplier: float = 3.0
+
+
+@dataclass
+class RebalancingConfig:
+    enabled: bool = False
+    trigger_mode: str = "threshold"
+    rebalance_interval_hours: int = 168
+    drift_threshold_pct: float = 5.0
+    target_allocations: Dict[str, float] = None
+    avoid_wash_sales: bool = True
+
+    def __post_init__(self):
+        if self.target_allocations is None:
+            self.target_allocations = {}
+
+
+@dataclass
+class SentimentConfig:
+    enabled: bool = False
+    fear_greed_enabled: bool = True
+    social_sentiment_enabled: bool = True
+    mcp_url: str = "http://localhost:8000"
+    impact_multiplier: float = 1.0
+
+
+@dataclass
+class RegimeDetectionConfig:
+    enabled: bool = False
+    trend_lookback_candles: int = 50
+    volatility_lookback_candles: int = 20
+    auto_adjust_dca: bool = True
+    auto_adjust_pm: bool = True
+
+
+@dataclass
 class SystemConfig:
     log_level: str = "INFO"
     log_file: str = "hub_data/powertrader.log"
@@ -162,6 +224,10 @@ class PowerTraderConfig:
     analytics: AnalyticsConfig = None
     position_sizing: PositionSizingConfig = None
     correlation: CorrelationConfig = None
+    risk_management: RiskManagementConfig = None
+    rebalancing: RebalancingConfig = None
+    sentiment: SentimentConfig = None
+    regime_detection: RegimeDetectionConfig = None
     system: SystemConfig = None
 
     def __post_init__(self):
@@ -177,6 +243,14 @@ class PowerTraderConfig:
             self.position_sizing = PositionSizingConfig()
         if self.correlation is None:
             self.correlation = CorrelationConfig()
+        if self.risk_management is None:
+            self.risk_management = RiskManagementConfig()
+        if self.rebalancing is None:
+            self.rebalancing = RebalancingConfig()
+        if self.sentiment is None:
+            self.sentiment = SentimentConfig()
+        if self.regime_detection is None:
+            self.regime_detection = RegimeDetectionConfig()
         if self.system is None:
             self.system = SystemConfig()
 
@@ -237,6 +311,33 @@ class ConfigValidator:
                         "Telegram platform enabled but telegram_chat_id not set"
                     )
 
+            if config.platforms.get("slack", False):
+                if not config.slack_webhook_url:
+                    errors.append(
+                        "Slack platform enabled but slack_webhook_url not set"
+                    )
+            if config.platforms.get("teams", False):
+                if not config.teams_webhook_url:
+                    errors.append(
+                        "Teams platform enabled but teams_webhook_url not set"
+                    )
+            if config.platforms.get("twilio", False):
+                if not config.twilio_account_sid or not config.twilio_auth_token or \
+                   not config.twilio_from_number or not config.twilio_to_number:
+                    errors.append(
+                        "Twilio platform enabled but missing one or more required Twilio credentials"
+                    )
+            if config.platforms.get("onesignal", False):
+                if not config.onesignal_app_id or not config.onesignal_rest_api_key:
+                    errors.append(
+                        "OneSignal platform enabled but missing app ID or REST API key"
+                    )
+            if config.platforms.get("webhook", False):
+                if not config.custom_webhook_url:
+                    errors.append(
+                        "Webhook platform enabled but custom_webhook_url not set"
+                    )
+
         return errors
 
     @staticmethod
@@ -249,6 +350,43 @@ class ConfigValidator:
 
         return errors
 
+    @staticmethod
+    def validate_risk_management(config: RiskManagementConfig) -> List[str]:
+        errors = []
+        if not 1.0 <= config.max_portfolio_drawdown_pct <= 50.0:
+            errors.append("max_portfolio_drawdown_pct must be between 1.0 and 50.0")
+        if not 1.0 <= config.max_coin_concentration_pct <= 100.0:
+            errors.append("max_coin_concentration_pct must be between 1.0 and 100.0")
+        if not 1.0 <= config.min_liquidity_multiplier <= 100.0:
+            errors.append("min_liquidity_multiplier must be between 1.0 and 100.0")
+        return errors
+
+    @staticmethod
+    def validate_rebalancing(config: RebalancingConfig) -> List[str]:
+        errors = []
+        valid_modes = ["time", "threshold", "both"]
+        if config.trigger_mode.lower() not in valid_modes:
+            errors.append(f"trigger_mode must be one of {valid_modes}")
+        if config.drift_threshold_pct <= 0:
+            errors.append("drift_threshold_pct must be greater than 0")
+        if config.rebalance_interval_hours <= 0:
+            errors.append("rebalance_interval_hours must be greater than 0")
+        
+        target_sum = sum(config.target_allocations.values())
+        if target_sum > 100.0:
+            errors.append(f"target_allocations sum ({target_sum}%) exceeds 100%")
+        
+        return errors
+
+    @staticmethod
+    def validate_regime_detection(config: RegimeDetectionConfig) -> List[str]:
+        errors = []
+        if config.trend_lookback_candles < 10:
+            errors.append("trend_lookback_candles must be at least 10")
+        if config.volatility_lookback_candles < 5:
+            errors.append("volatility_lookback_candles must be at least 5")
+        return errors
+
     @classmethod
     def validate(cls, config: PowerTraderConfig) -> List[str]:
         """Validate entire configuration."""
@@ -256,6 +394,9 @@ class ConfigValidator:
 
         all_errors.extend(cls.validate_trading(config.trading))
         all_errors.extend(cls.validate_notifications(config.notifications))
+        all_errors.extend(cls.validate_risk_management(config.risk_management))
+        all_errors.extend(cls.validate_rebalancing(config.rebalancing))
+        all_errors.extend(cls.validate_regime_detection(config.regime_detection))
         all_errors.extend(cls.validate_system(config.system))
 
         return all_errors
@@ -426,6 +567,18 @@ class ConfigManager:
 
         if "correlation" in data and isinstance(data["correlation"], dict):
             config_dict["correlation"] = CorrelationConfig(**data["correlation"])
+
+        if "risk_management" in data and isinstance(data["risk_management"], dict):
+            config_dict["risk_management"] = RiskManagementConfig(**data["risk_management"])
+
+        if "rebalancing" in data and isinstance(data["rebalancing"], dict):
+            config_dict["rebalancing"] = RebalancingConfig(**data["rebalancing"])
+
+        if "sentiment" in data and isinstance(data["sentiment"], dict):
+            config_dict["sentiment"] = SentimentConfig(**data["sentiment"])
+
+        if "regime_detection" in data and isinstance(data["regime_detection"], dict):
+            config_dict["regime_detection"] = RegimeDetectionConfig(**data["regime_detection"])
 
         if "system" in data and isinstance(data["system"], dict):
             config_dict["system"] = SystemConfig(**data["system"])

@@ -49,6 +49,19 @@ try:
 except ImportError:
     TELEGRAM_AVAILABLE = False
 
+try:
+    from twilio.rest import Client
+    from twilio.base.exceptions import TwilioRestException
+    TWILIO_AVAILABLE = True
+except ImportError:
+    TWILIO_AVAILABLE = False
+
+try:
+    import requests
+    REQUESTS_AVAILABLE = True
+except ImportError:
+    REQUESTS_AVAILABLE = False
+
 from pt_config import ConfigManager, NotificationConfig
 
 DB_PATH = Path("hub_data/notifications.db")
@@ -509,6 +522,260 @@ class TelegramNotifier(BaseNotifier):
             )
 
 
+class SlackNotifier(BaseNotifier):
+    def __init__(self, config: NotificationConfig, db: NotificationDatabase):
+        super().__init__(config, db)
+        self.enabled = config.slack_webhook_url and REQUESTS_AVAILABLE
+
+    def is_available(self) -> bool:
+        return self.enabled and REQUESTS_AVAILABLE
+
+    async def send(
+        self,
+        message: str,
+        level: NotificationLevel = NotificationLevel.INFO,
+        **kwargs,
+    ) -> bool:
+        if not self.is_available():
+            logger.warning("Slack notifier not available")
+            self._log(False, level.value, message, "Slack not configured or requests missing")
+            return False
+
+        try:
+            payload = {"text": f"[{level.value.upper()}] PowerTrader AI\n{message}"}
+            
+            def _post():
+                resp = requests.post(self.config.slack_webhook_url, json=payload, timeout=10)
+                resp.raise_for_status()
+                return resp
+
+            await asyncio.get_event_loop().run_in_executor(None, _post)
+            self._log(True, level.value, message)
+            logger.info(f"Slack message sent successfully: {message[:50]}...")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send Slack message: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+
+
+class TeamsNotifier(BaseNotifier):
+    def __init__(self, config: NotificationConfig, db: NotificationDatabase):
+        super().__init__(config, db)
+        self.enabled = config.teams_webhook_url and REQUESTS_AVAILABLE
+
+    def is_available(self) -> bool:
+        return self.enabled and REQUESTS_AVAILABLE
+
+    async def send(
+        self,
+        message: str,
+        level: NotificationLevel = NotificationLevel.INFO,
+        **kwargs,
+    ) -> bool:
+        if not self.is_available():
+            logger.warning("Teams notifier not available")
+            self._log(False, level.value, message, "Teams not configured or requests missing")
+            return False
+
+        try:
+            # Basic adaptive card format for Teams Incoming Webhooks
+            payload = {
+                "type": "message",
+                "attachments": [
+                    {
+                        "contentType": "application/vnd.microsoft.card.adaptive",
+                        "contentUrl": None,
+                        "content": {
+                            "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                            "type": "AdaptiveCard",
+                            "version": "1.2",
+                            "body": [
+                                {
+                                    "type": "TextBlock",
+                                    "text": f"PowerTrader AI - {level.value.upper()}",
+                                    "weight": "bolder",
+                                    "size": "medium"
+                                },
+                                {
+                                    "type": "TextBlock",
+                                    "text": message,
+                                    "wrap": True
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+            
+            def _post():
+                resp = requests.post(self.config.teams_webhook_url, json=payload, timeout=10)
+                resp.raise_for_status()
+                return resp
+
+            await asyncio.get_event_loop().run_in_executor(None, _post)
+            self._log(True, level.value, message)
+            logger.info(f"Teams message sent successfully: {message[:50]}...")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send Teams message: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+
+
+class TwilioNotifier(BaseNotifier):
+    def __init__(self, config: NotificationConfig, db: NotificationDatabase):
+        super().__init__(config, db)
+        self.enabled = (
+            config.twilio_account_sid and 
+            config.twilio_auth_token and 
+            config.twilio_from_number and 
+            config.twilio_to_number and 
+            TWILIO_AVAILABLE
+        )
+        self.client = None
+        if self.enabled:
+            try:
+                self.client = Client(config.twilio_account_sid, config.twilio_auth_token)
+            except Exception as e:
+                logger.error(f"Failed to initialize TwilioNotifier: {e}")
+                self.enabled = False
+
+    def is_available(self) -> bool:
+        return self.enabled and TWILIO_AVAILABLE
+
+    async def send(
+        self,
+        message: str,
+        level: NotificationLevel = NotificationLevel.INFO,
+        **kwargs,
+    ) -> bool:
+        if not self.is_available():
+            logger.warning("Twilio notifier not available")
+            self._log(False, level.value, message, "Twilio not configured or unavailable")
+            return False
+
+        try:
+            # Truncate for SMS safe length (1600 max, but keeping it brief)
+            final_msg = f"[{level.value.upper()}] PwrTrader:\n{message}"
+            if len(final_msg) > 1500:
+                final_msg = final_msg[:1497] + "..."
+                
+            def _send_sms():
+                return self.client.messages.create(
+                    body=final_msg,
+                    from_=self.config.twilio_from_number,
+                    to=self.config.twilio_to_number
+                )
+
+            await asyncio.get_event_loop().run_in_executor(None, _send_sms)
+            self._log(True, level.value, message)
+            logger.info(f"Twilio SMS sent successfully: {message[:50]}...")
+            return True
+
+        except TwilioRestException as e:
+            logger.error(f"Twilio API Error: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+        except Exception as e:
+            logger.error(f"Failed to send Twilio message: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+
+
+class OneSignalNotifier(BaseNotifier):
+    def __init__(self, config: NotificationConfig, db: NotificationDatabase):
+        super().__init__(config, db)
+        self.enabled = config.onesignal_app_id and config.onesignal_rest_api_key and REQUESTS_AVAILABLE
+
+    def is_available(self) -> bool:
+        return self.enabled and REQUESTS_AVAILABLE
+
+    async def send(
+        self,
+        message: str,
+        level: NotificationLevel = NotificationLevel.INFO,
+        **kwargs,
+    ) -> bool:
+        if not self.is_available():
+            logger.warning("OneSignal notifier not available")
+            self._log(False, level.value, message, "OneSignal not configured or requests missing")
+            return False
+
+        try:
+            headers = {
+                "Content-Type": "application/json; charset=utf-8",
+                "Authorization": f"Basic {self.config.onesignal_rest_api_key}"
+            }
+            
+            payload = {
+                "app_id": self.config.onesignal_app_id,
+                "included_segments": ["All"],
+                "headings": {"en": f"PowerTrader AI - {level.value.upper()}"},
+                "contents": {"en": message}
+            }
+            
+            def _post():
+                resp = requests.post("https://onesignal.com/api/v1/notifications", headers=headers, json=payload, timeout=10)
+                resp.raise_for_status()
+                return resp
+
+            await asyncio.get_event_loop().run_in_executor(None, _post)
+            self._log(True, level.value, message)
+            logger.info(f"OneSignal push sent successfully: {message[:50]}...")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to send OneSignal push message: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+
+
+class WebhookNotifier(BaseNotifier):
+    def __init__(self, config: NotificationConfig, db: NotificationDatabase):
+        super().__init__(config, db)
+        self.enabled = config.custom_webhook_url and REQUESTS_AVAILABLE
+
+    def is_available(self) -> bool:
+        return self.enabled and REQUESTS_AVAILABLE
+
+    async def send(
+        self,
+        message: str,
+        level: NotificationLevel = NotificationLevel.INFO,
+        **kwargs,
+    ) -> bool:
+        if not self.is_available():
+            logger.warning("Custom Webhook notifier not available")
+            self._log(False, level.value, message, "Custom Webhook not configured or requests missing")
+            return False
+
+        try:
+            payload = {
+                "app": "PowerTrader AI",
+                "level": level.value,
+                "message": message,
+                "timestamp": datetime.utcnow().isoformat() + "Z"
+            }
+            
+            def _post():
+                resp = requests.post(self.config.custom_webhook_url, json=payload, timeout=10)
+                resp.raise_for_status()
+                return resp
+
+            await asyncio.get_event_loop().run_in_executor(None, _post)
+            self._log(True, level.value, message)
+            logger.info(f"Webhook pushed successfully: {message[:50]}...")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to POST to Custom Webhook: {e}")
+            self._log(False, level.value, message, str(e))
+            return False
+
+
 class NotificationManager:
     def __init__(
         self,
@@ -521,17 +788,32 @@ class NotificationManager:
         self.email_notifier = EmailNotifier(self.config, self.db)
         self.discord_notifier = DiscordNotifier(self.config, self.db)
         self.telegram_notifier = TelegramNotifier(self.config, self.db)
+        self.slack_notifier = SlackNotifier(self.config, self.db)
+        self.teams_notifier = TeamsNotifier(self.config, self.db)
+        self.twilio_notifier = TwilioNotifier(self.config, self.db)
+        self.onesignal_notifier = OneSignalNotifier(self.config, self.db)
+        self.webhook_notifier = WebhookNotifier(self.config, self.db)
 
         self.rate_limiters = {
             "email": RateLimiter(self.config.rate_limit_emails_per_minute),
             "discord": RateLimiter(self.config.rate_limit_discord_per_minute),
             "telegram": RateLimiter(self.config.rate_limit_telegram_per_minute),
+            "slack": RateLimiter(self.config.rate_limit_slack_per_minute),
+            "teams": RateLimiter(self.config.rate_limit_teams_per_minute),
+            "twilio": RateLimiter(self.config.rate_limit_twilio_per_minute),
+            "onesignal": RateLimiter(self.config.rate_limit_onesignal_per_minute),
+            "webhook": RateLimiter(self.config.rate_limit_webhook_per_minute),
         }
 
         self.notifiers = {
             "email": self.email_notifier,
             "discord": self.discord_notifier,
             "telegram": self.telegram_notifier,
+            "slack": self.slack_notifier,
+            "teams": self.teams_notifier,
+            "twilio": self.twilio_notifier,
+            "onesignal": self.onesignal_notifier,
+            "webhook": self.webhook_notifier,
         }
 
     def _load_config(self) -> NotificationConfig:
@@ -769,6 +1051,15 @@ def main():
     config_parser.add_argument("--discord", help="Set Discord webhook URL")
     config_parser.add_argument("--telegram-token", help="Set Telegram bot token")
     config_parser.add_argument("--telegram-chat", help="Set Telegram chat ID")
+    config_parser.add_argument("--slack-url", help="Set Slack webhook URL")
+    config_parser.add_argument("--teams-url", help="Set Teams webhook URL")
+    config_parser.add_argument("--twilio-sid", help="Set Twilio Account SID")
+    config_parser.add_argument("--twilio-token", help="Set Twilio Auth Token")
+    config_parser.add_argument("--twilio-from", help="Set Twilio From Number")
+    config_parser.add_argument("--twilio-to", help="Set Twilio To Number")
+    config_parser.add_argument("--onesignal-app-id", help="Set OneSignal App ID")
+    config_parser.add_argument("--onesignal-api-key", help="Set OneSignal REST API Key")
+    config_parser.add_argument("--webhook-url", help="Set Custom Webhook URL")
 
     args = parser.parse_args()
 
@@ -813,6 +1104,28 @@ def main():
             updates["telegram_bot_token"] = args.telegram_token
         if args.telegram_chat:
             updates["telegram_chat_id"] = args.telegram_chat
+        
+        if args.slack_url:
+            updates["slack_webhook_url"] = args.slack_url
+        if args.teams_url:
+            updates["teams_webhook_url"] = args.teams_url
+        
+        if args.twilio_sid:
+            updates["twilio_account_sid"] = args.twilio_sid
+        if args.twilio_token:
+            updates["twilio_auth_token"] = args.twilio_token
+        if args.twilio_from:
+            updates["twilio_from_number"] = args.twilio_from
+        if args.twilio_to:
+            updates["twilio_to_number"] = args.twilio_to
+            
+        if args.onesignal_app_id:
+            updates["onesignal_app_id"] = args.onesignal_app_id
+        if args.onesignal_api_key:
+            updates["onesignal_rest_api_key"] = args.onesignal_api_key
+            
+        if args.webhook_url:
+            updates["custom_webhook_url"] = args.webhook_url
 
         if updates:
             manager.update_config(**updates)
@@ -829,6 +1142,21 @@ def main():
             )
             print(
                 f"Telegram: {'Configured' if manager.telegram_notifier.enabled else 'Not configured'}"
+            )
+            print(
+                f"Slack: {'Configured' if manager.slack_notifier.enabled else 'Not configured'}"
+            )
+            print(
+                f"Teams: {'Configured' if manager.teams_notifier.enabled else 'Not configured'}"
+            )
+            print(
+                f"Twilio: {'Configured' if manager.twilio_notifier.enabled else 'Not configured'}"
+            )
+            print(
+                f"OneSignal: {'Configured' if manager.onesignal_notifier.enabled else 'Not configured'}"
+            )
+            print(
+                f"Webhook: {'Configured' if manager.webhook_notifier.enabled else 'Not configured'}"
             )
 
             print(f"\nPlatform Settings:")

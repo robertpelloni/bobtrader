@@ -24,6 +24,10 @@ from pt_config import ConfigManager, PowerTraderConfig
 import pt_notifications
 from pt_volume_dashboard import VolumeDashboard
 from pt_risk_dashboard import RiskDashboard
+from pt_gui_heatmap import CorrelationHeatmap
+from pt_gui_performance import PerformanceAttribution
+from pt_gui_alerts import AlertRulesBuilder
+from pt_gui_replay import TradeReplay
 
 DARK_BG = "#070B10"
 DARK_BG2 = "#0B1220"
@@ -2129,8 +2133,21 @@ class PowerTraderHub(tk.Tk):
         self.config(menu=menubar)
 
     def _build_layout(self) -> None:
-        outer = ttk.Panedwindow(self, orient="horizontal")
+        self.main_nb = ttk.Notebook(self)
+        self.main_nb.pack(fill="both", expand=True)
+
+        # Tab 1: Live Trading (the old outer)
+        live_tab = ttk.Frame(self.main_nb)
+        self.main_nb.add(live_tab, text="Live Trading")
+
+        outer = ttk.Panedwindow(live_tab, orient="horizontal")
         outer.pack(fill="both", expand=True)
+
+        # Tab 2: Backtesting / Research
+        self.backtest_tab = ttk.Frame(self.main_nb)
+        self.main_nb.add(self.backtest_tab, text="Backtesting / Research")
+        
+        self._build_backtesting_tab()
 
         # LEFT + RIGHT panes
         left = ttk.Frame(outer)
@@ -2920,6 +2937,36 @@ class PowerTraderHub(tk.Tk):
         self.risk_dashboard = RiskDashboard(risk_page, self.coins)
         self.risk_dashboard.pack(fill="both", expand=True)
 
+        # HEATMAP page
+        heatmap_page = ttk.Frame(self.chart_pages_container)
+        self.chart_pages["HEATMAP"] = heatmap_page
+        heatmap_btn = ttk.Button(self.chart_tabs_bar, text="HEATMAP", style="ChartTab.TButton", command=lambda: self._show_chart_page("HEATMAP"))
+        self.chart_tabs_bar.add(heatmap_btn, padx=(0, 6), pady=(0, 6))
+        self._chart_tab_buttons["HEATMAP"] = heatmap_btn
+
+        self.heatmap_dashboard = CorrelationHeatmap(heatmap_page, self.coins)
+        self.heatmap_dashboard.pack(fill="both", expand=True)
+
+        # PERF (Performance Attribution) page
+        perf_page = ttk.Frame(self.chart_pages_container)
+        self.chart_pages["PERF"] = perf_page
+        perf_btn = ttk.Button(self.chart_tabs_bar, text="PERF", style="ChartTab.TButton", command=lambda: self._show_chart_page("PERF"))
+        self.chart_tabs_bar.add(perf_btn, padx=(0, 6), pady=(0, 6))
+        self._chart_tab_buttons["PERF"] = perf_btn
+
+        self.perf_dashboard = PerformanceAttribution(perf_page, self.coins)
+        self.perf_dashboard.pack(fill="both", expand=True)
+
+        # ALERTS page
+        alerts_page = ttk.Frame(self.chart_pages_container)
+        self.chart_pages["ALERTS"] = alerts_page
+        alerts_btn = ttk.Button(self.chart_tabs_bar, text="ALERTS", style="ChartTab.TButton", command=lambda: self._show_chart_page("ALERTS"))
+        self.chart_tabs_bar.add(alerts_btn, padx=(0, 6), pady=(0, 6))
+        self._chart_tab_buttons["ALERTS"] = alerts_btn
+
+        self.alerts_dashboard = AlertRulesBuilder(alerts_page, self.coins)
+        self.alerts_dashboard.pack(fill="both", expand=True)
+
         # Coin pages
         self.charts: Dict[str, CandleChart] = {}
         for coin in self.coins:
@@ -2978,6 +3025,7 @@ class PowerTraderHub(tk.Tk):
             "dca_24h",
             "next_dca",
             "trail_line",  # keep trail line column
+            "regime",      # NEW: regime detection column
         )
 
         header_labels = {
@@ -2993,6 +3041,7 @@ class PowerTraderHub(tk.Tk):
             "dca_24h": "DCA 24h",
             "next_dca": "Next DCA",
             "trail_line": "Trail Line",
+            "regime": "Regime",
         }
 
         trades_table_wrap = ttk.Frame(trades_frame)
@@ -3012,6 +3061,7 @@ class PowerTraderHub(tk.Tk):
         self.trades_tree.column("next_dca", width=160)
         self.trades_tree.column("dca_stages", width=90)
         self.trades_tree.column("dca_24h", width=80)
+        self.trades_tree.column("regime", width=100)
 
         ysb = ttk.Scrollbar(
             trades_table_wrap, orient="vertical", command=self.trades_tree.yview
@@ -3764,6 +3814,174 @@ class PowerTraderHub(tk.Tk):
                 pass
             txt.see("end")
 
+
+    def _build_backtesting_tab(self) -> None:
+        """Construct the UI for the Backtesting / Research tab."""
+        # Main layout: Left for Controls, Right for Results Text
+        outer = ttk.Panedwindow(self.backtest_tab, orient="horizontal")
+        outer.pack(fill="both", expand=True, padx=8, pady=8)
+
+        left = ttk.Frame(outer)
+        right = ttk.Frame(outer)
+        
+        outer.add(left, weight=1)
+        outer.add(right, weight=3)
+        
+        try:
+            outer.paneconfigure(left, minsize=300)
+        except Exception:
+            pass
+
+        # --- LEFT: Controls ---
+        # 1. Config
+        cfg_frame = ttk.LabelFrame(left, text="Backtest Configuration")
+        cfg_frame.pack(fill="x", pady=(0, 8))
+        
+        row = 0
+        ttk.Label(cfg_frame, text="Coins (comma-separated):").grid(row=row, column=0, sticky="w", padx=4, pady=4)
+        self.bt_coins_var = tk.StringVar(value="BTC,ETH")
+        ttk.Entry(cfg_frame, textvariable=self.bt_coins_var).grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+        
+        row += 1
+        ttk.Label(cfg_frame, text="Start Date (YYYY-MM-DD):").grid(row=row, column=0, sticky="w", padx=4, pady=4)
+        self.bt_start_var = tk.StringVar(value="2024-01-01")
+        ttk.Entry(cfg_frame, textvariable=self.bt_start_var).grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+        
+        row += 1
+        ttk.Label(cfg_frame, text="End Date (YYYY-MM-DD):").grid(row=row, column=0, sticky="w", padx=4, pady=4)
+        self.bt_end_var = tk.StringVar(value="2024-03-01")
+        ttk.Entry(cfg_frame, textvariable=self.bt_end_var).grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+
+        row += 1
+        ttk.Label(cfg_frame, text="Initial Capital ($):").grid(row=row, column=0, sticky="w", padx=4, pady=4)
+        self.bt_capital_var = tk.StringVar(value="10000")
+        ttk.Entry(cfg_frame, textvariable=self.bt_capital_var).grid(row=row, column=1, sticky="ew", padx=4, pady=4)
+        
+        cfg_frame.columnconfigure(1, weight=1)
+
+        # 2. Modes
+        mode_frame = ttk.LabelFrame(left, text="Run Mode")
+        mode_frame.pack(fill="x", pady=(0, 8))
+        
+        self.bt_mode_var = tk.StringVar(value="standard")
+        ttk.Radiobutton(mode_frame, text="Standard Backtest", variable=self.bt_mode_var, value="standard").pack(anchor="w", padx=4, pady=2)
+        ttk.Radiobutton(mode_frame, text="Parameter Optimization (Grid)", variable=self.bt_mode_var, value="optimize").pack(anchor="w", padx=4, pady=2)
+        ttk.Radiobutton(mode_frame, text="Walk-Forward Optimization", variable=self.bt_mode_var, value="walk_forward").pack(anchor="w", padx=4, pady=2)
+        ttk.Radiobutton(mode_frame, text="Monte Carlo Simulation", variable=self.bt_mode_var, value="monte_carlo").pack(anchor="w", padx=4, pady=2)
+        
+        mc_frame = ttk.Frame(mode_frame)
+        mc_frame.pack(fill="x", padx=20, pady=2)
+        ttk.Label(mc_frame, text="MC Runs:").pack(side="left")
+        self.bt_mc_runs_var = tk.StringVar(value="1000")
+        ttk.Entry(mc_frame, textvariable=self.bt_mc_runs_var, width=8).pack(side="left", padx=4)
+
+        # 3. Actions
+        btn_frame = ttk.Frame(left)
+        btn_frame.pack(fill="x", pady=(8, 0))
+        
+        self.btn_run_bt = ttk.Button(btn_frame, text="Run Backtest", command=self._on_run_backtest)
+        self.btn_run_bt.pack(fill="x", ipady=4)
+
+        # --- RIGHT: Results ---
+        res_frame = ttk.LabelFrame(right, text="Results Output")
+        res_frame.pack(fill="both", expand=True)
+
+        self.bt_output_text = tk.Text(
+            res_frame,
+            wrap="word",
+            bg=DARK_PANEL,
+            fg=DARK_FG,
+            insertbackground=DARK_FG,
+            font=("Consolas", 10)
+        )
+        scroll = ttk.Scrollbar(res_frame, orient="vertical", command=self.bt_output_text.yview)
+        self.bt_output_text.configure(yscrollcommand=scroll.set)
+        
+        self.bt_output_text.pack(side="left", fill="both", expand=True, padx=4, pady=4)
+        scroll.pack(side="right", fill="y", padx=(0, 4), pady=4)
+
+        # Trade Replay (below results)
+        replay_frame = ttk.LabelFrame(right, text="Trade Replay")
+        replay_frame.pack(fill="both", expand=True, pady=(8, 0))
+
+        self.trade_replay = TradeReplay(replay_frame)
+        self.trade_replay.pack(fill="both", expand=True)
+
+    def _on_run_backtest(self) -> None:
+        """Triggered when the Run Backtest button is clicked."""
+        coins = self.bt_coins_var.get().strip()
+        start = self.bt_start_var.get().strip()
+        end = self.bt_end_var.get().strip()
+        cap = self.bt_capital_var.get().strip()
+        mode = self.bt_mode_var.get().strip()
+        mc_runs = self.bt_mc_runs_var.get().strip()
+
+        if not coins or not start or not end:
+            messagebox.showerror("Error", "Coins, Start Date, and End Date are required.")
+            return
+
+        # Build command array
+        cmd = [
+            sys.executable,
+            os.path.join(self.project_dir, "pt_backtester.py"),
+            coins,
+            start,
+            end,
+            "--initial-capital", cap
+        ]
+        
+        if mode == "optimize":
+            cmd.append("--optimize")
+        elif mode == "walk_forward":
+            cmd.append("--walk-forward")
+        elif mode == "monte_carlo":
+            cmd.extend(["--monte-carlo", mc_runs])
+            
+        self.bt_output_text.delete("1.0", tk.END)
+        self.bt_output_text.insert(tk.END, f"Running command: {' '.join(cmd)}\n\n")
+        
+        self.btn_run_bt.configure(state="disabled", text="Running...")
+        self.update_idletasks()
+
+        # Run process asynchronously using a daemon thread, so GUI doesn't freeze
+        def _run_bt():
+            try:
+                # Disable buffering for real-time output
+                env = os.environ.copy()
+                env["PYTHONUNBUFFERED"] = "1"
+                
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,  # Merge stderr into stdout
+                    text=True,
+                    bufsize=1,
+                    env=env,
+                    cwd=self.project_dir
+                )
+
+                def append_text(val):
+                    self.bt_output_text.insert(tk.END, val)
+                    self.bt_output_text.see(tk.END)
+
+                # Read line by line until process finishes
+                for line in iter(process.stdout.readline, ""):
+                    # Update UI on main thread safely
+                    self.after_idle(append_text, line)
+
+                process.stdout.close()
+                process.wait()
+                
+            except Exception as e:
+                self.after_idle(lambda: self.bt_output_text.insert(tk.END, f"\nError running backtester: {e}"))
+            finally:
+                # Re-enable button
+                self.after_idle(lambda: self.btn_run_bt.configure(state="normal", text="Run Backtest"))
+
+        t = threading.Thread(target=_run_bt, daemon=True)
+        t.start()
+
+
     def _tick(self) -> None:
         # process labels
         neural_running = bool(
@@ -4211,6 +4429,25 @@ class PowerTraderHub(tk.Tk):
 
             trail_line = pos.get("trail_line", 0.0)
 
+            # --- NEW: Read Market Regime Data ---
+            regime_display = "N/A"
+            if self.settings.get("regime_detection.enabled", getattr(config, 'regime_detection', type('obj', (object,), {'enabled': False})).enabled):
+                try:
+                    main_dir = self.settings.get("main_neural_dir") or self.project_dir
+                    coin_clean = coin.upper().replace("-USDT", "").replace("-USD", "").strip()
+                    regime_file = os.path.join(main_dir, coin_clean, "market_regime.json")
+                    if os.path.exists(regime_file):
+                        with open(regime_file, "r") as f:
+                            regime_data = json.load(f)
+                            trend = regime_data.get("trend", "SIDEWAYS")
+                            vol = regime_data.get("volatility", "LOW")
+                            
+                            # Condense for narrow column: "BULL (H)", "BEAR (L)"
+                            vol_short = "H" if vol == "HIGH" else "L"
+                            regime_display = f"{trend} ({vol_short})"
+                except Exception:
+                    pass
+
             self.trades_tree.insert(
                 "",
                 "end",
@@ -4227,6 +4464,7 @@ class PowerTraderHub(tk.Tk):
                     dca_24h_display,
                     next_dca,
                     _fmt_price(trail_line),  # trail line is a price level
+                    regime_display,          # NEW: regime column
                 ),
             )
 
@@ -5400,20 +5638,59 @@ class PowerTraderHub(tk.Tk):
         r = add_field(t_notif, "Bot Token", "notifications.telegram_bot_token", config.notifications.telegram_bot_token or "", "Telegram Bot Token", r)
         r = add_field(t_notif, "Chat ID", "notifications.telegram_chat_id", config.notifications.telegram_chat_id or "", "Telegram Chat ID", r)
 
+        ttk.Label(t_notif, text="Slack", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_notif, "Webhook URL", "notifications.slack_webhook_url", config.notifications.slack_webhook_url or "", "Slack Incoming Webhook URL", r)
+
+        ttk.Label(t_notif, text="Microsoft Teams", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_notif, "Webhook URL", "notifications.teams_webhook_url", config.notifications.teams_webhook_url or "", "Teams Incoming Webhook URL", r)
+
+        ttk.Label(t_notif, text="Twilio (SMS)", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_notif, "Account SID", "notifications.twilio_account_sid", config.notifications.twilio_account_sid or "", "Twilio Account SID", r)
+        r = add_field(t_notif, "Auth Token", "notifications.twilio_auth_token", config.notifications.twilio_auth_token or "", "Twilio Auth Token", r)
+        r = add_field(t_notif, "From Number", "notifications.twilio_from_number", config.notifications.twilio_from_number or "", "Twilio Sender Phone Number", r)
+        r = add_field(t_notif, "To Number", "notifications.twilio_to_number", config.notifications.twilio_to_number or "", "Recipient Phone Number", r)
+
+        ttk.Label(t_notif, text="OneSignal (Push)", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_notif, "App ID", "notifications.onesignal_app_id", config.notifications.onesignal_app_id or "", "OneSignal App ID", r)
+        r = add_field(t_notif, "REST API Key", "notifications.onesignal_rest_api_key", config.notifications.onesignal_rest_api_key or "", "OneSignal REST API Key", r)
+
+        ttk.Label(t_notif, text="Custom Webhook", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_notif, "Webhook URL", "notifications.custom_webhook_url", config.notifications.custom_webhook_url or "", "Custom HTTPS POST Endpoint", r)
+
         # Test Button
         def test_notifications():
             try:
-                nm = pt_notifications.create_notification_manager(
-                    email_address=self._settings_vars["notifications.email_address"].get(),
-                    email_app_password=self._settings_vars["notifications.email_app_password"].get(),
-                    discord_webhook_url=self._settings_vars["notifications.discord_webhook_url"].get(),
-                    telegram_bot_token=self._settings_vars["notifications.telegram_bot_token"].get(),
-                    telegram_chat_id=self._settings_vars["notifications.telegram_chat_id"].get(),
-                    enabled=True
-                )
+                # Re-reading all fields live and manually updating a hot NotificationConfig
+                from pt_config import NotificationConfig
                 import asyncio
-                asyncio.run(nm.send_info("Test notification from PowerTrader AI Settings"))
-                messagebox.showinfo("Test Sent", "Test notification sent. Check your platforms.")
+                
+                hot_config = NotificationConfig()
+                hot_config.enabled = True
+                hot_config.email_address = self._settings_vars["notifications.email_address"].get()
+                hot_config.email_app_password = self._settings_vars["notifications.email_app_password"].get()
+                hot_config.discord_webhook_url = self._settings_vars["notifications.discord_webhook_url"].get()
+                hot_config.telegram_bot_token = self._settings_vars["notifications.telegram_bot_token"].get()
+                hot_config.telegram_chat_id = self._settings_vars["notifications.telegram_chat_id"].get()
+                hot_config.slack_webhook_url = self._settings_vars["notifications.slack_webhook_url"].get()
+                hot_config.teams_webhook_url = self._settings_vars["notifications.teams_webhook_url"].get()
+                hot_config.twilio_account_sid = self._settings_vars["notifications.twilio_account_sid"].get()
+                hot_config.twilio_auth_token = self._settings_vars["notifications.twilio_auth_token"].get()
+                hot_config.twilio_from_number = self._settings_vars["notifications.twilio_from_number"].get()
+                hot_config.twilio_to_number = self._settings_vars["notifications.twilio_to_number"].get()
+                hot_config.onesignal_app_id = self._settings_vars["notifications.onesignal_app_id"].get()
+                hot_config.onesignal_rest_api_key = self._settings_vars["notifications.onesignal_rest_api_key"].get()
+                hot_config.custom_webhook_url = self._settings_vars["notifications.custom_webhook_url"].get()
+                
+                temp_nm = pt_notifications.NotificationManager(config=hot_config)
+                
+                # Mock sending an info blast to all platforms actually configured
+                async def _send():
+                    await temp_nm.send("Test notification from PowerTrader AI Settings", level=pt_notifications.NotificationLevel.INFO)
+                    
+                asyncio.run(_send())
+                # Close the temp DB connection
+                temp_nm.db.conn.close()
+                messagebox.showinfo("Test Sent", "Test notification process initiated. Check your configured platforms. Errors will be logged to console.")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to send test: {e}")
 
@@ -5474,6 +5751,13 @@ class PowerTraderHub(tk.Tk):
         # ==================== TAB 5: RISK ====================
         t_risk = create_scrollable_tab(nb, "Risk")
         r = 0
+
+        ttk.Label(t_risk, text="Advanced Risk Management", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_risk, "Enable Risk Checks", "risk_management.enabled", config.risk_management.enabled, "Enable drawdown, concentration, and liquidity checks", r)
+        r = add_field(t_risk, "Max Drawdown %", "risk_management.max_portfolio_drawdown_pct", config.risk_management.max_portfolio_drawdown_pct, "Halt trading if peak portfolio value drops by this %", r)
+        r = add_field(t_risk, "Max Concentration %", "risk_management.max_coin_concentration_pct", config.risk_management.max_coin_concentration_pct, "Max % of portfolio value a single coin can occupy", r)
+        r = add_field(t_risk, "Min Liquidity M.", "risk_management.min_liquidity_multiplier", config.risk_management.min_liquidity_multiplier, "Trade size must be at least this much smaller than 24h volume", r)
+
         ttk.Label(t_risk, text="Correlation", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
         r = add_field(t_risk, "Enable Correlation Check", "correlation.enabled", config.correlation.enabled, "Check for highly correlated assets", r)
         r = add_field(t_risk, "Alert Threshold", "correlation.alert_threshold", config.correlation.alert_threshold, "Correlation coeff (0-1) to trigger alert", r)
@@ -5484,7 +5768,43 @@ class PowerTraderHub(tk.Tk):
         r = add_field(t_risk, "Min Risk %", "position_sizing.min_risk_pct", config.position_sizing.min_risk_pct, "Minimum position size scaling", r)
         r = add_field(t_risk, "Max Risk %", "position_sizing.max_risk_pct", config.position_sizing.max_risk_pct, "Maximum position size scaling", r)
 
-        # ==================== TAB 6: SYSTEM ====================
+        # ==================== TAB 6: REBALANCING ====================
+        t_rebalance = create_scrollable_tab(nb, "Rebalancing")
+        r = 0
+        
+        ttk.Label(t_rebalance, text="Portfolio Rebalancing", font=("", 12, "bold")).grid(row=r, column=0, sticky="w", padx=10, pady=10); r+=1
+        r = add_field(t_rebalance, "Enable Rebalancing", "rebalancing.enabled", config.rebalancing.enabled, "Enable automatic portfolio rebalancing", r)
+        r = add_field(t_rebalance, "Trigger Mode", "rebalancing.trigger_mode", config.rebalancing.trigger_mode, "Options: time, threshold, both", r)
+        r = add_field(t_rebalance, "Interval (Hours)", "rebalancing.rebalance_interval_hours", config.rebalancing.rebalance_interval_hours, "Hours between time-based rebalances", r)
+        r = add_field(t_rebalance, "Drift Threshold %", "rebalancing.drift_threshold_pct", config.rebalancing.drift_threshold_pct, "Trigger if asset drifts this % from target", r)
+        
+        # Target Allocations helper
+        # Instead of building a fully dynamic dictionary UI in this simple form, we'll store allocations as comma-separated: "BTC:50.0, ETH:30.0" 
+        def _get_alloc_str(d):
+            return ", ".join(f"{k}:{v}" for k,v in d.items())
+            
+        r = add_field(t_rebalance, "Target Allocations", "rebalancing.target_allocations", _get_alloc_str(config.rebalancing.target_allocations), "Format: BTC:50.0, ETH:30.0", r)
+        r = add_field(t_rebalance, "Avoid Wash Sales", "rebalancing.avoid_wash_sales", config.rebalancing.avoid_wash_sales, "Prevent selling if bought within 30 days at a higher price", r)
+
+        # ==================== TAB 7: SENTIMENT ====================
+        t_sentiment = create_scrollable_tab(nb, "Sentiment")
+        r = 0
+        r = add_field(t_sentiment, "Enable Sentiment", "sentiment.enabled", config.sentiment.enabled, "Enable MCP-based sentiment scoring", r)
+        r = add_field(t_sentiment, "Fear/Greed Index", "sentiment.fear_greed_enabled", config.sentiment.fear_greed_enabled, "Include global market sentiment", r)
+        r = add_field(t_sentiment, "Social Sentiment", "sentiment.social_sentiment_enabled", config.sentiment.social_sentiment_enabled, "Include coin-specific news/social volume", r)
+        r = add_field(t_sentiment, "MCP URL", "sentiment.mcp_url", config.sentiment.mcp_url, "URL of the local MCP Server (e.g. http://localhost:8000)", r)
+        r = add_field(t_sentiment, "Impact Multiplier", "sentiment.impact_multiplier", config.sentiment.impact_multiplier, "Scales the sentiment effect (Default 1.0)", r)
+
+        # ==================== TAB 8: REGIME DETECTION ====================
+        t_regime = create_scrollable_tab(nb, "Regime Detection")
+        r = 0
+        r = add_field(t_regime, "Enable Regime Detection", "regime_detection.enabled", config.regime_detection.enabled, "Enable market regime tracking", r)
+        r = add_field(t_regime, "Trend Lookback (Candles)", "regime_detection.trend_lookback_candles", config.regime_detection.trend_lookback_candles, "Number of candles for long-term SMA", r)
+        r = add_field(t_regime, "Volatility Lookback", "regime_detection.volatility_lookback_candles", config.regime_detection.volatility_lookback_candles, "Number of candles for std deviation", r)
+        r = add_field(t_regime, "Auto Adjust DCA", "regime_detection.auto_adjust_dca", config.regime_detection.auto_adjust_dca, "Wait longer to buy dips in bear markets", r)
+        r = add_field(t_regime, "Auto Adjust PM", "regime_detection.auto_adjust_pm", config.regime_detection.auto_adjust_pm, "Take profits faster in bear markets", r)
+
+        # ==================== TAB 9: SYSTEM ====================
         t_sys = create_scrollable_tab(nb, "System")
         r = 0
         r = add_field(t_sys, "Log Level", "system.log_level", config.system.log_level, "INFO, DEBUG, WARNING, ERROR", r)
@@ -5517,6 +5837,16 @@ class PowerTraderHub(tk.Tk):
                 config.notifications.discord_webhook_url = self._settings_vars["notifications.discord_webhook_url"].get()
                 config.notifications.telegram_bot_token = self._settings_vars["notifications.telegram_bot_token"].get()
                 config.notifications.telegram_chat_id = self._settings_vars["notifications.telegram_chat_id"].get()
+                
+                config.notifications.slack_webhook_url = self._settings_vars["notifications.slack_webhook_url"].get()
+                config.notifications.teams_webhook_url = self._settings_vars["notifications.teams_webhook_url"].get()
+                config.notifications.twilio_account_sid = self._settings_vars["notifications.twilio_account_sid"].get()
+                config.notifications.twilio_auth_token = self._settings_vars["notifications.twilio_auth_token"].get()
+                config.notifications.twilio_from_number = self._settings_vars["notifications.twilio_from_number"].get()
+                config.notifications.twilio_to_number = self._settings_vars["notifications.twilio_to_number"].get()
+                config.notifications.onesignal_app_id = self._settings_vars["notifications.onesignal_app_id"].get()
+                config.notifications.onesignal_rest_api_key = self._settings_vars["notifications.onesignal_rest_api_key"].get()
+                config.notifications.custom_webhook_url = self._settings_vars["notifications.custom_webhook_url"].get()
 
                 # Exchanges
                 config.exchanges.kucoin_api_key = self._settings_vars["exchanges.kucoin_api_key"].get()
@@ -5534,12 +5864,50 @@ class PowerTraderHub(tk.Tk):
                 config.analytics.log_performance = bool(self._settings_vars["analytics.log_performance"].get())
 
                 # Risk
+                config.risk_management.enabled = bool(self._settings_vars["risk_management.enabled"].get())
+                config.risk_management.max_portfolio_drawdown_pct = float(self._settings_vars["risk_management.max_portfolio_drawdown_pct"].get())
+                config.risk_management.max_coin_concentration_pct = float(self._settings_vars["risk_management.max_coin_concentration_pct"].get())
+                config.risk_management.min_liquidity_multiplier = float(self._settings_vars["risk_management.min_liquidity_multiplier"].get())
+
                 config.correlation.enabled = bool(self._settings_vars["correlation.enabled"].get())
                 config.correlation.alert_threshold = float(self._settings_vars["correlation.alert_threshold"].get())
                 config.position_sizing.enabled = bool(self._settings_vars["position_sizing.enabled"].get())
                 config.position_sizing.default_risk_pct = float(self._settings_vars["position_sizing.default_risk_pct"].get())
                 config.position_sizing.min_risk_pct = float(self._settings_vars["position_sizing.min_risk_pct"].get())
                 config.position_sizing.max_risk_pct = float(self._settings_vars["position_sizing.max_risk_pct"].get())
+
+                # Rebalancing
+                config.rebalancing.enabled = bool(self._settings_vars["rebalancing.enabled"].get())
+                config.rebalancing.trigger_mode = self._settings_vars["rebalancing.trigger_mode"].get()
+                config.rebalancing.rebalance_interval_hours = int(self._settings_vars["rebalancing.rebalance_interval_hours"].get())
+                config.rebalancing.drift_threshold_pct = float(self._settings_vars["rebalancing.drift_threshold_pct"].get())
+                
+                # Parse target allocations "BTC:50.0, ETH:30.0" -> dict
+                alloc_str = self._settings_vars["rebalancing.target_allocations"].get()
+                alloc_dict = {}
+                for p in alloc_str.split(","):
+                    p = p.strip()
+                    if not p: continue
+                    if ":" in p:
+                        k, v = p.split(":", 1)
+                        alloc_dict[k.strip().upper()] = float(v.strip())
+                config.rebalancing.target_allocations = alloc_dict
+                
+                config.rebalancing.avoid_wash_sales = bool(self._settings_vars["rebalancing.avoid_wash_sales"].get())
+
+                # Sentiment
+                config.sentiment.enabled = bool(self._settings_vars["sentiment.enabled"].get())
+                config.sentiment.fear_greed_enabled = bool(self._settings_vars["sentiment.fear_greed_enabled"].get())
+                config.sentiment.social_sentiment_enabled = bool(self._settings_vars["sentiment.social_sentiment_enabled"].get())
+                config.sentiment.mcp_url = self._settings_vars["sentiment.mcp_url"].get()
+                config.sentiment.impact_multiplier = float(self._settings_vars["sentiment.impact_multiplier"].get())
+
+                # Regime Detection
+                config.regime_detection.enabled = bool(self._settings_vars["regime_detection.enabled"].get())
+                config.regime_detection.trend_lookback_candles = int(self._settings_vars["regime_detection.trend_lookback_candles"].get())
+                config.regime_detection.volatility_lookback_candles = int(self._settings_vars["regime_detection.volatility_lookback_candles"].get())
+                config.regime_detection.auto_adjust_dca = bool(self._settings_vars["regime_detection.auto_adjust_dca"].get())
+                config.regime_detection.auto_adjust_pm = bool(self._settings_vars["regime_detection.auto_adjust_pm"].get())
 
                 # System
                 config.system.log_level = self._settings_vars["system.log_level"].get()

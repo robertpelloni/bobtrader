@@ -14,6 +14,8 @@ import traceback
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from cryptography.hazmat.primitives import serialization
 from pt_config import ConfigManager
+from pt_risk_management import RiskManager
+from pt_rebalancer import Rebalancer
 
 try:
     from pt_analytics import TradeJournal
@@ -206,6 +208,7 @@ class CryptoAPITrading:
             "holdings_buy_value": None,
             "percent_in_trade": None,
         }
+        self.peak_account_value = 0.0
 
         # --- DCA rate-limit (per trade, per coin, rolling 24h window) ---
         self.max_dca_buys_per_24h = int(MAX_DCA_BUYS_PER_24H)
@@ -214,6 +217,10 @@ class CryptoAPITrading:
         self._dca_buy_ts = {}  # { "BTC": [ts, ts, ...] } (DCA buys only)
         self._dca_last_sell_ts = {}  # { "BTC": ts_of_last_sell }
         self._seed_dca_window_from_history()
+        
+        # --- Rebalancing state ---
+        self.rebalancer = Rebalancer(config=None, db_path=os.path.join(HUB_DATA_DIR, "trades.db"))
+        self._last_rebalance_ts = 0.0
 
         # --- Analytics integration for persistent trade logging ---
         self.analytics_journal = TradeJournal() if ANALYTICS_AVAILABLE else None
@@ -1640,6 +1647,63 @@ class CryptoAPITrading:
                 "holdings_buy_value": float(holdings_buy_value),
                 "percent_in_trade": float(in_use),
             }
+            if total_account_value > self.peak_account_value:
+                self.peak_account_value = total_account_value
+
+        self.risk_manager = RiskManager()
+        is_safe_drawdown = self.risk_manager.check_portfolio_drawdown(total_account_value, self.peak_account_value)
+
+        # --- PORTFOLIO REBALANCING ENGINES ---
+        cm = ConfigManager()
+        self.rebalancer.config = cm.get().rebalancing
+        rebalance_due_time = self.rebalancer.is_rebalance_due(self._last_rebalance_ts)
+        rebalance_orders = []
+        
+        if self.rebalancer.config and self.rebalancer.config.enabled:
+            # Reconstruct simplified current portfolio {SYM: USD_value} for the rebalancer
+            current_portfolio = {}
+            for holding in holdings.get("results", []):
+                sym = holding["asset_code"]
+                qty = float(holding["total_quantity"])
+                price = current_sell_prices.get(f"{sym}-USD", 0)
+                if qty > 0 and price > 0 and sym != "USDC":
+                    current_portfolio[sym] = qty * price
+            
+            # Reconstruct trade history from ledger/journal for wash sale detection
+            th_list = []
+            try:
+                if os.path.isfile(TRADE_HISTORY_PATH):
+                    with open(TRADE_HISTORY_PATH, "r", encoding="utf-8") as f:
+                        for line in f:
+                            if not line.strip(): continue
+                            try:
+                                obj = json.loads(line)
+                                if "ts" in obj:  # Normalize timestamp keys
+                                    obj["timestamp"] = obj["ts"]
+                                th_list.append(obj)
+                            except Exception:
+                                pass
+            except Exception:
+                pass
+                
+            trigger_mode = self.rebalancer.config.trigger_mode.lower()
+            drift_detected = False
+            
+            if trigger_mode in ["threshold", "both"]:
+                drifts = self.rebalancer.check_drift(current_portfolio, total_account_value)
+                if drifts: drift_detected = True
+                
+            if (trigger_mode == "time" and rebalance_due_time) or \
+               (trigger_mode == "threshold" and drift_detected) or \
+               (trigger_mode == "both" and (rebalance_due_time or drift_detected)):
+                 
+                 rebalance_orders = self.rebalancer.generate_rebalance_orders(
+                     current_portfolio=current_portfolio,
+                     total_value=total_account_value,
+                     price_data={k.split('-')[0]: v for k,v in current_sell_prices.items()},
+                     cost_basis_data=cost_basis,
+                     trade_history=th_list
+                 )
 
         os.system("cls" if os.name == "nt" else "clear")
         print("\n--- Account Summary ---")
@@ -1650,6 +1714,36 @@ class CryptoAPITrading:
             f"Trailing PM: start +{self.pm_start_pct_no_dca:.2f}% (no DCA) / +{self.pm_start_pct_with_dca:.2f}% (with DCA) "
             f"| gap {self.trailing_gap_pct:.2f}%"
         )
+        
+        if rebalance_orders:
+            print("\n!!! REBALANCING TRIGGERED !!!")
+            for order in rebalance_orders:
+                print(f"  {order}")
+                try:
+                    full_sym = f"{order.symbol}-USD"
+                    if order.side == "SELL":
+                        qty_to_sell = order.amount_usd / current_sell_prices.get(full_sym, 1)
+                        self.place_sell_order(
+                            str(uuid.uuid4()), "sell", "market", full_sym, qty_to_sell, 
+                            expected_price=current_sell_prices.get(full_sym), 
+                            avg_cost_basis=cost_basis.get(order.symbol),
+                            tag="REBALANCE_SELL"
+                        )
+                        trades_made = True
+                    elif order.side == "BUY" and order.amount_usd <= buying_power:
+                        self.place_buy_order(
+                            str(uuid.uuid4()), "buy", "market", full_sym, order.amount_usd,
+                            avg_cost_basis=cost_basis.get(order.symbol),
+                            tag="REBALANCE_BUY"
+                        )
+                        buying_power -= order.amount_usd
+                        trades_made = True
+                except Exception as e:
+                    print(f"Failed executing rebalance order: {e}")
+            self._last_rebalance_ts = time.time()
+            # Skip normal trade loop this tick to let the rebalance settle
+            return
+            
         print("\n--- Current Trades ---")
 
         positions = {}
@@ -1981,13 +2075,22 @@ class CryptoAPITrading:
                 print(f"  DCA Amount: ${dca_amount:.2f}")
                 print(f"  Buying Power: ${buying_power:.2f}")
 
+                # Risk Management bounds
+                safe_concentration, new_conc = self.risk_manager.check_concentration_limit(
+                    symbol, value, dca_amount, total_account_value
+                )
+                safe_liquidity = True  # We would inject pt_volume logic here if available as an external volume USD figure. For now, passthrough.
+
                 recent_dca = self._dca_window_count(symbol)
-                if recent_dca >= int(getattr(self, "max_dca_buys_per_24h", 2)):
+                if recent_dca >= self.max_dca_buys_per_24h:
                     print(
                         f"  Skipping DCA for {symbol}. "
                         f"Already placed {recent_dca} DCA buys in the last 24h (max {self.max_dca_buys_per_24h})."
                     )
-
+                elif not is_safe_drawdown:
+                    print(f"  Skipping DCA for {symbol}. max_portfolio_drawdown_pct exceeded.")
+                elif not safe_concentration:
+                    print(f"  Skipping DCA for {symbol}. max_coin_concentration_pct exceeded ({new_conc:.1f}%).")
                 elif dca_amount <= buying_power:
                     response = self.place_buy_order(
                         str(uuid.uuid4()),
@@ -2099,6 +2202,24 @@ class CryptoAPITrading:
 
             # Default behavior: long must be >= start_level and short must be 0
             if not (buy_count >= start_level and sell_count == 0):
+                start_index += 1
+                continue
+
+            current_holdings = sum(
+                float(h["total_quantity"]) * current_sell_prices.get(f"{h['asset_code']}-USD", 0) 
+                for h in holdings.get("results", []) if h["asset_code"] == base_symbol
+            )
+            safe_concentration, new_conc = self.risk_manager.check_concentration_limit(
+                base_symbol, current_holdings, allocation_in_usd, total_account_value
+            )
+
+            if not is_safe_drawdown:
+                print(f"Skipping new trade. Max portfolio drawdown exceeded.")
+                start_index += 1
+                continue
+            
+            if not safe_concentration:
+                print(f"Skipping new trade for {full_symbol}. Concentration limit exceeded.")
                 start_index += 1
                 continue
 

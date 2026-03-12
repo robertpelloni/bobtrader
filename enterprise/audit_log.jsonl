@@ -1,0 +1,3 @@
+{"id": "5dd18141-2af", "timestamp": "2026-03-07T15:02:51.398047", "action": "user_created", "user": "admin_user", "severity": "info", "details": {"new_user": "trader1"}, "checksum": "ab55537036fae1ea"}
+{"id": "dd329969-eb7", "timestamp": "2026-03-07T15:02:51.426823", "action": "trade_executed", "user": "trader1", "severity": "info", "details": {"coin": "BTC", "side": "buy", "qty": 0.1}, "checksum": "c0a43d85573fb6a3"}
+{"id": "f36a3e71-a36", "timestamp": "2026-03-07T15:02:51.450482", "action": "login", "user": "viewer1", "severity": "info", "details": {"ip": "192.168.1.1"}, "checksum": "34f7f25564dd8aae"}

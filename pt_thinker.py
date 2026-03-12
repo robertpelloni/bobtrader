@@ -21,6 +21,51 @@ import uuid
 
 from nacl.signing import SigningKey
 from pt_config import ConfigManager
+from pt_sentiment import SentimentAnalyzer
+from pt_regime_detection import RegimeDetector
+from pt_feature_engine import FeatureEngine
+from pt_ml_ensemble import EnsemblePredictor, KNNModel
+
+# Global ML ensemble instance
+_FEATURE_ENGINE = None
+_ENSEMBLE = None
+
+def get_feature_engine():
+    global _FEATURE_ENGINE
+    if _FEATURE_ENGINE is None:
+        _FEATURE_ENGINE = FeatureEngine()
+    return _FEATURE_ENGINE
+
+def get_ensemble():
+    global _ENSEMBLE
+    if _ENSEMBLE is None:
+        from pathlib import Path
+        model_dir = Path("ml_models/ensemble")
+        if model_dir.exists():
+            _ENSEMBLE = EnsemblePredictor.load_all(model_dir)
+        else:
+            _ENSEMBLE = EnsemblePredictor()
+    return _ENSEMBLE
+
+# Global analyzer instance to avoid recreating it rapidly
+_SENTIMENT = None
+_REGIME_DETECTOR = None
+
+def get_sentiment_analyzer():
+    global _SENTIMENT
+    if _SENTIMENT is None:
+        cm = ConfigManager()
+        cm.reload()
+        _SENTIMENT = SentimentAnalyzer(cm.get().sentiment)
+    return _SENTIMENT
+
+def get_regime_detector():
+    global _REGIME_DETECTOR
+    if _REGIME_DETECTOR is None:
+        cm = ConfigManager()
+        cm.reload()
+        _REGIME_DETECTOR = RegimeDetector(cm.get().regime_detection)
+    return _REGIME_DETECTOR
 
 # -----------------------------
 # Robinhood market-data (current ASK), same source as rhcb.py trader:
@@ -593,6 +638,35 @@ def step_coin(sym: str):
             continue
 
     current_candle = 100 * ((closePrice - openPrice) / openPrice)
+    
+    # ====== NEW: Update Market Regime Detection ======
+    # Only evaluate regime on the first timeframe to save API calls (all TFs use the same regime metrics anyway)
+    # We use the 1hour timeframe (usually "1h" or "1hour") to get a macro view, or just fetch it here.
+    if tf_choice_index == 0:
+        regime_detector = get_regime_detector()
+        if regime_detector.config.enabled:
+            # We need a decent chunk of history to calculate SMA/Volatility (e.g., 60 candles)
+            lookback = max(regime_detector.config.trend_lookback_candles, regime_detector.config.volatility_lookback_candles) + 5
+            try:
+                # Get historical 1hour candles for regime detection
+                regime_history = market.get_kline(coin, '1hour', limit=lookback)
+                # KuCoin returns [[time, open, close, high, low, volume, turnover], ...] sorted newest to oldest
+                if regime_history and len(regime_history) > 0:
+                    # We want oldest to newest for the math, so reverse it
+                    regime_history = list(reversed(regime_history))
+                    close_prices = [float(candle[2]) for candle in regime_history]
+                    regime_state = regime_detector.evaluate_regime(sym, close_prices)
+                    
+                    # Persist regime state for the GUI to read
+                    try:
+                        import json
+                        with open("market_regime.json", "w+") as f:
+                            json.dump(regime_state, f)
+                    except Exception:
+                        pass
+            except Exception as e:
+                # Log or ignore if API call fails
+                pass
 
     # ====== ORIGINAL: load threshold + memories/weights and compute moves ======
     file = open("neural_perfect_threshold_" + tf_choices[tf_choice_index] + ".txt", "r")
@@ -807,6 +881,37 @@ def step_coin(sym: str):
         del low_tf_prices[tf_choice_index]
         low_tf_prices.insert(tf_choice_index, start_price)
     else:
+        # --- ML ENSEMBLE BLEND ---
+        # Blend original prediction with ensemble prediction (70/30 split)
+        try:
+            ensemble = get_ensemble()
+            if ensemble.models:  # only if ensemble has trained models
+                fe = get_feature_engine()
+                # Build a mini OHLCV window from recent candles for feature computation
+                # (uses the candle data already fetched in the loop above)
+                feature_vec = None
+                if 'recent_closes' in dir() and len(recent_closes) >= 30:
+                    features = fe.compute_features(
+                        recent_opens, recent_highs, recent_lows, recent_closes, recent_volumes
+                    )
+                    # Use the last valid row
+                    import numpy as _np
+                    last_row = features[-1]
+                    if not _np.any(_np.isnan(last_row)):
+                        feature_vec = last_row
+
+                if feature_vec is not None:
+                    result = ensemble.predict(feature_vec)
+                    if result.confidence > 0.3:  # minimum confidence threshold
+                        blend_weight = 0.30  # 30% ensemble, 70% original
+                        ens_high = start_price + (start_price * result.predicted_high_pct / 100.0)
+                        ens_low = start_price + (start_price * result.predicted_low_pct / 100.0)
+                        high_new_price = (1 - blend_weight) * high_new_price + blend_weight * ens_high
+                        low_new_price = (1 - blend_weight) * low_new_price + blend_weight * ens_low
+        except Exception:
+            pass  # Silently fall back to original predictions
+        # --- END ML ENSEMBLE BLEND ---
+
         del high_tf_prices[tf_choice_index]
         high_tf_prices.insert(tf_choice_index, high_new_price)
         del low_tf_prices[tf_choice_index]
@@ -826,8 +931,6 @@ def step_coin(sym: str):
             get_aggregated_current_price,
             detect_arbitrage_opportunities,
         )
-
-        rh_symbol = f"{sym}-USD"
 
         while True:
             try:
@@ -945,11 +1048,23 @@ def step_coin(sym: str):
                 else:
                     del messages[inder]
                     messages.insert(inder, message)
-                    del updated[inder]
-                    updated.insert(inder, 1)
-
-                del tf_sides[inder]
+                    del tf_sides[inder]
                 tf_sides.insert(inder, "short")
+
+                # Sentiment application for SHORT
+                analyzer = get_sentiment_analyzer()
+                if analyzer.config.enabled:
+                    sentiment_score = analyzer.calculate_combined_sentiment(sym)
+                    if sentiment_score > 0.4:
+                        # Veto the SHORT due to extremely positive sentiment
+                        message = f"VETO SHORT on {tf_choices[inder]} timeframe. (Sentiment: {sentiment_score:.2f} is too positive)"
+                        del messages[inder]
+                        messages.insert(inder, message)
+                        del tf_sides[inder]
+                        tf_sides.insert(inder, "none")
+                    elif sentiment_score < -0.3:
+                        # Append a boost message if sentiment is bad
+                        messages[inder] = messages[inder] + f" (Boosted by Sentiment: {sentiment_score:.2f})"
 
             elif (
                 current < low_bound_prices[inder]
@@ -988,6 +1103,21 @@ def step_coin(sym: str):
                     messages.insert(inder, message)
                     del updated[inder]
                     updated.insert(inder, 1)
+
+                # Sentiment application for LONG
+                analyzer = get_sentiment_analyzer()
+                if analyzer.config.enabled:
+                    sentiment_score = analyzer.calculate_combined_sentiment(sym)
+                    if sentiment_score < -0.4:
+                        # Veto the LONG due to extremely bad sentiment
+                        message = f"VETO LONG on {tf_choices[inder]} timeframe. (Sentiment: {sentiment_score:.2f} is too negative)"
+                        del messages[inder]
+                        messages.insert(inder, message)
+                        del tf_sides[inder]
+                        tf_sides.insert(inder, "none")
+                    elif sentiment_score > 0.3:
+                        # Append a boost message if sentiment is good
+                        messages[inder] = messages[inder] + f" (Boosted by Sentiment: {sentiment_score:.2f})"
 
             else:
                 if perfects[inder] == "inactive":
@@ -1228,14 +1358,22 @@ def step_coin(sym: str):
             PrintException()
 
         # write PM + DCA signals (same as before)
+        # write PM + DCA signals (same as before, now with Regime Detection adjustments)
         try:
             longs = tf_sides.count("long")
             shorts = tf_sides.count("short")
+            
+            # Fetch Regime Detection Adjustments
+            regime_detector = get_regime_detector()
+            dca_adj = regime_detector.get_dca_adjustment_factor(sym)
+            pm_adj = regime_detector.get_pm_adjustment_factor(sym)
 
-            # long pm
+            # --- LONG PM ---
             current_pms = [m for m in margins if m != 0]
             try:
                 pm = sum(current_pms) / len(current_pms)
+                # Apply Regime Adjustment to PM
+                pm *= pm_adj
                 if pm < 0.25:
                     pm = 0.25
             except:
@@ -1243,13 +1381,22 @@ def step_coin(sym: str):
 
             with open("futures_long_profit_margin.txt", "w+") as f:
                 f.write(str(pm))
+                
+            # --- LONG DCA ---
+            adjusted_longs = int(longs * (1.0 / dca_adj))  # e.g., Bear market DCA factor > 1 == fewer signals sent
             with open("long_dca_signal.txt", "w+") as f:
-                f.write(str(longs))
+                f.write(str(adjusted_longs))
 
-            # short pm
+            # --- SHORT PM ---
             current_pms = [m for m in margins if m != 0]
             try:
                 pm = sum(current_pms) / len(current_pms)
+                # Apply Regime Adjustment to PM
+                # Short PM adjustment might be inverse, but logically pm_adj scales the target. 
+                # i.e., in BULL market (pm_adj=1.5), shorts get squeezed, so maybe you take quick profit?
+                # Actually, the logic in get_pm_adjustment_factor handles trend mapping generically for PM,
+                # but we'll apply it directly here. If pm_adj is < 1, take profits faster.
+                pm *= pm_adj
                 if pm < 0.25:
                     pm = 0.25
             except:
@@ -1257,8 +1404,11 @@ def step_coin(sym: str):
 
             with open("futures_short_profit_margin.txt", "w+") as f:
                 f.write(str(abs(pm)))
+                
+            # --- SHORT DCA ---
+            adjusted_shorts = int(shorts * (1.0 / dca_adj))
             with open("short_dca_signal.txt", "w+") as f:
-                f.write(str(shorts))
+                f.write(str(adjusted_shorts))
 
         except:
             PrintException()

@@ -1,0 +1,145 @@
+[
+  {
+    "name": "momentum_breakout",
+    "version": "2.1.0",
+    "author": "PowerTrader",
+    "description": "Momentum breakout strategy using volume confirmation and ATR-based stops",
+    "tags": [
+      "momentum",
+      "breakout",
+      "volume"
+    ],
+    "rating": 4.5,
+    "downloads": 1200,
+    "config": {
+      "strategy": "momentum",
+      "entry_signal": "price_above_sma20_and_volume_2x",
+      "stop_loss_atr": 2.0,
+      "take_profit_atr": 3.0,
+      "timeframe": "1hour",
+      "min_volume_ratio": 2.0
+    },
+    "backtest_results": {
+      "total_return": 45.2,
+      "win_rate": 0.58,
+      "max_drawdown": 12.5,
+      "sharpe": 1.8,
+      "trades": 340,
+      "period": "2024-01 to 2024-12"
+    }
+  },
+  {
+    "name": "mean_reversion_rsi",
+    "version": "1.5.0",
+    "author": "PowerTrader",
+    "description": "Mean reversion using RSI oversold/overbought with Bollinger Band confirmation",
+    "tags": [
+      "mean-reversion",
+      "rsi",
+      "bollinger"
+    ],
+    "rating": 4.2,
+    "downloads": 890,
+    "config": {
+      "strategy": "mean_reversion",
+      "rsi_oversold": 25,
+      "rsi_overbought": 75,
+      "bb_period": 20,
+      "bb_std": 2.0,
+      "timeframe": "4hour"
+    },
+    "backtest_results": {
+      "total_return": 32.1,
+      "win_rate": 0.62,
+      "max_drawdown": 8.3,
+      "sharpe": 2.1,
+      "trades": 210,
+      "period": "2024-01 to 2024-12"
+    }
+  },
+  {
+    "name": "dca_accumulator",
+    "version": "3.0.0",
+    "author": "PowerTrader",
+    "description": "Dollar-cost averaging with neural level detection for optimal entry timing",
+    "tags": [
+      "dca",
+      "neural",
+      "long-term"
+    ],
+    "rating": 4.8,
+    "downloads": 2100,
+    "config": {
+      "strategy": "dca",
+      "interval_hours": 24,
+      "allocation_pct": 5.0,
+      "neural_bias": true,
+      "max_positions": 10
+    },
+    "backtest_results": {
+      "total_return": 28.5,
+      "win_rate": 0.71,
+      "max_drawdown": 5.2,
+      "sharpe": 2.5,
+      "trades": 365,
+      "period": "2024-01 to 2024-12"
+    }
+  },
+  {
+    "name": "grid_trader",
+    "version": "1.2.0",
+    "author": "community",
+    "description": "Grid trading bot with dynamic level spacing based on ATR volatility",
+    "tags": [
+      "grid",
+      "range",
+      "automation"
+    ],
+    "rating": 3.9,
+    "downloads": 650,
+    "config": {
+      "strategy": "grid",
+      "grid_levels": 10,
+      "spacing_method": "atr",
+      "atr_multiplier": 0.5,
+      "order_size_pct": 2.0
+    },
+    "backtest_results": {
+      "total_return": 18.7,
+      "win_rate": 0.74,
+      "max_drawdown": 6.8,
+      "sharpe": 1.5,
+      "trades": 820,
+      "period": "2024-06 to 2024-12"
+    }
+  },
+  {
+    "name": "trend_follower_macd",
+    "version": "2.0.0",
+    "author": "community",
+    "description": "Trend-following strategy with MACD crossover and EMA filter",
+    "tags": [
+      "trend",
+      "macd",
+      "ema"
+    ],
+    "rating": 4.0,
+    "downloads": 750,
+    "config": {
+      "strategy": "trend",
+      "macd_fast": 12,
+      "macd_slow": 26,
+      "macd_signal": 9,
+      "ema_filter": 200,
+      "timeframe": "4hour"
+    },
+    "backtest_results": {
+      "total_return": 38.4,
+      "win_rate": 0.52,
+      "max_drawdown": 15.1,
+      "sharpe": 1.6,
+      "trades": 180,
+      "period": "2024-01 to 2024-12"
+    }
+  }
+]
