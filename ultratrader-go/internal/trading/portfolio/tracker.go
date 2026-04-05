@@ -102,6 +102,26 @@ func (t *Tracker) OpenPositionCount() int {
 	return count
 }
 
+func (t *Tracker) CurrentValue(symbol string) float64 {
+	for _, position := range t.Positions() {
+		if strings.EqualFold(position.Symbol, symbol) {
+			if position.MarketValue > 0 {
+				return position.MarketValue
+			}
+			return position.CostBasis
+		}
+	}
+	return 0
+}
+
+func (t *Tracker) TotalValue() float64 {
+	var total float64
+	for _, position := range t.Positions() {
+		total += position.CostBasis
+	}
+	return total
+}
+
 func (t *Tracker) ValuedPositions(ctx context.Context, feed marketdata.Feed) []Position {
 	positions := t.Positions()
 	if feed == nil {

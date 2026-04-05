@@ -41,4 +41,10 @@ func TestValuationAndPnL(t *testing.T) {
 	if tracker.OpenPositionCount() != 1 {
 		t.Fatalf("expected one open position, got %d", tracker.OpenPositionCount())
 	}
+	if tracker.CurrentValue("BTCUSDT") != 30000 {
+		t.Fatalf("expected cost-basis current value 30000, got %v", tracker.CurrentValue("BTCUSDT"))
+	}
+	if tracker.TotalValue() != 30000 {
+		t.Fatalf("expected total value 30000, got %v", tracker.TotalValue())
+	}
 }

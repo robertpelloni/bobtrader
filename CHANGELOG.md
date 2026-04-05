@@ -5,6 +5,34 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.10] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-9/10 Exposure Controls, Market-Data Streams, and Persistent Runtime Reports**
+  - Added persistent runtime report storage under `ultratrader-go/internal/persistence/reports`
+  - Added market-data streaming abstractions and paper tick subscription support
+  - Added `max-concentration` guard scaffold and wired `max-open-positions` into the runtime risk pipeline
+  - Added `/api/guards` endpoint and richer operator-visible guard diagnostics
+  - Added detailed implementation notes:
+    - `docs/ai/implementation/go-phase-9-exposure-controls-and-marketdata-streams.md`
+    - `docs/ai/implementation/go-phase-10-persistent-reports-and-exposure-controls.md`
+- **Project Direction Documentation**
+  - Added `VISION.md`
+  - Added `MEMORY.md`
+  - Added `DEPLOY.md`
+  - Added `TODO.md`
+  - Updated `ROADMAP.md` with a dedicated Go ultra-project parallel-track section
+
+### Changed
+- Expanded Go runtime configuration with report persistence and concentration risk settings
+- Enhanced app startup to persist a durable runtime summary report containing metrics, PnL, portfolio value, and active guards
+- Enhanced market-data layer with subscription-oriented interfaces to prepare for event-driven strategy evolution
+- Enhanced portfolio tracker with value-query helpers for future exposure/concentration enforcement
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-9/10 additions and logs the active guard stack plus runtime summary data
+
 ## [2.0.9] - 2026-04-05
 
 ### Added

@@ -12,6 +12,7 @@ type Config struct {
 	EventLog    EventLogConfig  `json:"event_log"`
 	Snapshots   SnapshotConfig  `json:"snapshots"`
 	Orders      OrderConfig     `json:"orders"`
+	Reports     ReportConfig    `json:"reports"`
 	Logging     LoggingConfig   `json:"logging"`
 	Server      ServerConfig    `json:"server"`
 	Scheduler   SchedulerConfig `json:"scheduler"`
@@ -26,6 +27,9 @@ type SnapshotConfig struct {
 	Path string `json:"path"`
 }
 type OrderConfig struct {
+	Path string `json:"path"`
+}
+type ReportConfig struct {
 	Path string `json:"path"`
 }
 
@@ -45,11 +49,12 @@ type SchedulerConfig struct {
 }
 
 type RiskConfig struct {
-	MaxNotional       float64  `json:"max_notional"`
-	AllowedSymbols    []string `json:"allowed_symbols"`
-	CooldownMS        int      `json:"cooldown_ms"`
-	DuplicateWindowMS int      `json:"duplicate_window_ms"`
-	MaxOpenPositions  int      `json:"max_open_positions"`
+	MaxNotional         float64  `json:"max_notional"`
+	AllowedSymbols      []string `json:"allowed_symbols"`
+	CooldownMS          int      `json:"cooldown_ms"`
+	DuplicateWindowMS   int      `json:"duplicate_window_ms"`
+	MaxOpenPositions    int      `json:"max_open_positions"`
+	MaxConcentrationPct float64  `json:"max_concentration_pct"`
 }
 
 type AccountConfig struct {
@@ -66,10 +71,11 @@ func Default() Config {
 		EventLog:    EventLogConfig{Path: filepath.Join("data", "eventlog", "events.jsonl")},
 		Snapshots:   SnapshotConfig{Path: filepath.Join("data", "snapshots", "accounts.jsonl")},
 		Orders:      OrderConfig{Path: filepath.Join("data", "orders", "orders.jsonl")},
+		Reports:     ReportConfig{Path: filepath.Join("data", "reports", "runtime.jsonl")},
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
 		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
-		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, MaxOpenPositions: 0},
+		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, MaxOpenPositions: 0, MaxConcentrationPct: 0},
 		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
 	}
 }
@@ -95,6 +101,9 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Orders.Path == "" {
 		cfg.Orders.Path = defaults.Orders.Path
+	}
+	if cfg.Reports.Path == "" {
+		cfg.Reports.Path = defaults.Reports.Path
 	}
 	if cfg.Logging.Path == "" {
 		cfg.Logging.Path = defaults.Logging.Path

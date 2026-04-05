@@ -2,6 +2,38 @@
 
 This roadmap outlines the development history, current status, and future plans for PowerTrader AI.
 
+## Current Parallel Track - Go Ultra-Project
+
+A new clean-room Go workstream now exists under `ultratrader-go/`.
+
+Current status of the Go track includes:
+- runtime composition root
+- config loading
+- structured logging
+- event log
+- exchange registry
+- paper exchange adapter
+- market-data interfaces + paper feed/stream support
+- risk pipeline with multiple concrete guards
+- execution service
+- execution repository + summary model
+- order journal
+- snapshot store
+- runtime report store
+- portfolio valuation and realized/unrealized PnL
+- metrics tracking
+- diagnostics APIs
+- runtime lifecycle control
+
+Recommended next work for the Go track:
+- richer guard diagnostics
+- persistent analytics history
+- stream-driven strategy consumption
+- deeper exposure/concentration enforcement
+- coordinated shutdown tests
+- eventual backtesting/optimization/exchange-adapter expansion
+
+
 ## Version 2.0.0 (Current) - Released 2026-01-18
 
 ### Completed Features ✅

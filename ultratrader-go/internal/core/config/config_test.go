@@ -11,7 +11,7 @@ func TestLoadDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load default returned error: %v", err)
 	}
-	if cfg.EventLog.Path == "" || cfg.Snapshots.Path == "" || cfg.Orders.Path == "" || cfg.Logging.Path == "" {
+	if cfg.EventLog.Path == "" || cfg.Snapshots.Path == "" || cfg.Orders.Path == "" || cfg.Reports.Path == "" || cfg.Logging.Path == "" {
 		t.Fatal("expected default persistence/logging paths")
 	}
 	if cfg.Server.Address == "" {
@@ -31,7 +31,7 @@ func TestLoadDefault(t *testing.T) {
 func TestLoadFileOverridesDefault(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"logging":{"path":"tmp/app.jsonl","stdout":false},"server":{"enabled":false,"address":"127.0.0.1:9191"},"scheduler":{"enabled":true,"interval_ms":500},"risk":{"max_notional":250,"allowed_symbols":["BTCUSDT"],"cooldown_ms":1000,"duplicate_window_ms":2000,"max_open_positions":3},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
+	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"reports":{"path":"tmp/runtime.jsonl"},"logging":{"path":"tmp/app.jsonl","stdout":false},"server":{"enabled":false,"address":"127.0.0.1:9191"},"scheduler":{"enabled":true,"interval_ms":500},"risk":{"max_notional":250,"allowed_symbols":["BTCUSDT"],"cooldown_ms":1000,"duplicate_window_ms":2000,"max_open_positions":3,"max_concentration_pct":40},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write config file: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestLoadFileOverridesDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load file returned error: %v", err)
 	}
-	if cfg.Environment != "test" || cfg.EventLog.Path != "tmp/events.jsonl" || cfg.Snapshots.Path != "tmp/snapshots.jsonl" || cfg.Orders.Path != "tmp/orders.jsonl" || cfg.Logging.Path != "tmp/app.jsonl" {
+	if cfg.Environment != "test" || cfg.EventLog.Path != "tmp/events.jsonl" || cfg.Snapshots.Path != "tmp/snapshots.jsonl" || cfg.Orders.Path != "tmp/orders.jsonl" || cfg.Reports.Path != "tmp/runtime.jsonl" || cfg.Logging.Path != "tmp/app.jsonl" {
 		t.Fatalf("unexpected config paths: %+v", cfg)
 	}
 	if cfg.Server.Address != "127.0.0.1:9191" {
@@ -48,7 +48,7 @@ func TestLoadFileOverridesDefault(t *testing.T) {
 	if !cfg.Scheduler.Enabled || cfg.Scheduler.IntervalMS != 500 {
 		t.Fatalf("unexpected scheduler config: %+v", cfg.Scheduler)
 	}
-	if cfg.Risk.MaxNotional != 250 || cfg.Risk.CooldownMS != 1000 || cfg.Risk.DuplicateWindowMS != 2000 || cfg.Risk.MaxOpenPositions != 3 || len(cfg.Risk.AllowedSymbols) != 1 || cfg.Risk.AllowedSymbols[0] != "BTCUSDT" {
+	if cfg.Risk.MaxNotional != 250 || cfg.Risk.CooldownMS != 1000 || cfg.Risk.DuplicateWindowMS != 2000 || cfg.Risk.MaxOpenPositions != 3 || cfg.Risk.MaxConcentrationPct != 40 || len(cfg.Risk.AllowedSymbols) != 1 || cfg.Risk.AllowedSymbols[0] != "BTCUSDT" {
 		t.Fatalf("unexpected risk config: %+v", cfg.Risk)
 	}
 	if len(cfg.Accounts) != 1 || cfg.Accounts[0].ID != "acct-1" {

@@ -10,7 +10,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 )
 
-func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
+func TestAppStartWritesEventSnapshotOrderLogAndReport(t *testing.T) {
 	dir := t.TempDir()
 	cfg := config.Default()
 	cfg.Server.Enabled = false
@@ -18,6 +18,7 @@ func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 	cfg.EventLog.Path = filepath.Join(dir, "events.jsonl")
 	cfg.Snapshots.Path = filepath.Join(dir, "snapshots.jsonl")
 	cfg.Orders.Path = filepath.Join(dir, "orders.jsonl")
+	cfg.Reports.Path = filepath.Join(dir, "runtime.jsonl")
 	cfg.Logging.Path = filepath.Join(dir, "app.jsonl")
 	cfg.Logging.Stdout = false
 
@@ -25,7 +26,7 @@ func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
 	}
-	defer func() { _ = application.Close() }()
+	defer func() { _ = application.Shutdown(context.Background()) }()
 	if err := application.Start(context.Background()); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
@@ -54,11 +55,34 @@ func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 		t.Fatalf("expected BTCUSDT order and correlation id, got %q", string(orders))
 	}
 
+	reports, err := os.ReadFile(cfg.Reports.Path)
+	if err != nil {
+		t.Fatalf("read report log: %v", err)
+	}
+	if !strings.Contains(string(reports), "startup-summary") || !strings.Contains(string(reports), "portfolio_value") {
+		t.Fatalf("expected runtime report, got %q", string(reports))
+	}
+
 	logs, err := os.ReadFile(cfg.Logging.Path)
 	if err != nil {
 		t.Fatalf("read app log: %v", err)
 	}
 	if !strings.Contains(string(logs), "app startup completed") || !strings.Contains(string(logs), "realized_pnl") || !strings.Contains(string(logs), "execution_attempts") || !strings.Contains(string(logs), "symbol-whitelist") {
 		t.Fatalf("expected startup completion log with pnl, metrics, and guards fields, got %q", string(logs))
+	}
+}
+
+func TestAppShutdown(t *testing.T) {
+	cfg := config.Default()
+	cfg.Server.Enabled = false
+	cfg.Logging.Stdout = false
+	cfg.Logging.Path = filepath.Join(t.TempDir(), "app.jsonl")
+	cfg.Reports.Path = filepath.Join(t.TempDir(), "runtime.jsonl")
+	application, err := New(cfg)
+	if err != nil {
+		t.Fatalf("New returned error: %v", err)
+	}
+	if err := application.Shutdown(context.Background()); err != nil {
+		t.Fatalf("Shutdown returned error: %v", err)
 	}
 }
