@@ -2,13 +2,16 @@ package execution
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 )
@@ -30,12 +33,18 @@ func TestExecutePlacesOrder(t *testing.T) {
 		t.Fatalf("Register returned error: %v", err)
 	}
 
-	events, err := eventlog.New(filepath.Join(t.TempDir(), "events.jsonl"))
+	eventPath := filepath.Join(t.TempDir(), "events.jsonl")
+	events, err := eventlog.New(eventPath)
 	if err != nil {
 		t.Fatalf("eventlog.New returned error: %v", err)
 	}
+	orderPath := filepath.Join(t.TempDir(), "orders.jsonl")
+	orderStore, err := orders.NewStore(orderPath)
+	if err != nil {
+		t.Fatalf("orders.NewStore returned error: %v", err)
+	}
 
-	service := NewService(accounts, registry, risk.NewPipeline(), events)
+	service := NewService(accounts, registry, risk.NewPipeline(), events, orderStore)
 	order, err := service.Execute(context.Background(), "paper-main", exchange.OrderRequest{
 		Symbol:   "BTCUSDT",
 		Side:     exchange.Buy,
@@ -47,5 +56,13 @@ func TestExecutePlacesOrder(t *testing.T) {
 	}
 	if order.ID == "" {
 		t.Fatal("expected order id")
+	}
+
+	data, err := os.ReadFile(orderPath)
+	if err != nil {
+		t.Fatalf("ReadFile returned error: %v", err)
+	}
+	if !strings.Contains(string(data), order.ID) {
+		t.Fatalf("expected order id in order journal, got %q", string(data))
 	}
 }

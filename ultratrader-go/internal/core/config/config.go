@@ -11,6 +11,7 @@ type Config struct {
 	Environment string          `json:"environment"`
 	EventLog    EventLogConfig  `json:"event_log"`
 	Snapshots   SnapshotConfig  `json:"snapshots"`
+	Orders      OrderConfig     `json:"orders"`
 	Server      ServerConfig    `json:"server"`
 	Accounts    []AccountConfig `json:"accounts"`
 }
@@ -20,6 +21,10 @@ type EventLogConfig struct {
 }
 
 type SnapshotConfig struct {
+	Path string `json:"path"`
+}
+
+type OrderConfig struct {
 	Path string `json:"path"`
 }
 
@@ -44,6 +49,9 @@ func Default() Config {
 		},
 		Snapshots: SnapshotConfig{
 			Path: filepath.Join("data", "snapshots", "accounts.jsonl"),
+		},
+		Orders: OrderConfig{
+			Path: filepath.Join("data", "orders", "orders.jsonl"),
 		},
 		Server: ServerConfig{
 			Enabled: true,
@@ -82,6 +90,9 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Snapshots.Path == "" {
 		cfg.Snapshots.Path = defaults.Snapshots.Path
+	}
+	if cfg.Orders.Path == "" {
+		cfg.Orders.Path = defaults.Orders.Path
 	}
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = defaults.Server.Address

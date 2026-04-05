@@ -1,21 +1,24 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project beyond the initial scaffold and implemented the next kernel-service wave.
+- Continued the Go ultra-project into a third implementation wave focused on turning the kernel skeleton into a minimally self-driving paper-trading loop.
 - Added the following new subsystems under `ultratrader-go/`:
-  - exchange registry,
-  - paper exchange adapter,
-  - execution service,
-  - snapshot persistence store,
-  - health/readiness HTTP handler package,
-  - strategy runtime skeleton.
-- Added app-level integration and tests proving bootstrap event + snapshot creation.
-- Added detailed implementation documentation:
-  - `docs/ai/implementation/go-phase-2-kernel-services.md`
-  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+  - order journal persistence,
+  - market-data interfaces,
+  - deterministic paper market-data feed,
+  - demo strategy package,
+  - strategy scheduler,
+  - HTTP runtime wrapper.
+- Expanded app integration so startup now:
+  - writes the startup event,
+  - persists bootstrap snapshots,
+  - runs the scheduler once,
+  - executes the demo strategy through the paper exchange,
+  - persists the resulting order.
+- Updated the feature assimilation matrix and added Phase-3 implementation notes.
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.3`
-  - `CHANGELOG.md` with the 2.0.3 kernel-services entry.
+  - `VERSION.md` → `2.0.4`
+  - `CHANGELOG.md` with the 2.0.4 Phase-3 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -26,34 +29,34 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The project now has:
-1. a full Stage-1 audit and migration strategy,
-2. a clean-room Go implementation root,
-3. the first real service path:
-   - account lookup,
-   - exchange registry resolution,
-   - guard pipeline,
-   - paper execution,
-   - event emission,
-   - snapshot persistence.
+The project now has its first complete bootstrap trading loop in Go:
+1. app startup,
+2. event log write,
+3. snapshot persistence,
+4. strategy signal generation,
+5. scheduler conversion,
+6. execution through paper exchange,
+7. order journal persistence,
+8. execution event persistence.
 
-This is the first real proof that the chosen architecture can be implemented in a controlled Go codebase.
+This is the first genuinely end-to-end paper trading flow in the new Go codebase.
 
 ## Suggested Immediate Next Steps
-1. Add order journal persistence.
-2. Add snapshot builders that read adapter balances and markets.
-3. Add market-data interfaces and paper market-data feeds.
-4. Add structured logger package.
-5. Add strategy scheduler and account-to-strategy binding.
-6. Add first demo strategy that routes through the execution service.
-7. Expose the health handler through a controlled HTTP server runtime.
+1. Add recurring scheduler cadence / service loop.
+2. Add portfolio and position state.
+3. Add real risk guards.
+4. Add market-data-aware demo strategy using the paper feed.
+5. Add execution repository / in-memory reconciliation layer.
+6. Add structured logging with correlation IDs.
+7. Add server lifecycle integration tests.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-2-kernel-services.md`
+- `docs/ai/implementation/go-phase-3-marketdata-and-scheduling.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - `ultratrader-go/internal/core/app/app.go`
-- `ultratrader-go/internal/exchange/registry.go`
-- `ultratrader-go/internal/exchange/paper/adapter.go`
+- `ultratrader-go/internal/persistence/orders/store.go`
+- `ultratrader-go/internal/marketdata/feed.go`
+- `ultratrader-go/internal/marketdata/paper/feed.go`
+- `ultratrader-go/internal/strategy/demo/buyonce.go`
+- `ultratrader-go/internal/strategy/scheduler/scheduler.go`
 - `ultratrader-go/internal/trading/execution/service.go`
-- `ultratrader-go/internal/persistence/snapshot/store.go`
-- `ultratrader-go/internal/strategy/runtime.go`

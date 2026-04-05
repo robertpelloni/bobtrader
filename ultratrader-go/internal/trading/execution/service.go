@@ -7,6 +7,7 @@ import (
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 )
@@ -16,10 +17,11 @@ type Service struct {
 	registry *exchange.Registry
 	pipeline *risk.Pipeline
 	events   *eventlog.Log
+	orders   *orders.Store
 }
 
-func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log) *Service {
-	return &Service{accounts: accounts, registry: registry, pipeline: pipeline, events: events}
+func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log, orderStore *orders.Store) *Service {
+	return &Service{accounts: accounts, registry: registry, pipeline: pipeline, events: events, orders: orderStore}
 }
 
 func (s *Service) Execute(ctx context.Context, accountID string, request exchange.OrderRequest, intent risk.OrderIntent) (exchange.Order, error) {
@@ -46,6 +48,25 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 	order, err := adapter.PlaceOrder(ctx, request)
 	if err != nil {
 		return exchange.Order{}, fmt.Errorf("place order: %w", err)
+	}
+
+	if s.orders != nil {
+		if err := s.orders.Append(ctx, orders.Record{
+			AccountID: acct.ID,
+			Exchange:  acct.ExchangeName,
+			OrderID:   order.ID,
+			Symbol:    order.Symbol,
+			Side:      string(order.Side),
+			Type:      string(order.Type),
+			Status:    order.Status,
+			Quantity:  order.Quantity,
+			Price:     order.Price,
+			Metadata: map[string]any{
+				"account_name": acct.Name,
+			},
+		}); err != nil {
+			return exchange.Order{}, fmt.Errorf("append order record: %w", err)
+		}
 	}
 
 	if s.events != nil {

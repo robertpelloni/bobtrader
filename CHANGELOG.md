@@ -5,6 +5,29 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.4] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-3 Market Data, Journaling, and Scheduling**
+  - Added append-only order journaling under `ultratrader-go/internal/persistence/orders`
+  - Added market-data abstractions and a deterministic paper market-data feed
+  - Added demo strategy package with a bootstrap `buy-once` strategy
+  - Added strategy scheduler that converts signals into execution requests
+  - Added HTTP runtime wrapper for controllable health/readiness serving
+  - Added comprehensive implementation docs:
+    - `docs/ai/implementation/go-phase-3-marketdata-and-scheduling.md`
+    - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
+
+### Changed
+- Extended `ultratrader-go` configuration with order-journal settings
+- Expanded the execution service to persist order records in addition to event-log entries
+- Expanded app bootstrap to wire market data, order journaling, demo strategy execution, and scheduler-driven startup behavior
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` still initializes successfully after Phase-3 additions
+- App integration tests now validate event, snapshot, and order persistence together
+
 ## [2.0.3] - 2026-04-05
 
 ### Added

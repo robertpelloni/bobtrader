@@ -7,6 +7,8 @@ type Signal struct {
 	Symbol    string
 	Action    string
 	Reason    string
+	Quantity  string
+	OrderType string
 }
 
 type Strategy interface {
