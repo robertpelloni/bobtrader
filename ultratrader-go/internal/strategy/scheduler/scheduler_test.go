@@ -7,6 +7,7 @@ import (
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
@@ -35,9 +36,11 @@ func TestRunOnceExecutesSignals(t *testing.T) {
 	}
 	events, _ := eventlog.New(filepath.Join(t.TempDir(), "events.jsonl"))
 	orderStore, _ := orders.NewStore(filepath.Join(t.TempDir(), "orders.jsonl"))
+	logger, _ := logging.New(logging.Config{Path: filepath.Join(t.TempDir(), "app.jsonl"), Stdout: false})
+	defer func() { _ = logger.Close() }()
 	repo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
-	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker)
+	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker, logger)
 	runtime := strategy.NewRuntime(oneShotStrategy{})
 	scheduler := New(runtime, executor)
 

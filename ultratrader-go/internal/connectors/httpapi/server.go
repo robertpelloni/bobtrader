@@ -3,6 +3,9 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
 type Status struct {
@@ -11,13 +14,26 @@ type Status struct {
 	AccountCount int    `json:"account_count"`
 }
 
-func NewHandler(status Status) http.Handler {
+type PortfolioSnapshot struct {
+	Positions        []portfolio.Position `json:"positions"`
+	TotalMarketValue float64              `json:"total_market_value"`
+}
+
+type Dependencies struct {
+	StatusProvider    func() Status
+	PortfolioProvider func() PortfolioSnapshot
+	OrdersProvider    func() []exchange.Order
+}
+
+func NewHandler(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		status := deps.StatusProvider()
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "name": status.Name})
 	})
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		status := deps.StatusProvider()
 		w.Header().Set("Content-Type", "application/json")
 		code := http.StatusOK
 		if !status.Ready {
@@ -25,6 +41,18 @@ func NewHandler(status Status) http.Handler {
 		}
 		w.WriteHeader(code)
 		_ = json.NewEncoder(w).Encode(status)
+	})
+	mux.HandleFunc("/api/status", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.StatusProvider())
+	})
+	mux.HandleFunc("/api/portfolio", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.PortfolioProvider())
+	})
+	mux.HandleFunc("/api/orders", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.OrdersProvider())
 	})
 	return mux
 }

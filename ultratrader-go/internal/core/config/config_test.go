@@ -11,9 +11,8 @@ func TestLoadDefault(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load default returned error: %v", err)
 	}
-
-	if cfg.EventLog.Path == "" || cfg.Snapshots.Path == "" || cfg.Orders.Path == "" {
-		t.Fatal("expected default persistence paths")
+	if cfg.EventLog.Path == "" || cfg.Snapshots.Path == "" || cfg.Orders.Path == "" || cfg.Logging.Path == "" {
+		t.Fatal("expected default persistence/logging paths")
 	}
 	if cfg.Server.Address == "" {
 		t.Fatal("expected default server address")
@@ -32,17 +31,15 @@ func TestLoadDefault(t *testing.T) {
 func TestLoadFileOverridesDefault(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"server":{"enabled":false,"address":"127.0.0.1:9191"},"scheduler":{"enabled":true,"interval_ms":500},"risk":{"max_notional":250,"allowed_symbols":["BTCUSDT"]},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
+	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"logging":{"path":"tmp/app.jsonl","stdout":false},"server":{"enabled":false,"address":"127.0.0.1:9191"},"scheduler":{"enabled":true,"interval_ms":500},"risk":{"max_notional":250,"allowed_symbols":["BTCUSDT"]},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write config file: %v", err)
 	}
-
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatalf("Load file returned error: %v", err)
 	}
-
-	if cfg.Environment != "test" || cfg.EventLog.Path != "tmp/events.jsonl" || cfg.Snapshots.Path != "tmp/snapshots.jsonl" || cfg.Orders.Path != "tmp/orders.jsonl" {
+	if cfg.Environment != "test" || cfg.EventLog.Path != "tmp/events.jsonl" || cfg.Snapshots.Path != "tmp/snapshots.jsonl" || cfg.Orders.Path != "tmp/orders.jsonl" || cfg.Logging.Path != "tmp/app.jsonl" {
 		t.Fatalf("unexpected config paths: %+v", cfg)
 	}
 	if cfg.Server.Address != "127.0.0.1:9191" {

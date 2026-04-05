@@ -1,24 +1,19 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project into a fourth implementation wave focused on making the paper-trading loop policy-aware and stateful.
+- Continued the Go ultra-project into a fifth implementation wave focused on observability, market-value awareness, and runtime API read models.
 - Added the following new subsystems under `ultratrader-go/`:
-  - concrete risk guards (`symbol-whitelist`, `max-notional`),
-  - in-memory execution repository,
-  - in-memory portfolio tracker,
-  - market-data-aware demo strategy (`price-threshold`),
-  - recurring scheduler service abstraction.
-- Expanded app integration so startup now uses:
-  - configured risk guards,
-  - repository-backed execution memory,
-  - portfolio state updates,
-  - a market-data-aware strategy instead of a purely synthetic one-shot action.
+  - structured logging package with correlation IDs,
+  - market-value computation in the portfolio tracker,
+  - HTTP API read models for status, portfolio, and orders.
+- Upgraded execution to generate correlation IDs and propagate them into logs, event payloads, and order-journal metadata.
+- Upgraded app integration so startup now produces structured logs and exposes dynamic runtime state through the handler layer.
 - Added detailed implementation documentation:
-  - `docs/ai/implementation/go-phase-4-risk-portfolio-and-loop.md`
+  - `docs/ai/implementation/go-phase-5-observability-valuation-and-api.md`
   - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.5`
-  - `CHANGELOG.md` with the 2.0.5 Phase-4 entry.
+  - `VERSION.md` → `2.0.6`
+  - `CHANGELOG.md` with the 2.0.6 Phase-5 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -29,39 +24,43 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The project now has a policy-aware end-to-end paper trading loop with internal state.
+The project now has:
+- a policy-aware paper trading loop,
+- in-memory order and portfolio state,
+- market-based valuation,
+- structured correlation-aware logs,
+- operator-readable HTTP state surfaces.
 
-Current path:
-1. app starts,
-2. startup event is persisted,
-3. account snapshot is persisted,
-4. market-data-aware strategy reads the paper feed,
-5. scheduler translates signal to order request,
-6. risk guards validate the intent,
-7. execution routes through the paper exchange,
-8. order journal is persisted,
-9. execution repository stores the order,
-10. portfolio tracker updates position state,
-11. execution event is persisted.
+Current runtime path now includes:
+1. structured startup logging,
+2. startup event persistence,
+3. snapshot persistence,
+4. market-data-aware strategy evaluation,
+5. scheduler-to-execution routing,
+6. risk validation,
+7. paper execution,
+8. order journal persistence,
+9. execution repository update,
+10. portfolio state update,
+11. execution event persistence,
+12. operator-readable state exposure through HTTP handlers.
 
-This is the first version of the Go system that has the shape of a genuine supervised trading runtime rather than only a scaffolding exercise.
+This is the first version of the Go system that starts to feel like a supervised service platform rather than only a trading prototype.
 
 ## Suggested Immediate Next Steps
-1. Add structured logger package and correlation IDs.
-2. Add portfolio valuation using market data.
-3. Add richer guards (cooldown, duplicate suppression, exposure limits).
-4. Add scheduler lifecycle tests for repeated execution.
-5. Add status/portfolio HTTP endpoints.
-6. Add real market-data subscription/event interfaces.
-7. Add position/PnL reporting.
+1. Add realized/unrealized PnL to the portfolio tracker.
+2. Add cooldown and duplicate suppression guards.
+3. Add execution metrics and summaries.
+4. Add recurring scheduler lifecycle integration tests.
+5. Add richer HTTP endpoints for portfolio summary and execution diagnostics.
+6. Add market-data event/subscription interfaces.
+7. Add graceful app shutdown tests covering logger and HTTP runtime cleanup.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-4-risk-portfolio-and-loop.md`
+- `docs/ai/implementation/go-phase-5-observability-valuation-and-api.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-- `ultratrader-go/internal/risk/max_notional.go`
-- `ultratrader-go/internal/risk/symbol_whitelist.go`
-- `ultratrader-go/internal/trading/execution/repository.go`
+- `ultratrader-go/internal/core/logging/logger.go`
 - `ultratrader-go/internal/trading/portfolio/tracker.go`
-- `ultratrader-go/internal/strategy/demo/price_threshold.go`
-- `ultratrader-go/internal/strategy/scheduler/service.go`
+- `ultratrader-go/internal/connectors/httpapi/server.go`
+- `ultratrader-go/internal/trading/execution/service.go`
 - `ultratrader-go/internal/core/app/app.go`

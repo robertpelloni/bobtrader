@@ -5,6 +5,29 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.6] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-5 Observability, Valuation, and API Surfaces**
+  - Added structured JSON logging package with context-propagated correlation IDs
+  - Added portfolio valuation using the market-data feed
+  - Added runtime HTTP read-model endpoints:
+    - `/api/status`
+    - `/api/portfolio`
+    - `/api/orders`
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-5-observability-valuation-and-api.md`
+
+### Changed
+- Expanded `ultratrader-go` configuration with logging settings
+- Upgraded execution service to emit correlation-aware structured logs and persist correlation IDs in order/event artifacts
+- Upgraded app bootstrap to create a real logger and expose dynamic status/portfolio/order state through the HTTP handler
+- Added logger cleanup support for tests and future shutdown handling
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-5 additions
+- API handler tests, logging tests, valuation tests, and app integration tests pass
+
 ## [2.0.5] - 2026-04-05
 
 ### Added

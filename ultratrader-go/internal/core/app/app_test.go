@@ -10,7 +10,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 )
 
-func TestAppStartWritesEventSnapshotAndOrder(t *testing.T) {
+func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 	dir := t.TempDir()
 	cfg := config.Default()
 	cfg.Server.Enabled = false
@@ -18,12 +18,14 @@ func TestAppStartWritesEventSnapshotAndOrder(t *testing.T) {
 	cfg.EventLog.Path = filepath.Join(dir, "events.jsonl")
 	cfg.Snapshots.Path = filepath.Join(dir, "snapshots.jsonl")
 	cfg.Orders.Path = filepath.Join(dir, "orders.jsonl")
+	cfg.Logging.Path = filepath.Join(dir, "app.jsonl")
+	cfg.Logging.Stdout = false
 
 	application, err := New(cfg)
 	if err != nil {
 		t.Fatalf("New returned error: %v", err)
 	}
-
+	defer func() { _ = application.Close() }()
 	if err := application.Start(context.Background()); err != nil {
 		t.Fatalf("Start returned error: %v", err)
 	}
@@ -50,5 +52,13 @@ func TestAppStartWritesEventSnapshotAndOrder(t *testing.T) {
 	}
 	if !strings.Contains(string(orders), "BTCUSDT") {
 		t.Fatalf("expected BTCUSDT order, got %q", string(orders))
+	}
+
+	logs, err := os.ReadFile(cfg.Logging.Path)
+	if err != nil {
+		t.Fatalf("read app log: %v", err)
+	}
+	if !strings.Contains(string(logs), "app startup completed") {
+		t.Fatalf("expected startup completion log, got %q", string(logs))
 	}
 }

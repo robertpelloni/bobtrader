@@ -12,6 +12,7 @@ type Config struct {
 	EventLog    EventLogConfig  `json:"event_log"`
 	Snapshots   SnapshotConfig  `json:"snapshots"`
 	Orders      OrderConfig     `json:"orders"`
+	Logging     LoggingConfig   `json:"logging"`
 	Server      ServerConfig    `json:"server"`
 	Scheduler   SchedulerConfig `json:"scheduler"`
 	Risk        RiskConfig      `json:"risk"`
@@ -21,13 +22,16 @@ type Config struct {
 type EventLogConfig struct {
 	Path string `json:"path"`
 }
-
 type SnapshotConfig struct {
 	Path string `json:"path"`
 }
-
 type OrderConfig struct {
 	Path string `json:"path"`
+}
+
+type LoggingConfig struct {
+	Path   string `json:"path"`
+	Stdout bool   `json:"stdout"`
 }
 
 type ServerConfig struct {
@@ -59,16 +63,11 @@ func Default() Config {
 		EventLog:    EventLogConfig{Path: filepath.Join("data", "eventlog", "events.jsonl")},
 		Snapshots:   SnapshotConfig{Path: filepath.Join("data", "snapshots", "accounts.jsonl")},
 		Orders:      OrderConfig{Path: filepath.Join("data", "orders", "orders.jsonl")},
+		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:8080"},
 		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
 		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}},
-		Accounts: []AccountConfig{{
-			ID:           "paper-main",
-			Name:         "Paper Main",
-			Enabled:      true,
-			Exchange:     "paper",
-			Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
-		}},
+		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
 	}
 }
 
@@ -76,17 +75,14 @@ func Load(path string) (Config, error) {
 	if path == "" {
 		return Default(), nil
 	}
-
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return Config{}, fmt.Errorf("read config file: %w", err)
 	}
-
 	cfg := Default()
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return Config{}, fmt.Errorf("unmarshal config: %w", err)
 	}
-
 	defaults := Default()
 	if cfg.EventLog.Path == "" {
 		cfg.EventLog.Path = defaults.EventLog.Path
@@ -96,6 +92,9 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Orders.Path == "" {
 		cfg.Orders.Path = defaults.Orders.Path
+	}
+	if cfg.Logging.Path == "" {
+		cfg.Logging.Path = defaults.Logging.Path
 	}
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = defaults.Server.Address
@@ -112,6 +111,5 @@ func Load(path string) (Config, error) {
 	if len(cfg.Accounts) == 0 {
 		cfg.Accounts = defaults.Accounts
 	}
-
 	return cfg, nil
 }
