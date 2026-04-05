@@ -5,6 +5,28 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-2 Kernel Services**
+  - Added exchange registry and the first clean-room `paper` exchange adapter
+  - Added execution service to connect accounts, risk guards, exchange adapters, and event logging
+  - Added append-only account snapshot persistence
+  - Added health/readiness HTTP handler package
+  - Added strategy runtime skeleton for future signal scheduling and aggregation
+  - Added detailed implementation docs:
+    - `docs/ai/implementation/go-phase-2-kernel-services.md`
+    - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+
+### Changed
+- Expanded `ultratrader-go` configuration to include snapshot and server settings
+- Extended app bootstrap to register the paper exchange, initialize snapshot persistence, and emit bootstrap account snapshots
+- Improved account service with deterministic listing and account lookup
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` still initializes successfully after the Phase-2 service additions
+
 ## [2.0.2] - 2026-04-05
 
 ### Added

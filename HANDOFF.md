@@ -1,53 +1,59 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project program after the Stage-1 audit.
-- Created the first executable Go scaffold in `ultratrader-go/`.
-- Added foundational modules for:
-  - application runtime,
-  - config loading,
-  - append-only event logging,
-  - unified trading account modeling,
-  - exchange capability interfaces,
-  - guard pipeline contracts.
-- Added tests covering:
-  - config defaults and overrides,
-  - JSONL event log append behavior,
-  - guard pipeline failure semantics.
-- Added implementation notes at `docs/ai/implementation/go-phase-1-scaffold.md`.
+- Continued the Go ultra-project beyond the initial scaffold and implemented the next kernel-service wave.
+- Added the following new subsystems under `ultratrader-go/`:
+  - exchange registry,
+  - paper exchange adapter,
+  - execution service,
+  - snapshot persistence store,
+  - health/readiness HTTP handler package,
+  - strategy runtime skeleton.
+- Added app-level integration and tests proving bootstrap event + snapshot creation.
+- Added detailed implementation documentation:
+  - `docs/ai/implementation/go-phase-2-kernel-services.md`
+  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.2`
-  - `CHANGELOG.md` with the 2.0.2 scaffold entry.
+  - `VERSION.md` → `2.0.3`
+  - `CHANGELOG.md` with the 2.0.3 kernel-services entry.
 
 ## Verification Performed
-- `go test ./...` inside `ultratrader-go/` passed.
-- `go run ./cmd/ultratrader` inside `ultratrader-go/` ran successfully and initialized the scaffold.
+Inside `ultratrader-go/`:
+- `gofmt -w ./cmd ./internal`
+- `go test ./...`
+- `go run ./cmd/ultratrader`
+
+All succeeded.
 
 ## Current Strategic Position
 The project now has:
-1. a documented submodule audit and migration strategy,
-2. an organized top-50 crypto-trading submodule research corpus,
-3. a first clean-room Go implementation root.
+1. a full Stage-1 audit and migration strategy,
+2. a clean-room Go implementation root,
+3. the first real service path:
+   - account lookup,
+   - exchange registry resolution,
+   - guard pipeline,
+   - paper execution,
+   - event emission,
+   - snapshot persistence.
 
-The long-term recommendation remains:
-- use **BBGO** as the Go kernel reference,
-- use **OpenAlice** as the architecture reference,
-- assimilate other projects feature-by-feature into the new Go codebase.
+This is the first real proof that the chosen architecture can be implemented in a controlled Go codebase.
 
 ## Suggested Immediate Next Steps
-1. Add an exchange registry and paper adapter under `ultratrader-go/internal/exchange`.
-2. Add execution intents and an execution service.
-3. Add account snapshot persistence.
-4. Add structured logging package.
-5. Add HTTP health/readiness endpoints.
-6. Start the strategy runtime skeleton.
+1. Add order journal persistence.
+2. Add snapshot builders that read adapter balances and markets.
+3. Add market-data interfaces and paper market-data feeds.
+4. Add structured logger package.
+5. Add strategy scheduler and account-to-strategy binding.
+6. Add first demo strategy that routes through the execution service.
+7. Expose the health handler through a controlled HTTP server runtime.
 
 ## Files to Review First Next Session
-- `docs/ai/design/go-ultra-project-architecture.md`
-- `docs/ai/planning/go-ultra-project-program-plan.md`
-- `docs/ai/implementation/submodule-architecture-audit.md`
-- `docs/ai/implementation/go-phase-1-scaffold.md`
-- `ultratrader-go/README.md`
+- `docs/ai/implementation/go-phase-2-kernel-services.md`
+- `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - `ultratrader-go/internal/core/app/app.go`
-- `ultratrader-go/internal/core/config/config.go`
-- `ultratrader-go/internal/core/eventlog/eventlog.go`
+- `ultratrader-go/internal/exchange/registry.go`
+- `ultratrader-go/internal/exchange/paper/adapter.go`
+- `ultratrader-go/internal/trading/execution/service.go`
+- `ultratrader-go/internal/persistence/snapshot/store.go`
+- `ultratrader-go/internal/strategy/runtime.go`

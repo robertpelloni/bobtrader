@@ -2,6 +2,7 @@ package account
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
@@ -36,10 +37,21 @@ func NewService(cfg []config.AccountConfig) (*Service, error) {
 	return &Service{accounts: accounts}, nil
 }
 
+func (s *Service) Get(id string) (Account, bool) {
+	acct, ok := s.accounts[id]
+	return acct, ok
+}
+
 func (s *Service) List() []Account {
+	keys := make([]string, 0, len(s.accounts))
+	for id := range s.accounts {
+		keys = append(keys, id)
+	}
+	sort.Strings(keys)
+
 	out := make([]Account, 0, len(s.accounts))
-	for _, account := range s.accounts {
-		out = append(out, account)
+	for _, id := range keys {
+		out = append(out, s.accounts[id])
 	}
 	return out
 }

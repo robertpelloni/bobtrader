@@ -10,11 +10,22 @@ import (
 type Config struct {
 	Environment string          `json:"environment"`
 	EventLog    EventLogConfig  `json:"event_log"`
+	Snapshots   SnapshotConfig  `json:"snapshots"`
+	Server      ServerConfig    `json:"server"`
 	Accounts    []AccountConfig `json:"accounts"`
 }
 
 type EventLogConfig struct {
 	Path string `json:"path"`
+}
+
+type SnapshotConfig struct {
+	Path string `json:"path"`
+}
+
+type ServerConfig struct {
+	Enabled bool   `json:"enabled"`
+	Address string `json:"address"`
 }
 
 type AccountConfig struct {
@@ -30,6 +41,13 @@ func Default() Config {
 		Environment: "development",
 		EventLog: EventLogConfig{
 			Path: filepath.Join("data", "eventlog", "events.jsonl"),
+		},
+		Snapshots: SnapshotConfig{
+			Path: filepath.Join("data", "snapshots", "accounts.jsonl"),
+		},
+		Server: ServerConfig{
+			Enabled: true,
+			Address: "127.0.0.1:8080",
 		},
 		Accounts: []AccountConfig{
 			{
@@ -58,12 +76,18 @@ func Load(path string) (Config, error) {
 		return Config{}, fmt.Errorf("unmarshal config: %w", err)
 	}
 
+	defaults := Default()
 	if cfg.EventLog.Path == "" {
-		cfg.EventLog.Path = Default().EventLog.Path
+		cfg.EventLog.Path = defaults.EventLog.Path
 	}
-
+	if cfg.Snapshots.Path == "" {
+		cfg.Snapshots.Path = defaults.Snapshots.Path
+	}
+	if cfg.Server.Address == "" {
+		cfg.Server.Address = defaults.Server.Address
+	}
 	if len(cfg.Accounts) == 0 {
-		cfg.Accounts = Default().Accounts
+		cfg.Accounts = defaults.Accounts
 	}
 
 	return cfg, nil

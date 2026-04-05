@@ -15,6 +15,12 @@ func TestLoadDefault(t *testing.T) {
 	if cfg.EventLog.Path == "" {
 		t.Fatal("expected default event log path")
 	}
+	if cfg.Snapshots.Path == "" {
+		t.Fatal("expected default snapshot path")
+	}
+	if cfg.Server.Address == "" {
+		t.Fatal("expected default server address")
+	}
 	if len(cfg.Accounts) == 0 {
 		t.Fatal("expected default account")
 	}
@@ -23,7 +29,7 @@ func TestLoadDefault(t *testing.T) {
 func TestLoadFileOverridesDefault(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
+	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"server":{"enabled":false,"address":"127.0.0.1:9191"},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write config file: %v", err)
 	}
@@ -38,6 +44,12 @@ func TestLoadFileOverridesDefault(t *testing.T) {
 	}
 	if cfg.EventLog.Path != "tmp/events.jsonl" {
 		t.Fatalf("unexpected event log path: %q", cfg.EventLog.Path)
+	}
+	if cfg.Snapshots.Path != "tmp/snapshots.jsonl" {
+		t.Fatalf("unexpected snapshot path: %q", cfg.Snapshots.Path)
+	}
+	if cfg.Server.Address != "127.0.0.1:9191" {
+		t.Fatalf("unexpected server address: %q", cfg.Server.Address)
 	}
 	if len(cfg.Accounts) != 1 || cfg.Accounts[0].ID != "acct-1" {
 		t.Fatalf("unexpected accounts: %+v", cfg.Accounts)
