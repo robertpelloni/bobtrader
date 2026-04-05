@@ -8,6 +8,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -23,13 +24,17 @@ type Service struct {
 	repository *Repository
 	portfolio  *portfolio.Tracker
 	logger     *logging.Logger
+	metrics    *metrics.Tracker
 }
 
-func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log, orderStore *orders.Store, repository *Repository, portfolioTracker *portfolio.Tracker, logger *logging.Logger) *Service {
+func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log, orderStore *orders.Store, repository *Repository, portfolioTracker *portfolio.Tracker, logger *logging.Logger, metricsTracker *metrics.Tracker) *Service {
 	if logger == nil {
 		logger, _ = logging.New(logging.Config{Stdout: true})
 	}
-	return &Service{accounts: accounts, registry: registry, pipeline: pipeline, events: events, orders: orderStore, repository: repository, portfolio: portfolioTracker, logger: logger}
+	if metricsTracker == nil {
+		metricsTracker = metrics.NewTracker()
+	}
+	return &Service{accounts: accounts, registry: registry, pipeline: pipeline, events: events, orders: orderStore, repository: repository, portfolio: portfolioTracker, logger: logger, metrics: metricsTracker}
 }
 
 func (s *Service) Execute(ctx context.Context, accountID string, request exchange.OrderRequest, intent risk.OrderIntent) (exchange.Order, error) {
@@ -46,8 +51,14 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		return exchange.Order{}, fmt.Errorf("symbol is required")
 	}
 
+	if s.metrics != nil {
+		s.metrics.RecordAttempt()
+	}
 	log.Info("execution requested", map[string]any{"account_id": accountID, "symbol": request.Symbol, "side": request.Side, "type": request.Type})
 	if err := s.pipeline.Run(ctx, acct, intent); err != nil {
+		if s.metrics != nil {
+			s.metrics.RecordBlocked()
+		}
 		log.Error("execution blocked by guard", map[string]any{"account_id": accountID, "symbol": request.Symbol, "error": err.Error()})
 		return exchange.Order{}, err
 	}
@@ -75,6 +86,16 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 	if s.events != nil {
 		_ = s.events.Append(ctx, eventlog.Entry{Type: "execution.order_placed", Source: "execution-service", Payload: map[string]any{"account_id": accountID, "exchange": acct.ExchangeName, "symbol": order.Symbol, "side": order.Side, "type": order.Type, "status": order.Status, "order_id": order.ID, "correlation_id": correlationID}})
 	}
+	if s.metrics != nil {
+		s.metrics.RecordSuccess()
+	}
 	log.Info("execution completed", map[string]any{"account_id": accountID, "order_id": order.ID, "symbol": order.Symbol, "status": order.Status})
 	return order, nil
+}
+
+func (s *Service) MetricsSnapshot() metrics.Snapshot {
+	if s.metrics == nil {
+		return metrics.Snapshot{}
+	}
+	return s.metrics.Snapshot()
 }

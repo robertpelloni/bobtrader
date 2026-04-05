@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -17,6 +18,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		PortfolioProvider:        func() PortfolioSnapshot { return PortfolioSnapshot{} },
 		OrdersProvider:           func() []exchange.Order { return nil },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{} },
+		MetricsProvider:          func() metrics.Snapshot { return metrics.Snapshot{} },
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -34,7 +36,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 	}
 }
 
-func TestPortfolioOrdersAndSummaryEndpoints(t *testing.T) {
+func TestPortfolioOrdersSummaryAndMetricsEndpoints(t *testing.T) {
 	h := NewHandler(Dependencies{
 		StatusProvider: func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
 		PortfolioProvider: func() PortfolioSnapshot {
@@ -42,6 +44,9 @@ func TestPortfolioOrdersAndSummaryEndpoints(t *testing.T) {
 		},
 		OrdersProvider:           func() []exchange.Order { return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}} },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
+		MetricsProvider: func() metrics.Snapshot {
+			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}
+		},
 	})
 
 	w := httptest.NewRecorder()
@@ -60,5 +65,14 @@ func TestPortfolioOrdersAndSummaryEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/execution-summary", nil))
 	if !strings.Contains(w.Body.String(), "ord-1") {
 		t.Fatalf("expected execution summary in response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/metrics", nil))
+	if !strings.Contains(w.Body.String(), "execution_attempts") {
+		t.Fatalf("expected metrics response, got %q", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "2") {
+		t.Fatalf("expected metrics counts in response, got %q", w.Body.String())
 	}
 }

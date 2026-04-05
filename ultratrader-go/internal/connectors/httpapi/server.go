@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -27,6 +28,7 @@ type Dependencies struct {
 	PortfolioProvider        func() PortfolioSnapshot
 	OrdersProvider           func() []exchange.Order
 	ExecutionSummaryProvider func() execution.Summary
+	MetricsProvider          func() metrics.Snapshot
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -61,6 +63,10 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/execution-summary", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.ExecutionSummaryProvider())
+	})
+	mux.HandleFunc("/api/metrics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.MetricsProvider())
 	})
 	return mux
 }

@@ -4,7 +4,7 @@
 Track how the emerging `ultratrader-go/` codebase maps to the audited source projects and to the long-term Go ultra-project plan.
 
 ## Current Status
-The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, and basic operator API surfaces. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
+The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, runtime metrics, and operator API surfaces. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
 
 ## Matrix
 
@@ -13,6 +13,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | App runtime / composition root | Implemented | OpenAlice | BBGO | Platform-style orchestration remains the backbone |
 | Config loading | Implemented | OpenAlice | PyCryptoBot, PowerTrader | Config now covers persistence, logging, server, scheduler, and risk |
 | Structured logging | Implemented | platform ops patterns | OpenAlice, PowerTrader | Context-driven correlation IDs and JSON logging now exist |
+| Runtime metrics | Implemented | operator observability patterns | PowerTrader dashboard mentality | Attempts/successes/blocks now tracked in memory |
 | Event log | Implemented | OpenAlice | PowerTrader analytics mindset | JSONL append-only event durability remains central |
 | Unified account model | Implemented | OpenAlice UTA | PowerTrader account-centric operation | Accounts remain the main execution boundary |
 | Exchange capability vocabulary | Implemented | CCXT | BBGO | Capability-driven contract remains intact |
@@ -26,7 +27,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Execution service | Implemented | BBGO | OpenAlice service composition | Real account -> guard -> adapter -> persistence flow exists |
 | Correlation-aware execution logs | Implemented | platform observability patterns | OpenAlice runtime introspection | Execution flow carries correlation IDs into logs and journals |
 | Execution repository | Implemented | platform state management patterns | BBGO runtime direction | In-memory order state and summary data exist |
-| Execution summary | Implemented | operator diagnostics patterns | PowerTrader dashboard thinking | Order counts and latest-symbol summary now available |
+| Execution summary | Implemented | operator diagnostics patterns | PowerTrader dashboard thinking | Order counts and latest-symbol summary are available |
 | Order journal | Implemented | PowerTrader journal mindset | OpenAlice durability | Orders persist independently of events |
 | Portfolio tracker | Implemented | BBGO runtime direction | PowerTrader analytics intuition | Internal position state exists |
 | Portfolio valuation | Implemented | PowerTrader dashboard mentality | BBGO market-aware runtime direction | Total market value derived from paper market data |
@@ -37,13 +38,14 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Portfolio API | Implemented | PowerTrader dashboard ideas | OpenAlice runtime state exposure | `/api/portfolio` exposes valued positions and PnL |
 | Orders API | Implemented | OpenAlice state exposure | PowerTrader trade visibility | `/api/orders` exposes in-memory order state |
 | Execution summary API | Implemented | operator diagnostics | PowerTrader state visibility | `/api/execution-summary` exposes order summary data |
+| Metrics API | Implemented | operator observability | PowerTrader-style runtime dashboards | `/api/metrics` exposes attempt/success/block counts |
 | HTTP runtime wrapper | Implemented | platform ops patterns | OpenAlice connector/runtime thinking | Server lifecycle shell exists |
 | Market data interface | Implemented | BBGO | CCXT, WolfBot | Abstraction exists |
 | Paper market data feed | Implemented | BBGO | PowerTrader practical bootstrap needs | Deterministic local feed supports strategy development |
 | Strategy runtime | Implemented | BBGO | WolfBot signal/event chaining | Signal aggregation runtime exists |
 | Market-data-aware strategy | Implemented | BBGO | WolfBot, PowerTrader | Strategy consumes feed data |
 | Strategy scheduler | Implemented | WolfBot event flow | BBGO runtime thinking | Converts signals into execution requests |
-| Recurring scheduler service | Implemented | WolfBot event loop direction | BBGO daemon trajectory | Repeated execution behavior is now test-covered |
+| Recurring scheduler service | Implemented | WolfBot event loop direction | BBGO daemon trajectory | Repeated execution behavior is test-covered |
 | Backtesting | Not yet implemented | BBGO | WolfBot, PowerTrader | Deferred |
 | Optimization | Not yet implemented | BBGO | WolfBot | Deferred |
 | Arbitrage engine | Not yet implemented | WolfBot | kelvinau, ericjang, polymarket repos | Later advanced module |

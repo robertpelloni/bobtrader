@@ -12,6 +12,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -44,7 +45,8 @@ func TestExecutePlacesOrder(t *testing.T) {
 	defer func() { _ = logger.Close() }()
 	repo := NewRepository()
 	portfolioTracker := portfolio.NewTracker()
-	service := NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker, logger)
+	metricsTracker := metrics.NewTracker()
+	service := NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker, logger, metricsTracker)
 	order, err := service.Execute(context.Background(), "paper-main", exchange.OrderRequest{Symbol: "BTCUSDT", Side: exchange.Buy, Type: exchange.MarketOrder, Quantity: "0.01"}, risk.OrderIntent{AccountID: "paper-main", Symbol: "BTCUSDT", Notional: 100})
 	if err != nil {
 		t.Fatalf("Execute returned error: %v", err)
@@ -65,5 +67,9 @@ func TestExecutePlacesOrder(t *testing.T) {
 	positions := portfolioTracker.Positions()
 	if len(positions) != 1 || positions[0].Quantity != 0.01 {
 		t.Fatalf("unexpected portfolio positions: %+v", positions)
+	}
+	snap := service.MetricsSnapshot()
+	if snap.ExecutionAttempts != 1 || snap.ExecutionSuccess != 1 || snap.ExecutionBlocked != 0 {
+		t.Fatalf("unexpected metrics snapshot: %+v", snap)
 	}
 }

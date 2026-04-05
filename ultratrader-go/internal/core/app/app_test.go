@@ -58,7 +58,7 @@ func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read app log: %v", err)
 	}
-	if !strings.Contains(string(logs), "app startup completed") || !strings.Contains(string(logs), "realized_pnl") {
-		t.Fatalf("expected startup completion log with pnl fields, got %q", string(logs))
+	if !strings.Contains(string(logs), "app startup completed") || !strings.Contains(string(logs), "realized_pnl") || !strings.Contains(string(logs), "execution_attempts") {
+		t.Fatalf("expected startup completion log with pnl and metrics fields, got %q", string(logs))
 	}
 }

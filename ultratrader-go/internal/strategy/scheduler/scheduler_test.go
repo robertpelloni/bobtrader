@@ -10,6 +10,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
@@ -40,7 +41,8 @@ func TestRunOnceExecutesSignals(t *testing.T) {
 	defer func() { _ = logger.Close() }()
 	repo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
-	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker, logger)
+	metricsTracker := metrics.NewTracker()
+	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker, logger, metricsTracker)
 	runtime := strategy.NewRuntime(oneShotStrategy{})
 	scheduler := New(runtime, executor)
 
@@ -49,5 +51,8 @@ func TestRunOnceExecutesSignals(t *testing.T) {
 	}
 	if len(repo.List()) != 1 {
 		t.Fatalf("expected repository to contain 1 order, got %d", len(repo.List()))
+	}
+	if metricsTracker.Snapshot().ExecutionSuccess != 1 {
+		t.Fatalf("expected success metric increment, got %+v", metricsTracker.Snapshot())
 	}
 }

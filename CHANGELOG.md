@@ -5,6 +5,26 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.8] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-7 Metrics, Diagnostics, and Guard Configuration**
+  - Added in-memory execution metrics tracking for attempts, successes, and blocked executions
+  - Added `/api/metrics` endpoint for runtime metrics exposure
+  - Added richer execution summary and portfolio API responses including PnL values
+  - Added configuration support for cooldown and duplicate-execution guard windows
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-7-metrics-diagnostics-and-guard-config.md`
+
+### Changed
+- Enhanced execution service to record metrics alongside existing journaling and correlation-aware logging
+- Enhanced app wiring to expose metrics and richer diagnostics through HTTP handlers
+- Enhanced feature assimilation documentation to reflect runtime metrics and richer diagnostics surfaces
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-7 additions
+- Metrics tests, API handler tests, scheduler tests, and app integration tests pass
+
 ## [2.0.7] - 2026-04-05
 
 ### Added
