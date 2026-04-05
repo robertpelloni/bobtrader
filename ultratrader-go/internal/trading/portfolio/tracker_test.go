@@ -10,9 +10,8 @@ import (
 
 func TestTrackerApply(t *testing.T) {
 	tracker := NewTracker()
-	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Buy, Quantity: "0.50"})
-	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Sell, Quantity: "0.10"})
-
+	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Buy, Quantity: "0.50", Price: "60000"})
+	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Sell, Quantity: "0.10", Price: "65000"})
 	positions := tracker.Positions()
 	if len(positions) != 1 {
 		t.Fatalf("expected 1 position, got %d", len(positions))
@@ -20,13 +19,20 @@ func TestTrackerApply(t *testing.T) {
 	if positions[0].Quantity != 0.4 {
 		t.Fatalf("expected quantity 0.4, got %v", positions[0].Quantity)
 	}
+	if positions[0].RealizedPnL != 500 {
+		t.Fatalf("expected realized pnl 500, got %v", positions[0].RealizedPnL)
+	}
 }
 
-func TestTotalMarketValue(t *testing.T) {
+func TestValuationAndPnL(t *testing.T) {
 	tracker := NewTracker()
-	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Buy, Quantity: "0.50"})
+	tracker.Apply(exchange.Order{Symbol: "BTCUSDT", Side: exchange.Buy, Quantity: "0.50", Price: "60000"})
 	total := tracker.TotalMarketValue(context.Background(), marketdatapaper.New())
 	if total != 32500 {
 		t.Fatalf("expected total market value 32500, got %v", total)
+	}
+	unrealized := tracker.TotalUnrealizedPnL(context.Background(), marketdatapaper.New())
+	if unrealized != 2500 {
+		t.Fatalf("expected unrealized pnl 2500, got %v", unrealized)
 	}
 }

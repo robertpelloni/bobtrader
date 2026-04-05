@@ -5,6 +5,27 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.7] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-6 PnL, Guard Strengthening, Metrics, and Scheduler Lifecycle**
+  - Added cooldown and duplicate-symbol guards for time-aware execution protection
+  - Added richer in-memory execution repository summaries and recent-symbol detection
+  - Added portfolio analytics for average entry, cost basis, realized PnL, unrealized PnL, and total market value
+  - Added execution summary and richer portfolio data exposure through HTTP API surfaces
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-6-pnl-guards-metrics-and-scheduler.md`
+
+### Changed
+- Enhanced the paper exchange adapter to assign deterministic fill prices for market orders
+- Enhanced the app wiring to include new guards and richer portfolio/execution diagnostics
+- Enhanced the scheduler service to run through a generic runner abstraction with repeated-run test coverage
+- Updated the feature assimilation matrix with the new runtime-state and PnL capabilities
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-6 additions
+- Risk tests, scheduler lifecycle tests, repository summary tests, and portfolio PnL tests pass
+
 ## [2.0.6] - 2026-04-05
 
 ### Added

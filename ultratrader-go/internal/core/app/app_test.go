@@ -50,15 +50,15 @@ func TestAppStartWritesEventSnapshotOrderAndLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read order log: %v", err)
 	}
-	if !strings.Contains(string(orders), "BTCUSDT") {
-		t.Fatalf("expected BTCUSDT order, got %q", string(orders))
+	if !strings.Contains(string(orders), "BTCUSDT") || !strings.Contains(string(orders), "correlation_id") {
+		t.Fatalf("expected BTCUSDT order and correlation id, got %q", string(orders))
 	}
 
 	logs, err := os.ReadFile(cfg.Logging.Path)
 	if err != nil {
 		t.Fatalf("read app log: %v", err)
 	}
-	if !strings.Contains(string(logs), "app startup completed") {
-		t.Fatalf("expected startup completion log, got %q", string(logs))
+	if !strings.Contains(string(logs), "app startup completed") || !strings.Contains(string(logs), "realized_pnl") {
+		t.Fatalf("expected startup completion log with pnl fields, got %q", string(logs))
 	}
 }

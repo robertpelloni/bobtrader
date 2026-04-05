@@ -1,19 +1,27 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project into a fifth implementation wave focused on observability, market-value awareness, and runtime API read models.
+- Continued the Go ultra-project into a sixth implementation wave focused on PnL-aware portfolio analytics, stronger runtime guards, execution summaries, and recurring scheduler confidence.
 - Added the following new subsystems under `ultratrader-go/`:
-  - structured logging package with correlation IDs,
-  - market-value computation in the portfolio tracker,
-  - HTTP API read models for status, portfolio, and orders.
-- Upgraded execution to generate correlation IDs and propagate them into logs, event payloads, and order-journal metadata.
-- Upgraded app integration so startup now produces structured logs and exposes dynamic runtime state through the handler layer.
+  - cooldown guard,
+  - duplicate-symbol guard,
+  - richer execution repository summary model,
+  - PnL-aware portfolio tracker,
+  - enhanced paper exchange pricing for market fills.
+- Strengthened app/runtime integration so the system now combines:
+  - structured logs,
+  - event log,
+  - order journal,
+  - execution repository,
+  - portfolio state,
+  - portfolio valuation/PnL,
+  - richer HTTP diagnostics.
 - Added detailed implementation documentation:
-  - `docs/ai/implementation/go-phase-5-observability-valuation-and-api.md`
+  - `docs/ai/implementation/go-phase-6-pnl-guards-metrics-and-scheduler.md`
   - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.6`
-  - `CHANGELOG.md` with the 2.0.6 Phase-5 entry.
+  - `VERSION.md` → `2.0.7`
+  - `CHANGELOG.md` with the 2.0.7 Phase-6 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -24,43 +32,44 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The project now has:
-- a policy-aware paper trading loop,
-- in-memory order and portfolio state,
-- market-based valuation,
-- structured correlation-aware logs,
-- operator-readable HTTP state surfaces.
+The project now has a paper-trading loop with:
+- concrete pre-trade protections,
+- deterministic fill pricing,
+- in-memory execution history,
+- position tracking,
+- market valuation,
+- realized/unrealized PnL,
+- operator-readable API and log surfaces.
 
 Current runtime path now includes:
 1. structured startup logging,
-2. startup event persistence,
+2. event persistence,
 3. snapshot persistence,
 4. market-data-aware strategy evaluation,
 5. scheduler-to-execution routing,
-6. risk validation,
-7. paper execution,
-8. order journal persistence,
-9. execution repository update,
-10. portfolio state update,
-11. execution event persistence,
-12. operator-readable state exposure through HTTP handlers.
+6. whitelist/notional/cooldown/duplicate protection,
+7. paper execution with deterministic price,
+8. journal + repository updates,
+9. portfolio and PnL state updates,
+10. operator-readable status/portfolio/orders/execution-summary surfaces.
 
-This is the first version of the Go system that starts to feel like a supervised service platform rather than only a trading prototype.
+This is the strongest and most operationally coherent version of the Go ultra-project so far.
 
 ## Suggested Immediate Next Steps
-1. Add realized/unrealized PnL to the portfolio tracker.
-2. Add cooldown and duplicate suppression guards.
-3. Add execution metrics and summaries.
-4. Add recurring scheduler lifecycle integration tests.
-5. Add richer HTTP endpoints for portfolio summary and execution diagnostics.
-6. Add market-data event/subscription interfaces.
-7. Add graceful app shutdown tests covering logger and HTTP runtime cleanup.
+1. Add dedicated metrics tracker/counters.
+2. Add guard diagnostics endpoints.
+3. Add graceful shutdown coverage for scheduler + HTTP runtime.
+4. Add market-data event/subscription interfaces.
+5. Add exposure and max-open-position guards.
+6. Add portfolio summary and execution diagnostics endpoints beyond the current basics.
+7. Begin persistent valuation history or PnL journal support.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-5-observability-valuation-and-api.md`
+- `docs/ai/implementation/go-phase-6-pnl-guards-metrics-and-scheduler.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-- `ultratrader-go/internal/core/logging/logger.go`
+- `ultratrader-go/internal/risk/cooldown.go`
+- `ultratrader-go/internal/risk/duplicate_symbol.go`
+- `ultratrader-go/internal/trading/execution/repository.go`
 - `ultratrader-go/internal/trading/portfolio/tracker.go`
 - `ultratrader-go/internal/connectors/httpapi/server.go`
-- `ultratrader-go/internal/trading/execution/service.go`
 - `ultratrader-go/internal/core/app/app.go`

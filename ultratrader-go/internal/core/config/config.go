@@ -45,8 +45,10 @@ type SchedulerConfig struct {
 }
 
 type RiskConfig struct {
-	MaxNotional    float64  `json:"max_notional"`
-	AllowedSymbols []string `json:"allowed_symbols"`
+	MaxNotional       float64  `json:"max_notional"`
+	AllowedSymbols    []string `json:"allowed_symbols"`
+	CooldownMS        int      `json:"cooldown_ms"`
+	DuplicateWindowMS int      `json:"duplicate_window_ms"`
 }
 
 type AccountConfig struct {
@@ -66,8 +68,19 @@ func Default() Config {
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:8080"},
 		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
-		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}},
-		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
+		Risk: RiskConfig{
+			MaxNotional:       1000,
+			AllowedSymbols:    []string{"BTCUSDT", "ETHUSDT"},
+			CooldownMS:        0,
+			DuplicateWindowMS: 0,
+		},
+		Accounts: []AccountConfig{{
+			ID:           "paper-main",
+			Name:         "Paper Main",
+			Enabled:      true,
+			Exchange:     "paper",
+			Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
+		}},
 	}
 }
 

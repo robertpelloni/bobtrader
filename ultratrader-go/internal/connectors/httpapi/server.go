@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
@@ -15,14 +16,17 @@ type Status struct {
 }
 
 type PortfolioSnapshot struct {
-	Positions        []portfolio.Position `json:"positions"`
-	TotalMarketValue float64              `json:"total_market_value"`
+	Positions          []portfolio.Position `json:"positions"`
+	TotalMarketValue   float64              `json:"total_market_value"`
+	TotalRealizedPnL   float64              `json:"total_realized_pnl"`
+	TotalUnrealizedPnL float64              `json:"total_unrealized_pnl"`
 }
 
 type Dependencies struct {
-	StatusProvider    func() Status
-	PortfolioProvider func() PortfolioSnapshot
-	OrdersProvider    func() []exchange.Order
+	StatusProvider           func() Status
+	PortfolioProvider        func() PortfolioSnapshot
+	OrdersProvider           func() []exchange.Order
+	ExecutionSummaryProvider func() execution.Summary
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -53,6 +57,10 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/orders", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.OrdersProvider())
+	})
+	mux.HandleFunc("/api/execution-summary", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.ExecutionSummaryProvider())
 	})
 	return mux
 }

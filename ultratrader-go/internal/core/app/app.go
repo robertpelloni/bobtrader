@@ -71,10 +71,15 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("register paper exchange: %w", err)
 	}
 
-	pipeline := risk.NewPipeline(risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols), risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional))
 	marketDataFeed := marketdatapaper.New()
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
+	pipeline := risk.NewPipeline(
+		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
+		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
+		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
+		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
+	)
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger)
 	strategyRuntime := strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
@@ -85,16 +90,21 @@ func New(cfg config.Config) (*App, error) {
 			return httpapi.Status{Name: "ultratrader-go", Ready: true, AccountCount: len(accountService.List())}
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
-			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSnapshot{
+				Positions:          portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
+				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+			}
 		},
-		OrdersProvider: func() []exchange.Order { return executionRepo.List() },
+		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
+		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 	})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
-
 	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, httpHandler: handler, httpRuntime: runtime}, nil
 }
 
@@ -128,7 +138,7 @@ func (a *App) Start(ctx context.Context) error {
 	if err := a.scheduler.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
-	a.logger.Info("app startup completed", map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed)})
+	a.logger.Info("app startup completed", map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed)})
 	return nil
 }
 

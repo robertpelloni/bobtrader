@@ -5,17 +5,21 @@ import (
 	"time"
 )
 
-type Service struct {
-	scheduler *Scheduler
-	interval  time.Duration
+type runner interface {
+	RunOnce(ctx context.Context) error
 }
 
-func NewService(scheduler *Scheduler, interval time.Duration) *Service {
-	return &Service{scheduler: scheduler, interval: interval}
+type Service struct {
+	runner   runner
+	interval time.Duration
+}
+
+func NewService(r runner, interval time.Duration) *Service {
+	return &Service{runner: r, interval: interval}
 }
 
 func (s *Service) Start(ctx context.Context) {
-	if s.interval <= 0 {
+	if s.runner == nil || s.interval <= 0 {
 		return
 	}
 	go func() {
@@ -26,7 +30,7 @@ func (s *Service) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				_ = s.scheduler.RunOnce(ctx)
+				_ = s.runner.RunOnce(ctx)
 			}
 		}
 	}()

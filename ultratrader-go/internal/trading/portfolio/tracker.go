@@ -11,32 +11,60 @@ import (
 )
 
 type Position struct {
-	Symbol      string  `json:"symbol"`
-	Quantity    float64 `json:"quantity"`
-	MarketPrice float64 `json:"market_price,omitempty"`
-	MarketValue float64 `json:"market_value,omitempty"`
+	Symbol            string  `json:"symbol"`
+	Quantity          float64 `json:"quantity"`
+	AverageEntryPrice float64 `json:"average_entry_price,omitempty"`
+	CostBasis         float64 `json:"cost_basis,omitempty"`
+	MarketPrice       float64 `json:"market_price,omitempty"`
+	MarketValue       float64 `json:"market_value,omitempty"`
+	UnrealizedPnL     float64 `json:"unrealized_pnl,omitempty"`
+	RealizedPnL       float64 `json:"realized_pnl,omitempty"`
+}
+
+type state struct {
+	quantity    float64
+	avgEntry    float64
+	realizedPnL float64
 }
 
 type Tracker struct {
 	mu        sync.Mutex
-	positions map[string]float64
+	positions map[string]state
 }
 
-func NewTracker() *Tracker { return &Tracker{positions: make(map[string]float64)} }
+func NewTracker() *Tracker { return &Tracker{positions: make(map[string]state)} }
 
 func (t *Tracker) Apply(order exchange.Order) {
 	qty := parseFloat(order.Quantity)
+	price := parseFloat(order.Price)
 	if qty == 0 {
 		return
 	}
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	symbol := strings.ToUpper(strings.TrimSpace(order.Symbol))
+	st := t.positions[symbol]
 	if order.Side == exchange.Sell {
-		t.positions[symbol] -= qty
+		if price > 0 {
+			st.realizedPnL += (price - st.avgEntry) * qty
+		}
+		st.quantity -= qty
+		if st.quantity <= 0 {
+			st.quantity = 0
+			st.avgEntry = 0
+		}
 	} else {
-		t.positions[symbol] += qty
+		if price > 0 {
+			totalCost := (st.avgEntry * st.quantity) + (price * qty)
+			st.quantity += qty
+			if st.quantity > 0 {
+				st.avgEntry = totalCost / st.quantity
+			}
+		} else {
+			st.quantity += qty
+		}
 	}
+	t.positions[symbol] = st
 }
 
 func (t *Tracker) Positions() []Position {
@@ -49,7 +77,8 @@ func (t *Tracker) Positions() []Position {
 	sort.Strings(keys)
 	out := make([]Position, 0, len(keys))
 	for _, symbol := range keys {
-		out = append(out, Position{Symbol: symbol, Quantity: t.positions[symbol]})
+		st := t.positions[symbol]
+		out = append(out, Position{Symbol: symbol, Quantity: st.quantity, AverageEntryPrice: st.avgEntry, CostBasis: st.avgEntry * st.quantity, RealizedPnL: st.realizedPnL})
 	}
 	return out
 }
@@ -67,6 +96,7 @@ func (t *Tracker) ValuedPositions(ctx context.Context, feed marketdata.Feed) []P
 		price := parseFloat(tick.Price)
 		positions[i].MarketPrice = price
 		positions[i].MarketValue = price * positions[i].Quantity
+		positions[i].UnrealizedPnL = (price - positions[i].AverageEntryPrice) * positions[i].Quantity
 	}
 	return positions
 }
@@ -75,6 +105,22 @@ func (t *Tracker) TotalMarketValue(ctx context.Context, feed marketdata.Feed) fl
 	var total float64
 	for _, position := range t.ValuedPositions(ctx, feed) {
 		total += position.MarketValue
+	}
+	return total
+}
+
+func (t *Tracker) TotalUnrealizedPnL(ctx context.Context, feed marketdata.Feed) float64 {
+	var total float64
+	for _, position := range t.ValuedPositions(ctx, feed) {
+		total += position.UnrealizedPnL
+	}
+	return total
+}
+
+func (t *Tracker) TotalRealizedPnL() float64 {
+	var total float64
+	for _, position := range t.Positions() {
+		total += position.RealizedPnL
 	}
 	return total
 }
