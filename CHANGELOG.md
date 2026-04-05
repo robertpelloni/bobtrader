@@ -5,6 +5,25 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-04-05
+
+### Added
+- **Submodule Research Corpus**
+  - Added 50 crypto-trading repositories as organized git submodules under `submodules/page-02` through `submodules/page-06`
+  - Added `SUBMODULES.md` manifest with ranking/order, paths, commit SHAs, and source URLs
+  - Normalized `.gitmodules` entries to match the page-based layout
+
+- **AI DevKit Phase Documentation**
+  - Added `docs/ai/requirements/go-ultra-project-requirements.md`
+  - Added `docs/ai/design/go-ultra-project-architecture.md`
+  - Added `docs/ai/planning/go-ultra-project-program-plan.md`
+  - Added `docs/ai/implementation/submodule-architecture-audit.md`
+  - Added `docs/ai/implementation/submodule_inventory.json`
+
+### Changed
+- Established Stage-1 recommendation to use `c9s/bbgo` as the Go kernel reference and `TraderAlice/OpenAlice` as the architectural reference for the future unified Go ultra-project
+- Documented licensing constraints across imported repos and formalized a clean-room reimplementation strategy instead of direct multi-project code transplantation
+
 ## [2.0.0] - 2026-01-18
 
 ### Added

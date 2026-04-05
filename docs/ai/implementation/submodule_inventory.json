@@ -1,0 +1,2112 @@
+{
+  "generated_at": "2026-04-05",
+  "repo_count": 50,
+  "repos": [
+    {
+      "page": "page-02",
+      "name": "Bohr1005__xcrypto",
+      "path": "submodules/page-02/Bohr1005__xcrypto",
+      "file_count": 57,
+      "primary_language": "Rust",
+      "top_extensions": [
+        [
+          ".rs",
+          28
+        ],
+        [
+          ".py",
+          8
+        ],
+        [
+          ".toml",
+          7
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".jpeg",
+          2
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".svg",
+          1
+        ],
+        [
+          ".lock",
+          1
+        ],
+        [
+          ".pem",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [],
+      "readme_summary": "xcrypto is a trading system with a Client/Server architecture. It is implemented based on rust tokio and can support up to 65536 strategies running simultaneously. It communicates with strategies using WebSocket, automates trading by forwarding exchange quotes, accepting order requests from strategi"
+    },
+    {
+      "page": "page-02",
+      "name": "ctubio__Krypto-trading-bot",
+      "path": "submodules/page-02/ctubio__Krypto-trading-bot",
+      "file_count": 80,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          20
+        ],
+        [
+          ".h",
+          17
+        ],
+        [
+          "[noext]",
+          16
+        ],
+        [
+          ".md",
+          11
+        ],
+        [
+          ".cxx",
+          3
+        ],
+        [
+          ".s",
+          3
+        ],
+        [
+          ".mp3",
+          2
+        ],
+        [
+          ".scss",
+          2
+        ],
+        [
+          ".dist",
+          1
+        ],
+        [
+          ".gzip",
+          1
+        ]
+      ],
+      "license": "ISC",
+      "build_markers": [
+        "Makefile"
+      ],
+      "readme_summary": "<br clear=\"left\">"
+    },
+    {
+      "page": "page-02",
+      "name": "jammy928__CoinExchange_CryptoExchange_Java",
+      "path": "submodules/page-02/jammy928__CoinExchange_CryptoExchange_Java",
+      "file_count": 1836,
+      "primary_language": "Java",
+      "top_extensions": [
+        [
+          ".java",
+          878
+        ],
+        [
+          ".png",
+          205
+        ],
+        [
+          ".vue",
+          149
+        ],
+        [
+          "[noext]",
+          99
+        ],
+        [
+          ".prefs",
+          88
+        ],
+        [
+          ".properties",
+          88
+        ],
+        [
+          ".xml",
+          74
+        ],
+        [
+          ".js",
+          71
+        ],
+        [
+          ".json",
+          35
+        ],
+        [
+          ".jar",
+          31
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [],
+      "readme_summary": ">  Statement 1: I have been working in the new company. I will take the time to update some descriptive things here so that everyone can compile, build, and develop"
+    },
+    {
+      "page": "page-02",
+      "name": "JulyIghor__QtBitcoinTrader",
+      "path": "submodules/page-02/JulyIghor__QtBitcoinTrader",
+      "file_count": 349,
+      "primary_language": "C++",
+      "top_extensions": [
+        [
+          ".png",
+          97
+        ],
+        [
+          ".h",
+          84
+        ],
+        [
+          ".cpp",
+          82
+        ],
+        [
+          ".ui",
+          32
+        ],
+        [
+          ".lng",
+          16
+        ],
+        [
+          "[noext]",
+          10
+        ],
+        [
+          ".ini",
+          10
+        ],
+        [
+          ".thm",
+          3
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".ico",
+          1
+        ]
+      ],
+      "license": "GPL",
+      "build_markers": [],
+      "readme_summary": "**Qt Bitcoin Trader** is a cross-platform open-source application for cryptocurrency trading."
+    },
+    {
+      "page": "page-02",
+      "name": "pirate__crypto-trader",
+      "path": "submodules/page-02/pirate__crypto-trader",
+      "file_count": 24,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".pyi",
+          12
+        ],
+        [
+          ".py",
+          7
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": ":moneybag: Python bindings for trading Bitcoin, Ethereum, & USD on the Gemini.com Exchange API."
+    },
+    {
+      "page": "page-02",
+      "name": "Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance",
+      "path": "submodules/page-02/Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance",
+      "file_count": 21,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          13
+        ],
+        [
+          ".txt",
+          4
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".md",
+          2
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [],
+      "readme_summary": "Hello and welcome to the code repository of @BlockchainEng Joaquin Roibal."
+    },
+    {
+      "page": "page-02",
+      "name": "scrtlabs__catalyst",
+      "path": "submodules/page-02/scrtlabs__catalyst",
+      "file_count": 549,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          364
+        ],
+        [
+          "[noext]",
+          46
+        ],
+        [
+          ".txt",
+          22
+        ],
+        [
+          ".rst",
+          18
+        ],
+        [
+          ".sh",
+          16
+        ],
+        [
+          ".pyx",
+          16
+        ],
+        [
+          ".bat",
+          13
+        ],
+        [
+          ".gz",
+          13
+        ],
+        [
+          ".yaml",
+          11
+        ],
+        [
+          ".csv",
+          9
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [],
+      "readme_summary": ".. image:: https://s3.amazonaws.com/enigmaco-docs/catalyst-crypto.png"
+    },
+    {
+      "page": "page-02",
+      "name": "taniman__profit-trailer",
+      "path": "submodules/page-02/taniman__profit-trailer",
+      "file_count": 4,
+      "primary_language": "Unknown",
+      "top_extensions": [
+        [
+          ".md",
+          2
+        ],
+        [
+          "[noext]",
+          1
+        ],
+        [
+          ".sh",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [],
+      "readme_summary": "The most advanced crypto trading bot"
+    },
+    {
+      "page": "page-02",
+      "name": "TraderAlice__OpenAlice",
+      "path": "submodules/page-02/TraderAlice__OpenAlice",
+      "file_count": 1569,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          1032
+        ],
+        [
+          ".py",
+          252
+        ],
+        [
+          ".proto",
+          203
+        ],
+        [
+          ".tsx",
+          32
+        ],
+        [
+          ".md",
+          15
+        ],
+        [
+          ".json",
+          9
+        ],
+        [
+          "[noext]",
+          7
+        ],
+        [
+          ".yaml",
+          3
+        ],
+        [
+          ".txt",
+          2
+        ],
+        [
+          ".pyproj",
+          2
+        ]
+      ],
+      "license": "AGPL-3.0",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "</p>"
+    },
+    {
+      "page": "page-02",
+      "name": "warp-id__solana-trading-bot",
+      "path": "submodules/page-02/warp-id__solana-trading-bot",
+      "file_count": 39,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          27
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".json",
+          3
+        ],
+        [
+          ".md",
+          2
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".copy",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "Ms-PL",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "The Solana Trading Bot is a software tool designed to automate the buying and selling of tokens on the Solana blockchain."
+    },
+    {
+      "page": "page-03",
+      "name": "AdeelMufti__CryptoBot",
+      "path": "submodules/page-03/AdeelMufti__CryptoBot",
+      "file_count": 22,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          15
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".md",
+          2
+        ],
+        [
+          ".sh",
+          2
+        ],
+        [
+          ".png",
+          1
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [],
+      "readme_summary": "<a href=\"#\"><img src=\"images/bot.png\""
+    },
+    {
+      "page": "page-03",
+      "name": "Ekliptor__WolfBot",
+      "path": "submodules/page-03/Ekliptor__WolfBot",
+      "file_count": 1110,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          383
+        ],
+        [
+          ".js",
+          382
+        ],
+        [
+          ".json",
+          181
+        ],
+        [
+          ".scss",
+          94
+        ],
+        [
+          ".html",
+          25
+        ],
+        [
+          ".png",
+          12
+        ],
+        [
+          "[noext]",
+          5
+        ],
+        [
+          ".css",
+          3
+        ],
+        [
+          ".map",
+          2
+        ],
+        [
+          ".eot",
+          2
+        ]
+      ],
+      "license": "AGPL-3.0",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "This is the source of the Crypto currency trading bot running on: https://wolfbot.org"
+    },
+    {
+      "page": "page-03",
+      "name": "ericjang__cryptocurrency_arbitrage",
+      "path": "submodules/page-03/ericjang__cryptocurrency_arbitrage",
+      "file_count": 70,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          62
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".txt",
+          2
+        ],
+        [
+          ".md",
+          2
+        ]
+      ],
+      "license": "GPL",
+      "build_markers": [],
+      "readme_summary": "cryptocurrency_arbitrage"
+    },
+    {
+      "page": "page-03",
+      "name": "GuillermoEguilaz__Polymarket-Crypto-Trading-Bot",
+      "path": "submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot",
+      "file_count": 2,
+      "primary_language": "Unknown",
+      "top_extensions": [
+        [
+          "[noext]",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [],
+      "readme_summary": "Polymarket crypto trading bot"
+    },
+    {
+      "page": "page-03",
+      "name": "kelvinau__crypto-arbitrage",
+      "path": "submodules/page-03/kelvinau__crypto-arbitrage",
+      "file_count": 27,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          15
+        ],
+        [
+          ".key_sample",
+          5
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".gif",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [],
+      "readme_summary": "Updated on Sep 16, 2023:"
+    },
+    {
+      "page": "page-03",
+      "name": "Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot",
+      "path": "submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot",
+      "file_count": 44,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          29
+        ],
+        [
+          ".log",
+          9
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".temp",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "<div align=\"center\">"
+    },
+    {
+      "page": "page-03",
+      "name": "markusaksli__TradeBot",
+      "path": "submodules/page-03/markusaksli__TradeBot",
+      "file_count": 41,
+      "primary_language": "Java",
+      "top_extensions": [
+        [
+          ".java",
+          23
+        ],
+        [
+          ".txt",
+          4
+        ],
+        [
+          ".xml",
+          4
+        ],
+        [
+          ".md",
+          4
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".yaml",
+          1
+        ],
+        [
+          ".bat",
+          1
+        ],
+        [
+          ".ico",
+          1
+        ]
+      ],
+      "license": "GPL",
+      "build_markers": [
+        "pom.xml"
+      ],
+      "readme_summary": "TradeBot is a cryptocurrency trading bot that uses the Binance API, and a strategy based on a couple of 5 minute chart"
+    },
+    {
+      "page": "page-03",
+      "name": "RobertMarcellos__polymarket-copy-trading-bot",
+      "path": "submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot",
+      "file_count": 86,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          49
+        ],
+        [
+          ".md",
+          20
+        ],
+        [
+          "[noext]",
+          5
+        ],
+        [
+          ".json",
+          3
+        ],
+        [
+          ".js",
+          2
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".sh",
+          1
+        ],
+        [
+          ".mjs",
+          1
+        ],
+        [
+          ".yml",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "> Automated copy trading bot for Polymarket that mirrors trades from top performers with intelligent position sizing and real-time execution. Version 2.0 employs the fastest transaction detection method, enabling near-instantaneous trade replication with lower latency and reduced API load. The copy "
+    },
+    {
+      "page": "page-03",
+      "name": "saniales__golang-crypto-trading-bot",
+      "path": "submodules/page-03/saniales__golang-crypto-trading-bot",
+      "file_count": 40,
+      "primary_language": "Go",
+      "top_extensions": [
+        [
+          ".go",
+          30
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".yml",
+          3
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".mod",
+          1
+        ],
+        [
+          ".sum",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "GPL",
+      "build_markers": [
+        "go.mod"
+      ],
+      "readme_summary": "<a href=\"https://github.com/avelino/awesome-go#other-software\"><img src=\"https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg\" alt=\"Listed on Awesome Go\"></img></a>"
+    },
+    {
+      "page": "page-03",
+      "name": "steeply__gbot-trader",
+      "path": "submodules/page-03/steeply__gbot-trader",
+      "file_count": 29,
+      "primary_language": "JavaScript",
+      "top_extensions": [
+        [
+          ".js",
+          11
+        ],
+        [
+          "[noext]",
+          7
+        ],
+        [
+          ".md",
+          6
+        ],
+        [
+          ".json",
+          4
+        ],
+        [
+          ".yml",
+          1
+        ]
+      ],
+      "license": "Shareware",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "This app is working with server maintenance."
+    },
+    {
+      "page": "page-04",
+      "name": "0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto",
+      "path": "submodules/page-04/0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto",
+      "file_count": 18,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".json",
+          6
+        ],
+        [
+          ".ts",
+          4
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".tsx",
+          2
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".html",
+          1
+        ],
+        [
+          ".css",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "A full-stack tool for **Polymarket wallet copy trading** across **any market**: a target wallet\u2019s trades (via the Data API), optional copy-trading (dry-run or live), and real-time copy activity over WebSocket."
+    },
+    {
+      "page": "page-04",
+      "name": "ArsenAbazian__CryptoTradingFramework",
+      "path": "submodules/page-04/ArsenAbazian__CryptoTradingFramework",
+      "file_count": 857,
+      "primary_language": "C#",
+      "top_extensions": [
+        [
+          ".cs",
+          568
+        ],
+        [
+          ".resx",
+          130
+        ],
+        [
+          ".png",
+          61
+        ],
+        [
+          ".dll",
+          25
+        ],
+        [
+          ".jpg",
+          12
+        ],
+        [
+          ".csproj",
+          11
+        ],
+        [
+          ".gif",
+          11
+        ],
+        [
+          ".config",
+          10
+        ],
+        [
+          ".datasource",
+          6
+        ],
+        [
+          "[noext]",
+          4
+        ]
+      ],
+      "license": "CC-BY-NC-4.0",
+      "build_markers": [
+        "CryptoMarketClient.Develop.sln",
+        "CryptoMarketClient.sln"
+      ],
+      "readme_summary": "CryptoTradingFramework \u00a9 2024 by Abazian Arsen is licensed under CC BY-NC 4.0"
+    },
+    {
+      "page": "page-04",
+      "name": "bitisanop__CryptoExchange_TradingPlatform_CoinExchange",
+      "path": "submodules/page-04/bitisanop__CryptoExchange_TradingPlatform_CoinExchange",
+      "file_count": 607,
+      "primary_language": "Java",
+      "top_extensions": [
+        [
+          ".java",
+          504
+        ],
+        [
+          ".xml",
+          66
+        ],
+        [
+          ".png",
+          22
+        ],
+        [
+          ".yml",
+          9
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".md",
+          2
+        ],
+        [
+          ".factories",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [
+        "pom.xml"
+      ],
+      "readme_summary": "- Twitter: https://twitter.com/bitisan<br>"
+    },
+    {
+      "page": "page-04",
+      "name": "blockplusim__crypto_trading_service_for_tradingview",
+      "path": "submodules/page-04/blockplusim__crypto_trading_service_for_tradingview",
+      "file_count": 7,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".md",
+          4
+        ],
+        [
+          "[noext]",
+          1
+        ],
+        [
+          ".ini",
+          1
+        ],
+        [
+          ".py",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [],
+      "readme_summary": "**[\u91cd\u5927\u66f4\u65b0]\u6700\u65b0\u7f51\u9875\u7248\u65e0\u9700\u81ea\u884c\u8d2d\u4e70\u670d\u52a1\u5668\u5b89\u88c5\u5566**"
+    },
+    {
+      "page": "page-04",
+      "name": "c9s__bbgo",
+      "path": "submodules/page-04/c9s__bbgo",
+      "file_count": 2333,
+      "primary_language": "Go",
+      "top_extensions": [
+        [
+          ".go",
+          1671
+        ],
+        [
+          ".md",
+          178
+        ],
+        [
+          ".json",
+          110
+        ],
+        [
+          ".yaml",
+          100
+        ],
+        [
+          ".sql",
+          92
+        ],
+        [
+          ".js",
+          38
+        ],
+        [
+          ".sh",
+          25
+        ],
+        [
+          ".svg",
+          20
+        ],
+        [
+          "[noext]",
+          19
+        ],
+        [
+          ".sol",
+          15
+        ]
+      ],
+      "license": "AGPL-3.0",
+      "build_markers": [
+        "go.mod",
+        "Makefile"
+      ],
+      "readme_summary": "* [English\ud83d\udc48](./README.md)"
+    },
+    {
+      "page": "page-04",
+      "name": "ccxt__ccxt",
+      "path": "submodules/page-04/ccxt__ccxt",
+      "file_count": 8837,
+      "primary_language": "JavaScript",
+      "top_extensions": [
+        [
+          ".js",
+          1504
+        ],
+        [
+          ".cs",
+          1455
+        ],
+        [
+          ".ts",
+          1424
+        ],
+        [
+          ".py",
+          1327
+        ],
+        [
+          ".php",
+          1068
+        ],
+        [
+          ".go",
+          713
+        ],
+        [
+          ".md",
+          652
+        ],
+        [
+          ".json",
+          423
+        ],
+        [
+          "[noext]",
+          40
+        ],
+        [
+          ".txt",
+          29
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "package.json",
+        "pyproject.toml"
+      ],
+      "readme_summary": "A cryptocurrency trading API with more than 100 exchanges in JavaScript / TypeScript / Python / C# / PHP / Go."
+    },
+    {
+      "page": "page-04",
+      "name": "hackingthemarkets__binance-tutorials",
+      "path": "submodules/page-04/hackingthemarkets__binance-tutorials",
+      "file_count": 25,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".csv",
+          8
+        ],
+        [
+          ".py",
+          7
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".txt",
+          3
+        ],
+        [
+          ".md",
+          2
+        ],
+        [
+          ".js",
+          1
+        ],
+        [
+          ".html",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [],
+      "readme_summary": "Real-Time Candlestick Charts and Crypto Trading Bot using Binance API and Websockets"
+    },
+    {
+      "page": "page-04",
+      "name": "hello2all__gamma-ray",
+      "path": "submodules/page-04/hello2all__gamma-ray",
+      "file_count": 75,
+      "primary_language": "C++",
+      "top_extensions": [
+        [
+          ".cpp",
+          25
+        ],
+        [
+          ".h",
+          15
+        ],
+        [
+          ".cmake",
+          12
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".sh",
+          4
+        ],
+        [
+          ".json",
+          3
+        ],
+        [
+          ".txt",
+          2
+        ],
+        [
+          ".in",
+          2
+        ],
+        [
+          ".py",
+          2
+        ],
+        [
+          ".csv",
+          2
+        ]
+      ],
+      "license": "Other",
+      "build_markers": [],
+      "readme_summary": "**WARNING: The author of this software will not be responsible for your losses on the market, use at your own discretion.**"
+    },
+    {
+      "page": "page-04",
+      "name": "paulcpk__freqtrade-strategies-that-work",
+      "path": "submodules/page-04/paulcpk__freqtrade-strategies-that-work",
+      "file_count": 9,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          5
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [],
+      "readme_summary": "Crypto Trading Strategies for the [freqtrade.io](https://www.freqtrade.io/) trading bot"
+    },
+    {
+      "page": "page-04",
+      "name": "PolyStrategy__Polymarket-Crypto-Market-Bot",
+      "path": "submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot",
+      "file_count": 30,
+      "primary_language": "TypeScript",
+      "top_extensions": [
+        [
+          ".ts",
+          23
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".toml",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "A **Professional Polymarket Crypto Market Trading Agent** : Designed for high-frequency trading strategies on short-duration prediction markets, leveraging precise timing and configurable entry rules."
+    },
+    {
+      "page": "page-05",
+      "name": "6551Team__opennews-mcp",
+      "path": "submodules/page-05/6551Team__opennews-mcp",
+      "file_count": 24,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          11
+        ],
+        [
+          ".md",
+          6
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".toml",
+          1
+        ],
+        [
+          ".lock",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "pyproject.toml"
+      ],
+      "readme_summary": "<b>OpenNews MCP Server</b><br>"
+    },
+    {
+      "page": "page-05",
+      "name": "AI4Finance-Foundation__FinRL_Crypto",
+      "path": "submodules/page-05/AI4Finance-Foundation__FinRL_Crypto",
+      "file_count": 47,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          40
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".md",
+          3
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "For financial reinforcement learning (FinRL), we provide a way to address the dreaded overfitting trap and increase your chances of success in the wild world of cryptocurrency trading. Our approach has been tested on 10 different currencies and during a market crash period, and has proven to be more"
+    },
+    {
+      "page": "page-05",
+      "name": "asavinov__intelligent-trading-bot",
+      "path": "submodules/page-05/asavinov__intelligent-trading-bot",
+      "file_count": 64,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          46
+        ],
+        [
+          ".md",
+          9
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".jsonc",
+          3
+        ],
+        [
+          ".toml",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ],
+        [
+          ".png",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt",
+        "pyproject.toml"
+      ],
+      "readme_summary": "```"
+    },
+    {
+      "page": "page-05",
+      "name": "Brunofancy__polymarket-trading-agent",
+      "path": "submodules/page-05/Brunofancy__polymarket-trading-agent",
+      "file_count": 35,
+      "primary_language": "Rust",
+      "top_extensions": [
+        [
+          ".rs",
+          17
+        ],
+        [
+          ".toml",
+          11
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".lock",
+          1
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "Cargo.toml"
+      ],
+      "readme_summary": "Rust backend \u00b7 Real-time Polymarket market data \u00b7 Structured Polymarket trading workflow"
+    },
+    {
+      "page": "page-05",
+      "name": "CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins",
+      "path": "submodules/page-05/CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins",
+      "file_count": 32,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          12
+        ],
+        [
+          ".yml",
+          5
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".md",
+          3
+        ],
+        [
+          ".txt",
+          3
+        ],
+        [
+          ".yaml",
+          1
+        ],
+        [
+          ".json",
+          1
+        ],
+        [
+          ".toml",
+          1
+        ],
+        [
+          ".cfg",
+          1
+        ],
+        [
+          ".ini",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt",
+        "pyproject.toml"
+      ],
+      "readme_summary": "This Gateio x Binance cryptocurrency trading bot scans the Binance Announcements page and picks up on new coin listings."
+    },
+    {
+      "page": "page-05",
+      "name": "fluidex__dingir-exchange",
+      "path": "submodules/page-05/fluidex__dingir-exchange",
+      "file_count": 129,
+      "primary_language": "Rust",
+      "top_extensions": [
+        [
+          ".rs",
+          49
+        ],
+        [
+          ".ts",
+          28
+        ],
+        [
+          "[noext]",
+          13
+        ],
+        [
+          ".sql",
+          11
+        ],
+        [
+          ".py",
+          5
+        ],
+        [
+          ".yaml",
+          4
+        ],
+        [
+          ".yml",
+          4
+        ],
+        [
+          ".sh",
+          3
+        ],
+        [
+          ".json",
+          3
+        ],
+        [
+          ".toml",
+          2
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "Cargo.toml",
+        "Makefile"
+      ],
+      "readme_summary": "Dingir Exchange is a high performance exchange trading server."
+    },
+    {
+      "page": "page-05",
+      "name": "JPStrydom__Crypto-Trading-Bot",
+      "path": "submodules/page-05/JPStrydom__Crypto-Trading-Bot",
+      "file_count": 16,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          11
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "Firstly, I'd like to thank everyone who's shown an interest in this repo. I'd also like to apologize for my lack of support over"
+    },
+    {
+      "page": "page-05",
+      "name": "Mathieu2301__TradingView-API",
+      "path": "submodules/page-05/Mathieu2301__TradingView-API",
+      "file_count": 54,
+      "primary_language": "JavaScript",
+      "top_extensions": [
+        [
+          ".js",
+          31
+        ],
+        [
+          ".ts",
+          10
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".md",
+          4
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".yml",
+          2
+        ],
+        [
+          ".sample",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "Get realtime market prices and indicator values from Tradingview !"
+    },
+    {
+      "page": "page-05",
+      "name": "ned0flanders__Cryptocoinopoly",
+      "path": "submodules/page-05/ned0flanders__Cryptocoinopoly",
+      "file_count": 74,
+      "primary_language": "Unknown",
+      "top_extensions": [
+        [
+          ".png",
+          68
+        ],
+        [
+          ".md",
+          4
+        ],
+        [
+          "[noext]",
+          2
+        ]
+      ],
+      "license": "GPL",
+      "build_markers": [],
+      "readme_summary": "The crypto trading game."
+    },
+    {
+      "page": "page-05",
+      "name": "nicolasbonnici__cryptobot",
+      "path": "submodules/page-05/nicolasbonnici__cryptobot",
+      "file_count": 28,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          20
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".dist",
+          1
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ],
+        [
+          ".xml",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "Crypto trading bot wrote using Python 3.9."
+    },
+    {
+      "page": "page-06",
+      "name": "andresilvasantos__bitprophet",
+      "path": "submodules/page-06/andresilvasantos__bitprophet",
+      "file_count": 44,
+      "primary_language": "JavaScript",
+      "top_extensions": [
+        [
+          ".js",
+          30
+        ],
+        [
+          ".png",
+          6
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".md",
+          3
+        ],
+        [
+          ".json",
+          2
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "This source code evolved into a full desktop trading application, to be launched in Q1 2022. \ud83d\ude80"
+    },
+    {
+      "page": "page-06",
+      "name": "fabston__TradingView-Webhook-Bot",
+      "path": "submodules/page-06/fabston__TradingView-Webhook-Bot",
+      "file_count": 16,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".py",
+          3
+        ],
+        [
+          ".yml",
+          3
+        ],
+        [
+          ".md",
+          3
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".txt",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "<a href=\"https://www.python.org/downloads/release/python-380/\"><img src=\"https://img.shields.io/badge/python-3.8-blue.svg?style=plastic\" alt=\"Python version\"></a>"
+    },
+    {
+      "page": "page-06",
+      "name": "johndpope__CryptoCurrencyTrader",
+      "path": "submodules/page-06/johndpope__CryptoCurrencyTrader",
+      "file_count": 19,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          9
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".csv",
+          2
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".txt",
+          2
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".jpg",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "A machine learning program in python to generate cryptocurrency trading strategies using machine learning."
+    },
+    {
+      "page": "page-06",
+      "name": "MohammedRashad__Crypto-Copy-Trader",
+      "path": "submodules/page-06/MohammedRashad__Crypto-Copy-Trader",
+      "file_count": 38,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          10
+        ],
+        [
+          ".csv",
+          5
+        ],
+        [
+          ".html",
+          5
+        ],
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".css",
+          4
+        ],
+        [
+          ".js",
+          3
+        ],
+        [
+          ".md",
+          2
+        ],
+        [
+          ".db",
+          1
+        ],
+        [
+          ".txt",
+          1
+        ],
+        [
+          ".json",
+          1
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "Copy trading tool for cryptocurrencies - written in Python & Flask"
+    },
+    {
+      "page": "page-06",
+      "name": "Nafidinara__bot-pancakeswap",
+      "path": "submodules/page-06/Nafidinara__bot-pancakeswap",
+      "file_count": 11,
+      "primary_language": "JavaScript",
+      "top_extensions": [
+        [
+          ".png",
+          4
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".json",
+          2
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".js",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "package.json"
+      ],
+      "readme_summary": "* [Important Notes](#IMPORTANT-NOTES-BEFORE-RUNNING-THE-BOT)"
+    },
+    {
+      "page": "page-06",
+      "name": "nicknochnack__LLMAgentCrypto",
+      "path": "submodules/page-06/nicknochnack__LLMAgentCrypto",
+      "file_count": 713,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".csv",
+          375
+        ],
+        [
+          ".json",
+          176
+        ],
+        [
+          ".html",
+          142
+        ],
+        [
+          ".py",
+          12
+        ],
+        [
+          "[noext]",
+          5
+        ],
+        [
+          ".toml",
+          1
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".lock",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "pyproject.toml"
+      ],
+      "readme_summary": "How to build a trading bot for crypto with LLMs (not so great) and finbert (way better)"
+    },
+    {
+      "page": "page-06",
+      "name": "SFCQuantX__polymarket-trading-agent",
+      "path": "submodules/page-06/SFCQuantX__polymarket-trading-agent",
+      "file_count": 39,
+      "primary_language": "Rust",
+      "top_extensions": [
+        [
+          ".rs",
+          17
+        ],
+        [
+          ".toml",
+          15
+        ],
+        [
+          "[noext]",
+          2
+        ],
+        [
+          ".png",
+          2
+        ],
+        [
+          ".lock",
+          1
+        ],
+        [
+          ".example",
+          1
+        ],
+        [
+          ".md",
+          1
+        ]
+      ],
+      "license": "Unknown/None",
+      "build_markers": [
+        "Cargo.toml"
+      ],
+      "readme_summary": "Rust backend \u00b7 Real-time Polymarket market data \u00b7 Structured Polymarket trading workflow"
+    },
+    {
+      "page": "page-06",
+      "name": "unterstein__binance-trader",
+      "path": "submodules/page-06/unterstein__binance-trader",
+      "file_count": 12,
+      "primary_language": "Java",
+      "top_extensions": [
+        [
+          "[noext]",
+          4
+        ],
+        [
+          ".java",
+          3
+        ],
+        [
+          ".jpg",
+          1
+        ],
+        [
+          ".png",
+          1
+        ],
+        [
+          ".xml",
+          1
+        ],
+        [
+          ".md",
+          1
+        ],
+        [
+          ".properties",
+          1
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [
+        "pom.xml"
+      ],
+      "readme_summary": "Inspired by the [Auto-buy the John McAfee coins he posts on Twitter at Bittrex](https://github.com/mattiasgeniar/McAfee-Shill-Bot) by"
+    },
+    {
+      "page": "page-06",
+      "name": "wangzhe3224__awesome-systematic-trading",
+      "path": "submodules/page-06/wangzhe3224__awesome-systematic-trading",
+      "file_count": 18,
+      "primary_language": "Rust",
+      "top_extensions": [
+        [
+          ".md",
+          4
+        ],
+        [
+          "[noext]",
+          3
+        ],
+        [
+          ".yml",
+          3
+        ],
+        [
+          ".html",
+          2
+        ],
+        [
+          ".jpg",
+          1
+        ],
+        [
+          ".go",
+          1
+        ],
+        [
+          ".py",
+          1
+        ],
+        [
+          ".lock",
+          1
+        ],
+        [
+          ".toml",
+          1
+        ],
+        [
+          ".rs",
+          1
+        ]
+      ],
+      "license": "MIT",
+      "build_markers": [],
+      "readme_summary": "> or Quantitative Trading + a bit data science infra"
+    },
+    {
+      "page": "page-06",
+      "name": "whittlem__pycryptobot",
+      "path": "submodules/page-06/whittlem__pycryptobot",
+      "file_count": 160,
+      "primary_language": "Python",
+      "top_extensions": [
+        [
+          ".py",
+          102
+        ],
+        [
+          ".md",
+          12
+        ],
+        [
+          "[noext]",
+          11
+        ],
+        [
+          ".yaml",
+          7
+        ],
+        [
+          ".json",
+          6
+        ],
+        [
+          ".sample",
+          5
+        ],
+        [
+          ".txt",
+          3
+        ],
+        [
+          ".skip",
+          3
+        ],
+        [
+          ".sh",
+          2
+        ],
+        [
+          ".png",
+          2
+        ]
+      ],
+      "license": "Apache-2.0",
+      "build_markers": [
+        "requirements.txt"
+      ],
+      "readme_summary": "<https://t.me/joinchat/09hYKfelbRY2MDNk>"
+    }
+  ]
+}

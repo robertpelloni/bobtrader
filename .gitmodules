@@ -1,0 +1,150 @@
+[submodule "submodules/page-02/scrtlabs__catalyst"]
+	path = submodules/page-02/scrtlabs__catalyst
+	url = https://github.com/scrtlabs/catalyst.git
+[submodule "submodules/page-02/JulyIghor__QtBitcoinTrader"]
+	path = submodules/page-02/JulyIghor__QtBitcoinTrader
+	url = https://github.com/JulyIghor/QtBitcoinTrader.git
+[submodule "submodules/page-02/Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance"]
+	path = submodules/page-02/Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance
+	url = https://github.com/Roibal/Cryptocurrency-Trading-Bots-Python-Beginner-Advance.git
+[submodule "submodules/page-02/jammy928__CoinExchange_CryptoExchange_Java"]
+	path = submodules/page-02/jammy928__CoinExchange_CryptoExchange_Java
+	url = https://github.com/jammy928/CoinExchange_CryptoExchange_Java.git
+[submodule "submodules/page-02/ctubio__Krypto-trading-bot"]
+	path = submodules/page-02/ctubio__Krypto-trading-bot
+	url = https://github.com/ctubio/Krypto-trading-bot.git
+[submodule "submodules/page-02/taniman__profit-trailer"]
+	path = submodules/page-02/taniman__profit-trailer
+	url = https://github.com/taniman/profit-trailer.git
+[submodule "submodules/page-02/warp-id__solana-trading-bot"]
+	path = submodules/page-02/warp-id__solana-trading-bot
+	url = https://github.com/warp-id/solana-trading-bot.git
+[submodule "submodules/page-02/Bohr1005__xcrypto"]
+	path = submodules/page-02/Bohr1005__xcrypto
+	url = https://github.com/Bohr1005/xcrypto.git
+[submodule "submodules/page-02/TraderAlice__OpenAlice"]
+	path = submodules/page-02/TraderAlice__OpenAlice
+	url = https://github.com/TraderAlice/OpenAlice.git
+[submodule "submodules/page-02/pirate__crypto-trader"]
+	path = submodules/page-02/pirate__crypto-trader
+	url = https://github.com/pirate/crypto-trader.git
+[submodule "submodules/page-03/kelvinau__crypto-arbitrage"]
+	path = submodules/page-03/kelvinau__crypto-arbitrage
+	url = https://github.com/kelvinau/crypto-arbitrage.git
+[submodule "submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot"]
+	path = submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot
+	url = https://github.com/Krypto-Hashers-Community/polymarket-crypto-sports-arbitrage-trading-bot.git
+[submodule "submodules/page-03/saniales__golang-crypto-trading-bot"]
+	path = submodules/page-03/saniales__golang-crypto-trading-bot
+	url = https://github.com/saniales/golang-crypto-trading-bot.git
+[submodule "submodules/page-03/ericjang__cryptocurrency_arbitrage"]
+	path = submodules/page-03/ericjang__cryptocurrency_arbitrage
+	url = https://github.com/ericjang/cryptocurrency_arbitrage.git
+[submodule "submodules/page-03/Ekliptor__WolfBot"]
+	path = submodules/page-03/Ekliptor__WolfBot
+	url = https://github.com/Ekliptor/WolfBot.git
+[submodule "submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot"]
+	path = submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot
+	url = https://github.com/RobertMarcellos/polymarket-copy-trading-bot.git
+[submodule "submodules/page-03/markusaksli__TradeBot"]
+	path = submodules/page-03/markusaksli__TradeBot
+	url = https://github.com/markusaksli/TradeBot.git
+[submodule "submodules/page-03/steeply__gbot-trader"]
+	path = submodules/page-03/steeply__gbot-trader
+	url = https://github.com/steeply/gbot-trader.git
+[submodule "submodules/page-03/AdeelMufti__CryptoBot"]
+	path = submodules/page-03/AdeelMufti__CryptoBot
+	url = https://github.com/AdeelMufti/CryptoBot.git
+[submodule "submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot"]
+	path = submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot
+	url = https://github.com/GuillermoEguilaz/Polymarket-Crypto-Trading-Bot.git
+[submodule "submodules/page-04/hackingthemarkets__binance-tutorials"]
+	path = submodules/page-04/hackingthemarkets__binance-tutorials
+	url = https://github.com/hackingthemarkets/binance-tutorials.git
+[submodule "submodules/page-04/blockplusim__crypto_trading_service_for_tradingview"]
+	path = submodules/page-04/blockplusim__crypto_trading_service_for_tradingview
+	url = https://github.com/blockplusim/crypto_trading_service_for_tradingview.git
+[submodule "submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot"]
+	path = submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot
+	url = https://github.com/PolyStrategy/Polymarket-Crypto-Market-Bot.git
+[submodule "submodules/page-04/hello2all__gamma-ray"]
+	path = submodules/page-04/hello2all__gamma-ray
+	url = https://github.com/hello2all/gamma-ray.git
+[submodule "submodules/page-04/ccxt__ccxt"]
+	path = submodules/page-04/ccxt__ccxt
+	url = https://github.com/ccxt/ccxt.git
+[submodule "submodules/page-04/0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto"]
+	path = submodules/page-04/0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto
+	url = https://github.com/0xAxon7/polymarket-almanac-arbitrage-trading-bot-sports-crypto.git
+[submodule "submodules/page-04/c9s__bbgo"]
+	path = submodules/page-04/c9s__bbgo
+	url = https://github.com/c9s/bbgo.git
+[submodule "submodules/page-04/ArsenAbazian__CryptoTradingFramework"]
+	path = submodules/page-04/ArsenAbazian__CryptoTradingFramework
+	url = https://github.com/ArsenAbazian/CryptoTradingFramework.git
+[submodule "submodules/page-04/paulcpk__freqtrade-strategies-that-work"]
+	path = submodules/page-04/paulcpk__freqtrade-strategies-that-work
+	url = https://github.com/paulcpk/freqtrade-strategies-that-work.git
+[submodule "submodules/page-04/bitisanop__CryptoExchange_TradingPlatform_CoinExchange"]
+	path = submodules/page-04/bitisanop__CryptoExchange_TradingPlatform_CoinExchange
+	url = https://github.com/bitisanop/CryptoExchange_TradingPlatform_CoinExchange.git
+[submodule "submodules/page-05/nicolasbonnici__cryptobot"]
+	path = submodules/page-05/nicolasbonnici__cryptobot
+	url = https://github.com/nicolasbonnici/cryptobot.git
+[submodule "submodules/page-05/Brunofancy__polymarket-trading-agent"]
+	path = submodules/page-05/Brunofancy__polymarket-trading-agent
+	url = https://github.com/Brunofancy/polymarket-trading-agent.git
+[submodule "submodules/page-05/Mathieu2301__TradingView-API"]
+	path = submodules/page-05/Mathieu2301__TradingView-API
+	url = https://github.com/Mathieu2301/TradingView-API.git
+[submodule "submodules/page-05/ned0flanders__Cryptocoinopoly"]
+	path = submodules/page-05/ned0flanders__Cryptocoinopoly
+	url = https://github.com/ned0flanders/Cryptocoinopoly.git
+[submodule "submodules/page-05/AI4Finance-Foundation__FinRL_Crypto"]
+	path = submodules/page-05/AI4Finance-Foundation__FinRL_Crypto
+	url = https://github.com/AI4Finance-Foundation/FinRL_Crypto.git
+[submodule "submodules/page-05/CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins"]
+	path = submodules/page-05/CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins
+	url = https://github.com/CyberPunkMetalHead/gateio-crypto-trading-bot-binance-announcements-new-coins.git
+[submodule "submodules/page-05/asavinov__intelligent-trading-bot"]
+	path = submodules/page-05/asavinov__intelligent-trading-bot
+	url = https://github.com/asavinov/intelligent-trading-bot.git
+[submodule "submodules/page-05/JPStrydom__Crypto-Trading-Bot"]
+	path = submodules/page-05/JPStrydom__Crypto-Trading-Bot
+	url = https://github.com/JPStrydom/Crypto-Trading-Bot.git
+[submodule "submodules/page-05/fluidex__dingir-exchange"]
+	path = submodules/page-05/fluidex__dingir-exchange
+	url = https://github.com/fluidex/dingir-exchange.git
+[submodule "submodules/page-05/6551Team__opennews-mcp"]
+	path = submodules/page-05/6551Team__opennews-mcp
+	url = https://github.com/6551Team/opennews-mcp.git
+[submodule "submodules/page-06/unterstein__binance-trader"]
+	path = submodules/page-06/unterstein__binance-trader
+	url = https://github.com/unterstein/binance-trader.git
+[submodule "submodules/page-06/wangzhe3224__awesome-systematic-trading"]
+	path = submodules/page-06/wangzhe3224__awesome-systematic-trading
+	url = https://github.com/wangzhe3224/awesome-systematic-trading.git
+[submodule "submodules/page-06/MohammedRashad__Crypto-Copy-Trader"]
+	path = submodules/page-06/MohammedRashad__Crypto-Copy-Trader
+	url = https://github.com/MohammedRashad/Crypto-Copy-Trader.git
+[submodule "submodules/page-06/SFCQuantX__polymarket-trading-agent"]
+	path = submodules/page-06/SFCQuantX__polymarket-trading-agent
+	url = https://github.com/SFCQuantX/polymarket-trading-agent.git
+[submodule "submodules/page-06/fabston__TradingView-Webhook-Bot"]
+	path = submodules/page-06/fabston__TradingView-Webhook-Bot
+	url = https://github.com/fabston/TradingView-Webhook-Bot.git
+[submodule "submodules/page-06/andresilvasantos__bitprophet"]
+	path = submodules/page-06/andresilvasantos__bitprophet
+	url = https://github.com/andresilvasantos/bitprophet.git
+[submodule "submodules/page-06/johndpope__CryptoCurrencyTrader"]
+	path = submodules/page-06/johndpope__CryptoCurrencyTrader
+	url = https://github.com/johndpope/CryptoCurrencyTrader.git
+[submodule "submodules/page-06/Nafidinara__bot-pancakeswap"]
+	path = submodules/page-06/Nafidinara__bot-pancakeswap
+	url = https://github.com/Nafidinara/bot-pancakeswap.git
+[submodule "submodules/page-06/nicknochnack__LLMAgentCrypto"]
+	path = submodules/page-06/nicknochnack__LLMAgentCrypto
+	url = https://github.com/nicknochnack/LLMAgentCrypto.git
+[submodule "submodules/page-06/whittlem__pycryptobot"]
+	path = submodules/page-06/whittlem__pycryptobot
+	url = https://github.com/whittlem/pycryptobot.git
