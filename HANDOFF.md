@@ -1,50 +1,53 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Added and organized **50 crypto-trading submodules** under:
-  - `submodules/page-02/`
-  - `submodules/page-03/`
-  - `submodules/page-04/`
-  - `submodules/page-05/`
-  - `submodules/page-06/`
-- Added `SUBMODULES.md` manifest documenting all 50 repositories, order, paths, SHAs, and source URLs.
-- Performed Stage-1 cross-submodule audit and documented:
-  - requirements,
-  - target architecture,
-  - migration/program plan,
-  - comparative submodule architecture audit,
-  - generated inventory JSON.
+- Continued the Go ultra-project program after the Stage-1 audit.
+- Created the first executable Go scaffold in `ultratrader-go/`.
+- Added foundational modules for:
+  - application runtime,
+  - config loading,
+  - append-only event logging,
+  - unified trading account modeling,
+  - exchange capability interfaces,
+  - guard pipeline contracts.
+- Added tests covering:
+  - config defaults and overrides,
+  - JSONL event log append behavior,
+  - guard pipeline failure semantics.
+- Added implementation notes at `docs/ai/implementation/go-phase-1-scaffold.md`.
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.1`
-  - `CHANGELOG.md` with the 2.0.1 audit/submodule entry.
+  - `VERSION.md` → `2.0.2`
+  - `CHANGELOG.md` with the 2.0.2 scaffold entry.
 
-## Key Findings
-- **Best architecture:** `TraderAlice/OpenAlice`
-- **Best written / best practical Go kernel:** `c9s/bbgo`
-- **Best exchange abstraction reference:** `ccxt/ccxt`
-- **Best feature mine:** `Ekliptor/WolfBot`
-- **Recommended program direction:** build a new Go system using BBGO-style kernel concepts with OpenAlice-style system architecture and clean-room assimilation of features from the remaining projects.
+## Verification Performed
+- `go test ./...` inside `ultratrader-go/` passed.
+- `go run ./cmd/ultratrader` inside `ultratrader-go/` ran successfully and initialized the scaffold.
 
-## Important Constraints
-- There are major licensing conflicts across the imported repos (AGPL/GPL/CC-BY-NC/Shareware/Unknown). Do **not** blindly transplant code across projects.
-- Preferred path is **clean-room reimplementation** guided by documented behavior and architecture.
-- The repo contains many unrelated modified/untracked runtime/generated files that were already present or created outside the submodule/documentation work. Avoid accidentally bundling them in future commits.
+## Current Strategic Position
+The project now has:
+1. a documented submodule audit and migration strategy,
+2. an organized top-50 crypto-trading submodule research corpus,
+3. a first clean-room Go implementation root.
+
+The long-term recommendation remains:
+- use **BBGO** as the Go kernel reference,
+- use **OpenAlice** as the architecture reference,
+- assimilate other projects feature-by-feature into the new Go codebase.
 
 ## Suggested Immediate Next Steps
-1. Create the new Go project scaffold (new top-level directory).
-2. Implement Phase 1 modules:
-   - runtime/composition root,
-   - config,
-   - event log,
-   - account abstraction,
-   - exchange capability interfaces.
-3. Start formal feature matrix tracking for assimilation waves.
-4. Keep commits scoped to documentation + scaffolding + deliberate code, not runtime debris.
+1. Add an exchange registry and paper adapter under `ultratrader-go/internal/exchange`.
+2. Add execution intents and an execution service.
+3. Add account snapshot persistence.
+4. Add structured logging package.
+5. Add HTTP health/readiness endpoints.
+6. Start the strategy runtime skeleton.
 
 ## Files to Review First Next Session
-- `docs/ai/requirements/go-ultra-project-requirements.md`
 - `docs/ai/design/go-ultra-project-architecture.md`
 - `docs/ai/planning/go-ultra-project-program-plan.md`
 - `docs/ai/implementation/submodule-architecture-audit.md`
-- `docs/ai/implementation/submodule_inventory.json`
-- `SUBMODULES.md`
+- `docs/ai/implementation/go-phase-1-scaffold.md`
+- `ultratrader-go/README.md`
+- `ultratrader-go/internal/core/app/app.go`
+- `ultratrader-go/internal/core/config/config.go`
+- `ultratrader-go/internal/core/eventlog/eventlog.go`
