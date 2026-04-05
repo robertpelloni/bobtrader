@@ -5,6 +5,26 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.9] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-8 Guard Diagnostics and Runtime Lifecycle**
+  - Added `/api/guards` endpoint for operator-visible guard configuration diagnostics
+  - Added `max-open-positions` guard for portfolio-aware admission control
+  - Added explicit HTTP runtime lifecycle controls including `Address()` and `Shutdown()` with integration tests
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-8-guard-diagnostics-and-runtime-lifecycle.md`
+
+### Changed
+- Changed default Go runtime bind address to `127.0.0.1:0` to avoid local port collisions during development and validation
+- Enhanced app diagnostics logging to include active guard names and resolved HTTP runtime address
+- Enhanced portfolio tracker with open-position counting and state queries for risk enforcement
+- Enhanced feature assimilation documentation to reflect runtime lifecycle control and guard diagnostics
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-8 additions and now binds to an ephemeral local port by default
+- HTTP runtime lifecycle tests, guard tests, and app integration tests pass
+
 ## [2.0.8] - 2026-04-05
 
 ### Added

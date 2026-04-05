@@ -1,21 +1,21 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project into a seventh implementation wave focused on metrics, richer diagnostics, and configurable temporal guard behavior.
-- Added the following new subsystem under `ultratrader-go/`:
-  - in-memory metrics tracker for execution attempts, successes, and blocked executions.
-- Expanded runtime diagnostics so the HTTP layer now exposes:
-  - `/api/metrics`
-  - richer `/api/portfolio`
-  - richer `/api/execution-summary`
-- Expanded configuration so temporal guards are now controlled by config (`cooldown_ms`, `duplicate_window_ms`).
-- Updated execution service to record runtime metrics in parallel with event logging, journaling, and in-memory state updates.
-- Added detailed implementation documentation:
-  - `docs/ai/implementation/go-phase-7-metrics-diagnostics-and-guard-config.md`
-  - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
+- Continued the Go ultra-project into an eighth implementation wave focused on operator-visible guard diagnostics and explicit runtime lifecycle control.
+- Added the following new capabilities under `ultratrader-go/`:
+  - `max-open-positions` guard,
+  - guard-name diagnostics from the risk pipeline,
+  - `/api/guards` HTTP endpoint,
+  - HTTP runtime `Address()` and `Shutdown()` lifecycle controls,
+  - integration tests for runtime start/shutdown on an ephemeral TCP port.
+- Changed the default Go runtime server address to `127.0.0.1:0` to avoid development-time port conflicts.
+- Expanded app diagnostics logging to include active guard names and the resolved bound runtime address.
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.8`
-  - `CHANGELOG.md` with the 2.0.8 Phase-7 entry.
+  - `VERSION.md` → `2.0.9`
+  - `CHANGELOG.md` with the 2.0.9 Phase-8 entry.
+- Added detailed implementation docs:
+  - `docs/ai/implementation/go-phase-8-guard-diagnostics-and-runtime-lifecycle.md`
+  - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -28,11 +28,11 @@ All succeeded.
 ## Current Strategic Position
 The project now has:
 - policy-aware paper trading,
-- structured observability,
-- in-memory execution and portfolio state,
-- realized/unrealized PnL,
+- PnL-aware portfolio state,
 - runtime metrics,
-- operator-readable diagnostics APIs.
+- operator-readable diagnostics APIs,
+- explicit HTTP runtime lifecycle control,
+- portfolio-aware admission control.
 
 Current runtime path now includes:
 1. structured startup logging,
@@ -40,27 +40,28 @@ Current runtime path now includes:
 3. snapshot persistence,
 4. market-data-aware strategy evaluation,
 5. scheduler-to-execution routing,
-6. configurable temporal and notional guard enforcement,
+6. whitelist/notional/cooldown/duplicate/max-open-position protection,
 7. paper execution,
 8. journal/repository/portfolio updates,
 9. metrics accumulation,
-10. operator-readable API surfaces for status, portfolio, orders, execution summary, and metrics.
+10. operator-readable APIs for status, portfolio, orders, execution summary, metrics, and guards.
 
-This is the strongest operationally supervised form of the Go ultra-project yet.
+This is the most operationally controllable and diagnosable version of the Go ultra-project so far.
 
 ## Suggested Immediate Next Steps
-1. Add guard diagnostics endpoints.
-2. Add graceful shutdown coverage for HTTP runtime and scheduler service.
-3. Add exposure / max-open-position guards.
+1. Add exposure/concentration guards.
+2. Add persistent metrics or valuation history.
+3. Add coordinated app shutdown tests spanning scheduler + HTTP runtime + logger cleanup.
 4. Add market-data event/subscription interfaces.
-5. Add persistent metrics or valuation history.
-6. Add richer execution summary diagnostics (success rate, blocked rate, symbol concentration).
-7. Add app-level runtime summary tests around repeated scheduler activity.
+5. Add richer execution diagnostics such as block reasons and symbol concentration.
+6. Add guard diagnostics detail beyond just guard names.
+7. Begin persistent analytics/reporting layers for the Go runtime.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-7-metrics-diagnostics-and-guard-config.md`
+- `docs/ai/implementation/go-phase-8-guard-diagnostics-and-runtime-lifecycle.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-- `ultratrader-go/internal/metrics/tracker.go`
+- `ultratrader-go/internal/connectors/httpapi/runtime.go`
 - `ultratrader-go/internal/connectors/httpapi/server.go`
-- `ultratrader-go/internal/trading/execution/service.go`
+- `ultratrader-go/internal/risk/guard.go`
+- `ultratrader-go/internal/risk/max_open_positions.go`
 - `ultratrader-go/internal/core/app/app.go`

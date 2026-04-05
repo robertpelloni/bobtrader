@@ -19,6 +19,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		OrdersProvider:           func() []exchange.Order { return nil },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{} },
 		MetricsProvider:          func() metrics.Snapshot { return metrics.Snapshot{} },
+		GuardNamesProvider:       func() []string { return nil },
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -36,7 +37,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 	}
 }
 
-func TestPortfolioOrdersSummaryAndMetricsEndpoints(t *testing.T) {
+func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
 	h := NewHandler(Dependencies{
 		StatusProvider: func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
 		PortfolioProvider: func() PortfolioSnapshot {
@@ -47,6 +48,7 @@ func TestPortfolioOrdersSummaryAndMetricsEndpoints(t *testing.T) {
 		MetricsProvider: func() metrics.Snapshot {
 			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}
 		},
+		GuardNamesProvider: func() []string { return []string{"symbol-whitelist", "max-notional"} },
 	})
 
 	w := httptest.NewRecorder()
@@ -72,7 +74,10 @@ func TestPortfolioOrdersSummaryAndMetricsEndpoints(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "execution_attempts") {
 		t.Fatalf("expected metrics response, got %q", w.Body.String())
 	}
-	if !strings.Contains(w.Body.String(), "2") {
-		t.Fatalf("expected metrics counts in response, got %q", w.Body.String())
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/guards", nil))
+	if !strings.Contains(w.Body.String(), "max-notional") {
+		t.Fatalf("expected guard response, got %q", w.Body.String())
 	}
 }

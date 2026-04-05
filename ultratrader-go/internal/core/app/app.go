@@ -42,6 +42,7 @@ type App struct {
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.Scheduler
 	schedulerService *strategyscheduler.Service
+	pipeline         *risk.Pipeline
 	httpHandler      http.Handler
 	httpRuntime      *httpapi.Runtime
 }
@@ -82,6 +83,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
 		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
 		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
+		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 	)
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
 	strategyRuntime := strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
@@ -98,13 +100,14 @@ func New(cfg config.Config) (*App, error) {
 		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		MetricsProvider:          func() metrics.Snapshot { return metricsTracker.Snapshot() },
+		GuardNamesProvider:       func() []string { return pipeline.Names() },
 	})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
-	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, metricsTracker: metricsTracker, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, httpHandler: handler, httpRuntime: runtime}, nil
+	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, metricsTracker: metricsTracker, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, pipeline: pipeline, httpHandler: handler, httpRuntime: runtime}, nil
 }
 
 func (a *App) Close() error {
@@ -128,7 +131,7 @@ func (a *App) Start(ctx context.Context) error {
 		if err := a.httpRuntime.Start(ctx); err != nil {
 			return fmt.Errorf("start http runtime: %w", err)
 		}
-		a.logger.Info("http runtime started", map[string]any{"address": a.config.Server.Address})
+		a.logger.Info("http runtime started", map[string]any{"address": a.httpRuntime.Address()})
 	}
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
@@ -137,7 +140,7 @@ func (a *App) Start(ctx context.Context) error {
 	if err := a.scheduler.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
-	a.logger.Info("app startup completed", map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed), "metrics": a.metricsTracker.Snapshot()})
+	a.logger.Info("app startup completed", map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed), "metrics": a.metricsTracker.Snapshot(), "guards": a.pipeline.Names()})
 	return nil
 }
 

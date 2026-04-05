@@ -83,6 +83,25 @@ func (t *Tracker) Positions() []Position {
 	return out
 }
 
+func (t *Tracker) HasOpenPosition(symbol string) bool {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	st, ok := t.positions[strings.ToUpper(strings.TrimSpace(symbol))]
+	return ok && st.quantity > 0
+}
+
+func (t *Tracker) OpenPositionCount() int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	count := 0
+	for _, st := range t.positions {
+		if st.quantity > 0 {
+			count++
+		}
+	}
+	return count
+}
+
 func (t *Tracker) ValuedPositions(ctx context.Context, feed marketdata.Feed) []Position {
 	positions := t.Positions()
 	if feed == nil {

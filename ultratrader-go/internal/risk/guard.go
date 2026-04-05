@@ -34,3 +34,11 @@ func (p *Pipeline) Run(ctx context.Context, acct account.Account, intent OrderIn
 	}
 	return nil
 }
+
+func (p *Pipeline) Names() []string {
+	out := make([]string, 0, len(p.guards))
+	for _, guard := range p.guards {
+		out = append(out, guard.Name())
+	}
+	return out
+}

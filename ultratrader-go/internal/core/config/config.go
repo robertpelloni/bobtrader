@@ -49,6 +49,7 @@ type RiskConfig struct {
 	AllowedSymbols    []string `json:"allowed_symbols"`
 	CooldownMS        int      `json:"cooldown_ms"`
 	DuplicateWindowMS int      `json:"duplicate_window_ms"`
+	MaxOpenPositions  int      `json:"max_open_positions"`
 }
 
 type AccountConfig struct {
@@ -66,21 +67,10 @@ func Default() Config {
 		Snapshots:   SnapshotConfig{Path: filepath.Join("data", "snapshots", "accounts.jsonl")},
 		Orders:      OrderConfig{Path: filepath.Join("data", "orders", "orders.jsonl")},
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
-		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:8080"},
+		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
 		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
-		Risk: RiskConfig{
-			MaxNotional:       1000,
-			AllowedSymbols:    []string{"BTCUSDT", "ETHUSDT"},
-			CooldownMS:        0,
-			DuplicateWindowMS: 0,
-		},
-		Accounts: []AccountConfig{{
-			ID:           "paper-main",
-			Name:         "Paper Main",
-			Enabled:      true,
-			Exchange:     "paper",
-			Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
-		}},
+		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, MaxOpenPositions: 0},
+		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
 	}
 }
 

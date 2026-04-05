@@ -35,4 +35,10 @@ func TestValuationAndPnL(t *testing.T) {
 	if unrealized != 2500 {
 		t.Fatalf("expected unrealized pnl 2500, got %v", unrealized)
 	}
+	if !tracker.HasOpenPosition("BTCUSDT") {
+		t.Fatal("expected open BTCUSDT position")
+	}
+	if tracker.OpenPositionCount() != 1 {
+		t.Fatalf("expected one open position, got %d", tracker.OpenPositionCount())
+	}
 }
