@@ -5,6 +5,28 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.5] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-4 Risk, Portfolio, and Loop Foundations**
+  - Added concrete risk guards for symbol whitelist and max notional enforcement
+  - Added in-memory execution repository and portfolio tracker
+  - Added market-data-aware demo strategy based on paper feed price thresholds
+  - Added recurring scheduler service abstraction for future daemonized trading loops
+  - Added detailed implementation docs:
+    - `docs/ai/implementation/go-phase-4-risk-portfolio-and-loop.md`
+    - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
+
+### Changed
+- Expanded `ultratrader-go` configuration with scheduler and risk sections
+- Upgraded app bootstrap to wire concrete guards, execution memory, portfolio state, and the market-data-aware demo strategy
+- Upgraded execution service to save orders to an in-memory repository and apply fills to the portfolio tracker
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` still initializes successfully after Phase-4 additions
+- Scheduler tests, risk tests, portfolio tests, and app integration tests all pass
+
 ## [2.0.4] - 2026-04-05
 
 ### Added

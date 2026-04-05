@@ -13,6 +13,8 @@ type Config struct {
 	Snapshots   SnapshotConfig  `json:"snapshots"`
 	Orders      OrderConfig     `json:"orders"`
 	Server      ServerConfig    `json:"server"`
+	Scheduler   SchedulerConfig `json:"scheduler"`
+	Risk        RiskConfig      `json:"risk"`
 	Accounts    []AccountConfig `json:"accounts"`
 }
 
@@ -33,6 +35,16 @@ type ServerConfig struct {
 	Address string `json:"address"`
 }
 
+type SchedulerConfig struct {
+	Enabled    bool `json:"enabled"`
+	IntervalMS int  `json:"interval_ms"`
+}
+
+type RiskConfig struct {
+	MaxNotional    float64  `json:"max_notional"`
+	AllowedSymbols []string `json:"allowed_symbols"`
+}
+
 type AccountConfig struct {
 	ID           string   `json:"id"`
 	Name         string   `json:"name"`
@@ -44,28 +56,19 @@ type AccountConfig struct {
 func Default() Config {
 	return Config{
 		Environment: "development",
-		EventLog: EventLogConfig{
-			Path: filepath.Join("data", "eventlog", "events.jsonl"),
-		},
-		Snapshots: SnapshotConfig{
-			Path: filepath.Join("data", "snapshots", "accounts.jsonl"),
-		},
-		Orders: OrderConfig{
-			Path: filepath.Join("data", "orders", "orders.jsonl"),
-		},
-		Server: ServerConfig{
-			Enabled: true,
-			Address: "127.0.0.1:8080",
-		},
-		Accounts: []AccountConfig{
-			{
-				ID:           "paper-main",
-				Name:         "Paper Main",
-				Enabled:      true,
-				Exchange:     "paper",
-				Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
-			},
-		},
+		EventLog:    EventLogConfig{Path: filepath.Join("data", "eventlog", "events.jsonl")},
+		Snapshots:   SnapshotConfig{Path: filepath.Join("data", "snapshots", "accounts.jsonl")},
+		Orders:      OrderConfig{Path: filepath.Join("data", "orders", "orders.jsonl")},
+		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:8080"},
+		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
+		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}},
+		Accounts: []AccountConfig{{
+			ID:           "paper-main",
+			Name:         "Paper Main",
+			Enabled:      true,
+			Exchange:     "paper",
+			Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
+		}},
 	}
 }
 
@@ -96,6 +99,15 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = defaults.Server.Address
+	}
+	if cfg.Scheduler.IntervalMS <= 0 {
+		cfg.Scheduler.IntervalMS = defaults.Scheduler.IntervalMS
+	}
+	if cfg.Risk.MaxNotional == 0 {
+		cfg.Risk.MaxNotional = defaults.Risk.MaxNotional
+	}
+	if len(cfg.Risk.AllowedSymbols) == 0 {
+		cfg.Risk.AllowedSymbols = defaults.Risk.AllowedSymbols
 	}
 	if len(cfg.Accounts) == 0 {
 		cfg.Accounts = defaults.Accounts

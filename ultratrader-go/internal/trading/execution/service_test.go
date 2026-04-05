@@ -14,16 +14,11 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
 func TestExecutePlacesOrder(t *testing.T) {
-	accounts, err := account.NewService([]config.AccountConfig{{
-		ID:           "paper-main",
-		Name:         "Paper Main",
-		Enabled:      true,
-		Exchange:     "paper",
-		Capabilities: []string{"spot", "paper", "orders"},
-	}})
+	accounts, err := account.NewService([]config.AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "orders"}}})
 	if err != nil {
 		t.Fatalf("NewService returned error: %v", err)
 	}
@@ -43,14 +38,11 @@ func TestExecutePlacesOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("orders.NewStore returned error: %v", err)
 	}
+	repo := NewRepository()
+	portfolioTracker := portfolio.NewTracker()
 
-	service := NewService(accounts, registry, risk.NewPipeline(), events, orderStore)
-	order, err := service.Execute(context.Background(), "paper-main", exchange.OrderRequest{
-		Symbol:   "BTCUSDT",
-		Side:     exchange.Buy,
-		Type:     exchange.MarketOrder,
-		Quantity: "0.01",
-	}, risk.OrderIntent{AccountID: "paper-main", Symbol: "BTCUSDT", Notional: 100})
+	service := NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker)
+	order, err := service.Execute(context.Background(), "paper-main", exchange.OrderRequest{Symbol: "BTCUSDT", Side: exchange.Buy, Type: exchange.MarketOrder, Quantity: "0.01"}, risk.OrderIntent{AccountID: "paper-main", Symbol: "BTCUSDT", Notional: 100})
 	if err != nil {
 		t.Fatalf("Execute returned error: %v", err)
 	}
@@ -64,5 +56,12 @@ func TestExecutePlacesOrder(t *testing.T) {
 	}
 	if !strings.Contains(string(data), order.ID) {
 		t.Fatalf("expected order id in order journal, got %q", string(data))
+	}
+	if len(repo.List()) != 1 {
+		t.Fatalf("expected repository to contain 1 order, got %d", len(repo.List()))
+	}
+	positions := portfolioTracker.Positions()
+	if len(positions) != 1 || positions[0].Quantity != 0.01 {
+		t.Fatalf("unexpected portfolio positions: %+v", positions)
 	}
 }

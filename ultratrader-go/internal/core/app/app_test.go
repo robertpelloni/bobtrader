@@ -14,6 +14,7 @@ func TestAppStartWritesEventSnapshotAndOrder(t *testing.T) {
 	dir := t.TempDir()
 	cfg := config.Default()
 	cfg.Server.Enabled = false
+	cfg.Scheduler.Enabled = false
 	cfg.EventLog.Path = filepath.Join(dir, "events.jsonl")
 	cfg.Snapshots.Path = filepath.Join(dir, "snapshots.jsonl")
 	cfg.Orders.Path = filepath.Join(dir, "orders.jsonl")
@@ -31,11 +32,8 @@ func TestAppStartWritesEventSnapshotAndOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read event log: %v", err)
 	}
-	if !strings.Contains(string(events), "app.started") {
-		t.Fatalf("expected app.started event, got %q", string(events))
-	}
-	if !strings.Contains(string(events), "execution.order_placed") {
-		t.Fatalf("expected execution.order_placed event, got %q", string(events))
+	if !strings.Contains(string(events), "app.started") || !strings.Contains(string(events), "execution.order_placed") {
+		t.Fatalf("expected startup and execution events, got %q", string(events))
 	}
 
 	snapshots, err := os.ReadFile(cfg.Snapshots.Path)

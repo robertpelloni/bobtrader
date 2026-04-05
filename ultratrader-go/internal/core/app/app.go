@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
@@ -20,6 +21,7 @@ import (
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
 type App struct {
@@ -30,9 +32,12 @@ type App struct {
 	accountService   *account.Service
 	exchangeRegistry *exchange.Registry
 	marketDataFeed   marketdata.Feed
+	executionRepo    *execution.Repository
+	portfolioTracker *portfolio.Tracker
 	executionService *execution.Service
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.Scheduler
+	schedulerService *strategyscheduler.Service
 	httpHandler      http.Handler
 	httpRuntime      *httpapi.Runtime
 }
@@ -63,21 +68,22 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("register paper exchange: %w", err)
 	}
 
-	pipeline := risk.NewPipeline()
-	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore)
+	pipeline := risk.NewPipeline(
+		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
+		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
+	)
 	marketDataFeed := marketdatapaper.New()
-	_ = marketDataFeed
+	executionRepo := execution.NewRepository()
+	portfolioTracker := portfolio.NewTracker()
+	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker)
 
 	strategyRuntime := strategy.NewRuntime(
-		strategydemo.NewBuyOnce("paper-main", "BTCUSDT", "0.01"),
+		strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed),
 	)
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
+	schedulerService := strategyscheduler.NewService(scheduler, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
 
-	handler := httpapi.NewHandler(httpapi.Status{
-		Name:         "ultratrader-go",
-		Ready:        true,
-		AccountCount: len(accountService.List()),
-	})
+	handler := httpapi.NewHandler(httpapi.Status{Name: "ultratrader-go", Ready: true, AccountCount: len(accountService.List())})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
@@ -92,35 +98,24 @@ func New(cfg config.Config) (*App, error) {
 		accountService:   accountService,
 		exchangeRegistry: registry,
 		marketDataFeed:   marketDataFeed,
+		executionRepo:    executionRepo,
+		portfolioTracker: portfolioTracker,
 		executionService: executionService,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
+		schedulerService: schedulerService,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
 	}, nil
 }
 
 func (a *App) Start(ctx context.Context) error {
-	if err := a.eventLog.Append(ctx, eventlog.Entry{
-		Type:   "app.started",
-		Source: "ultratrader-go",
-		Payload: map[string]any{
-			"environment": a.config.Environment,
-			"accounts":    len(a.accountService.List()),
-		},
-	}); err != nil {
+	if err := a.eventLog.Append(ctx, eventlog.Entry{Type: "app.started", Source: "ultratrader-go", Payload: map[string]any{"environment": a.config.Environment, "accounts": len(a.accountService.List())}}); err != nil {
 		return err
 	}
 
 	for _, acct := range a.accountService.List() {
-		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{
-			AccountID:   acct.ID,
-			AccountName: acct.Name,
-			Exchange:    acct.ExchangeName,
-			Metadata: map[string]any{
-				"enabled": acct.Enabled,
-			},
-		}); err != nil {
+		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{AccountID: acct.ID, AccountName: acct.Name, Exchange: acct.ExchangeName, Metadata: map[string]any{"enabled": acct.Enabled}}); err != nil {
 			return fmt.Errorf("append bootstrap snapshot for %s: %w", acct.ID, err)
 		}
 	}
@@ -131,12 +126,12 @@ func (a *App) Start(ctx context.Context) error {
 		}
 	}
 
+	a.schedulerService.Start(ctx)
+
 	if err := a.scheduler.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
 	return nil
 }
 
-func (a *App) Handler() http.Handler {
-	return a.httpHandler
-}
+func (a *App) Handler() http.Handler { return a.httpHandler }

@@ -1,24 +1,24 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project into a third implementation wave focused on turning the kernel skeleton into a minimally self-driving paper-trading loop.
+- Continued the Go ultra-project into a fourth implementation wave focused on making the paper-trading loop policy-aware and stateful.
 - Added the following new subsystems under `ultratrader-go/`:
-  - order journal persistence,
-  - market-data interfaces,
-  - deterministic paper market-data feed,
-  - demo strategy package,
-  - strategy scheduler,
-  - HTTP runtime wrapper.
-- Expanded app integration so startup now:
-  - writes the startup event,
-  - persists bootstrap snapshots,
-  - runs the scheduler once,
-  - executes the demo strategy through the paper exchange,
-  - persists the resulting order.
-- Updated the feature assimilation matrix and added Phase-3 implementation notes.
+  - concrete risk guards (`symbol-whitelist`, `max-notional`),
+  - in-memory execution repository,
+  - in-memory portfolio tracker,
+  - market-data-aware demo strategy (`price-threshold`),
+  - recurring scheduler service abstraction.
+- Expanded app integration so startup now uses:
+  - configured risk guards,
+  - repository-backed execution memory,
+  - portfolio state updates,
+  - a market-data-aware strategy instead of a purely synthetic one-shot action.
+- Added detailed implementation documentation:
+  - `docs/ai/implementation/go-phase-4-risk-portfolio-and-loop.md`
+  - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.4`
-  - `CHANGELOG.md` with the 2.0.4 Phase-3 entry.
+  - `VERSION.md` → `2.0.5`
+  - `CHANGELOG.md` with the 2.0.5 Phase-4 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -29,34 +29,39 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The project now has its first complete bootstrap trading loop in Go:
-1. app startup,
-2. event log write,
-3. snapshot persistence,
-4. strategy signal generation,
-5. scheduler conversion,
-6. execution through paper exchange,
-7. order journal persistence,
-8. execution event persistence.
+The project now has a policy-aware end-to-end paper trading loop with internal state.
 
-This is the first genuinely end-to-end paper trading flow in the new Go codebase.
+Current path:
+1. app starts,
+2. startup event is persisted,
+3. account snapshot is persisted,
+4. market-data-aware strategy reads the paper feed,
+5. scheduler translates signal to order request,
+6. risk guards validate the intent,
+7. execution routes through the paper exchange,
+8. order journal is persisted,
+9. execution repository stores the order,
+10. portfolio tracker updates position state,
+11. execution event is persisted.
+
+This is the first version of the Go system that has the shape of a genuine supervised trading runtime rather than only a scaffolding exercise.
 
 ## Suggested Immediate Next Steps
-1. Add recurring scheduler cadence / service loop.
-2. Add portfolio and position state.
-3. Add real risk guards.
-4. Add market-data-aware demo strategy using the paper feed.
-5. Add execution repository / in-memory reconciliation layer.
-6. Add structured logging with correlation IDs.
-7. Add server lifecycle integration tests.
+1. Add structured logger package and correlation IDs.
+2. Add portfolio valuation using market data.
+3. Add richer guards (cooldown, duplicate suppression, exposure limits).
+4. Add scheduler lifecycle tests for repeated execution.
+5. Add status/portfolio HTTP endpoints.
+6. Add real market-data subscription/event interfaces.
+7. Add position/PnL reporting.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-3-marketdata-and-scheduling.md`
+- `docs/ai/implementation/go-phase-4-risk-portfolio-and-loop.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+- `ultratrader-go/internal/risk/max_notional.go`
+- `ultratrader-go/internal/risk/symbol_whitelist.go`
+- `ultratrader-go/internal/trading/execution/repository.go`
+- `ultratrader-go/internal/trading/portfolio/tracker.go`
+- `ultratrader-go/internal/strategy/demo/price_threshold.go`
+- `ultratrader-go/internal/strategy/scheduler/service.go`
 - `ultratrader-go/internal/core/app/app.go`
-- `ultratrader-go/internal/persistence/orders/store.go`
-- `ultratrader-go/internal/marketdata/feed.go`
-- `ultratrader-go/internal/marketdata/paper/feed.go`
-- `ultratrader-go/internal/strategy/demo/buyonce.go`
-- `ultratrader-go/internal/strategy/scheduler/scheduler.go`
-- `ultratrader-go/internal/trading/execution/service.go`

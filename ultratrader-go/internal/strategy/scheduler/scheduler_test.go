@@ -14,6 +14,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
 type oneShotStrategy struct{}
@@ -34,11 +35,16 @@ func TestRunOnceExecutesSignals(t *testing.T) {
 	}
 	events, _ := eventlog.New(filepath.Join(t.TempDir(), "events.jsonl"))
 	orderStore, _ := orders.NewStore(filepath.Join(t.TempDir(), "orders.jsonl"))
-	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore)
+	repo := execution.NewRepository()
+	portfolioTracker := portfolio.NewTracker()
+	executor := execution.NewService(accounts, registry, risk.NewPipeline(), events, orderStore, repo, portfolioTracker)
 	runtime := strategy.NewRuntime(oneShotStrategy{})
 	scheduler := New(runtime, executor)
 
 	if err := scheduler.RunOnce(context.Background()); err != nil {
 		t.Fatalf("RunOnce returned error: %v", err)
+	}
+	if len(repo.List()) != 1 {
+		t.Fatalf("expected repository to contain 1 order, got %d", len(repo.List()))
 	}
 }

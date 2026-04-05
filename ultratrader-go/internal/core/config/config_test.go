@@ -12,17 +12,17 @@ func TestLoadDefault(t *testing.T) {
 		t.Fatalf("Load default returned error: %v", err)
 	}
 
-	if cfg.EventLog.Path == "" {
-		t.Fatal("expected default event log path")
-	}
-	if cfg.Snapshots.Path == "" {
-		t.Fatal("expected default snapshot path")
-	}
-	if cfg.Orders.Path == "" {
-		t.Fatal("expected default order path")
+	if cfg.EventLog.Path == "" || cfg.Snapshots.Path == "" || cfg.Orders.Path == "" {
+		t.Fatal("expected default persistence paths")
 	}
 	if cfg.Server.Address == "" {
 		t.Fatal("expected default server address")
+	}
+	if cfg.Scheduler.IntervalMS <= 0 {
+		t.Fatal("expected default scheduler interval")
+	}
+	if cfg.Risk.MaxNotional <= 0 || len(cfg.Risk.AllowedSymbols) == 0 {
+		t.Fatal("expected default risk config")
 	}
 	if len(cfg.Accounts) == 0 {
 		t.Fatal("expected default account")
@@ -32,7 +32,7 @@ func TestLoadDefault(t *testing.T) {
 func TestLoadFileOverridesDefault(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"server":{"enabled":false,"address":"127.0.0.1:9191"},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
+	content := `{"environment":"test","event_log":{"path":"tmp/events.jsonl"},"snapshots":{"path":"tmp/snapshots.jsonl"},"orders":{"path":"tmp/orders.jsonl"},"server":{"enabled":false,"address":"127.0.0.1:9191"},"scheduler":{"enabled":true,"interval_ms":500},"risk":{"max_notional":250,"allowed_symbols":["BTCUSDT"]},"accounts":[{"id":"acct-1","name":"Test","enabled":true,"exchange":"paper","capabilities":["spot"]}]}`
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("write config file: %v", err)
 	}
@@ -42,20 +42,17 @@ func TestLoadFileOverridesDefault(t *testing.T) {
 		t.Fatalf("Load file returned error: %v", err)
 	}
 
-	if cfg.Environment != "test" {
-		t.Fatalf("expected environment test, got %q", cfg.Environment)
-	}
-	if cfg.EventLog.Path != "tmp/events.jsonl" {
-		t.Fatalf("unexpected event log path: %q", cfg.EventLog.Path)
-	}
-	if cfg.Snapshots.Path != "tmp/snapshots.jsonl" {
-		t.Fatalf("unexpected snapshot path: %q", cfg.Snapshots.Path)
-	}
-	if cfg.Orders.Path != "tmp/orders.jsonl" {
-		t.Fatalf("unexpected orders path: %q", cfg.Orders.Path)
+	if cfg.Environment != "test" || cfg.EventLog.Path != "tmp/events.jsonl" || cfg.Snapshots.Path != "tmp/snapshots.jsonl" || cfg.Orders.Path != "tmp/orders.jsonl" {
+		t.Fatalf("unexpected config paths: %+v", cfg)
 	}
 	if cfg.Server.Address != "127.0.0.1:9191" {
 		t.Fatalf("unexpected server address: %q", cfg.Server.Address)
+	}
+	if !cfg.Scheduler.Enabled || cfg.Scheduler.IntervalMS != 500 {
+		t.Fatalf("unexpected scheduler config: %+v", cfg.Scheduler)
+	}
+	if cfg.Risk.MaxNotional != 250 || len(cfg.Risk.AllowedSymbols) != 1 || cfg.Risk.AllowedSymbols[0] != "BTCUSDT" {
+		t.Fatalf("unexpected risk config: %+v", cfg.Risk)
 	}
 	if len(cfg.Accounts) != 1 || cfg.Accounts[0].ID != "acct-1" {
 		t.Fatalf("unexpected accounts: %+v", cfg.Accounts)
