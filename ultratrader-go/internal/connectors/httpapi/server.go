@@ -45,6 +45,16 @@ type GuardDiagnostics struct {
 	Metrics      metrics.Snapshot `json:"metrics"`
 }
 
+type ExposureDiagnostics struct {
+	OpenPositions       int                `json:"open_positions"`
+	Concentration       map[string]float64 `json:"concentration,omitempty"`
+	TopConcentration    string             `json:"top_concentration,omitempty"`
+	TopConcentrationPct float64            `json:"top_concentration_pct,omitempty"`
+	TotalMarketValue    float64            `json:"total_market_value"`
+	TotalRealizedPnL    float64            `json:"total_realized_pnl"`
+	TotalUnrealizedPnL  float64            `json:"total_unrealized_pnl"`
+}
+
 type Dependencies struct {
 	StatusProvider               func() Status
 	PortfolioProvider            func() PortfolioSnapshot
@@ -52,6 +62,7 @@ type Dependencies struct {
 	OrdersProvider               func() []exchange.Order
 	ExecutionSummaryProvider     func() execution.Summary
 	ExecutionDiagnosticsProvider func() ExecutionDiagnostics
+	ExposureDiagnosticsProvider  func() ExposureDiagnostics
 	MetricsProvider              func() metrics.Snapshot
 	GuardNamesProvider           func() []string
 	LatestReportsProvider        func() map[string]reports.Report
@@ -99,6 +110,10 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/execution-diagnostics", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.ExecutionDiagnosticsProvider())
+	})
+	mux.HandleFunc("/api/exposure-diagnostics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.ExposureDiagnosticsProvider())
 	})
 	mux.HandleFunc("/api/metrics", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -16,18 +16,22 @@ type NumericTrend struct {
 }
 
 type RuntimeTrends struct {
-	MetricsSamples          int                `json:"metrics_samples"`
-	ValuationSamples        int                `json:"valuation_samples"`
-	ExecutionSummarySamples int                `json:"execution_summary_samples"`
-	SuccessRate             NumericTrend       `json:"success_rate"`
-	BlockedRate             NumericTrend       `json:"blocked_rate"`
-	PortfolioValue          NumericTrend       `json:"portfolio_value"`
-	RealizedPnL             NumericTrend       `json:"realized_pnl"`
-	UnrealizedPnL           NumericTrend       `json:"unrealized_pnl"`
-	LatestBlockReasons      map[string]int     `json:"latest_block_reasons,omitempty"`
-	LatestConcentration     map[string]float64 `json:"latest_concentration,omitempty"`
-	LatestTopSymbol         string             `json:"latest_top_symbol,omitempty"`
-	LatestTopSymbolCount    int                `json:"latest_top_symbol_count,omitempty"`
+	MetricsSamples            int                `json:"metrics_samples"`
+	ValuationSamples          int                `json:"valuation_samples"`
+	ExecutionSummarySamples   int                `json:"execution_summary_samples"`
+	SuccessRate               NumericTrend       `json:"success_rate"`
+	BlockedRate               NumericTrend       `json:"blocked_rate"`
+	PortfolioValue            NumericTrend       `json:"portfolio_value"`
+	RealizedPnL               NumericTrend       `json:"realized_pnl"`
+	UnrealizedPnL             NumericTrend       `json:"unrealized_pnl"`
+	LatestBlockReasons        map[string]int     `json:"latest_block_reasons,omitempty"`
+	LatestDominantBlockReason string             `json:"latest_dominant_block_reason,omitempty"`
+	LatestDominantBlockCount  int                `json:"latest_dominant_block_count,omitempty"`
+	LatestConcentration       map[string]float64 `json:"latest_concentration,omitempty"`
+	LatestTopConcentration    string             `json:"latest_top_concentration,omitempty"`
+	LatestTopConcentrationPct float64            `json:"latest_top_concentration_pct,omitempty"`
+	LatestTopSymbol           string             `json:"latest_top_symbol,omitempty"`
+	LatestTopSymbolCount      int                `json:"latest_top_symbol_count,omitempty"`
 }
 
 type metricsPayload struct {
@@ -64,9 +68,21 @@ func BuildRuntimeTrends(metricReports, valuationReports, executionReports []repo
 
 	if len(metricPayloads) > 0 {
 		trends.LatestBlockReasons = metricPayloads[len(metricPayloads)-1].Metrics.BlockReasons
+		for reason, count := range trends.LatestBlockReasons {
+			if count > trends.LatestDominantBlockCount {
+				trends.LatestDominantBlockReason = reason
+				trends.LatestDominantBlockCount = count
+			}
+		}
 	}
 	if len(valuationPayloads) > 0 {
 		trends.LatestConcentration = valuationPayloads[len(valuationPayloads)-1].Concentration
+		for symbol, pct := range trends.LatestConcentration {
+			if pct > trends.LatestTopConcentrationPct {
+				trends.LatestTopConcentration = symbol
+				trends.LatestTopConcentrationPct = pct
+			}
+		}
 	}
 	if len(executionPayloads) > 0 {
 		last := executionPayloads[len(executionPayloads)-1].Summary

@@ -23,6 +23,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		OrdersProvider:               func() []exchange.Order { return nil },
 		ExecutionSummaryProvider:     func() execution.Summary { return execution.Summary{} },
 		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics { return ExecutionDiagnostics{} },
+		ExposureDiagnosticsProvider:  func() ExposureDiagnostics { return ExposureDiagnostics{} },
 		MetricsProvider:              func() metrics.Snapshot { return metrics.Snapshot{} },
 		GuardNamesProvider:           func() []string { return nil },
 		LatestReportsProvider:        func() map[string]reports.Report { return nil },
@@ -58,6 +59,9 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
 		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics {
 			return ExecutionDiagnostics{Summary: execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"}, Metrics: metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}}
+		},
+		ExposureDiagnosticsProvider: func() ExposureDiagnostics {
+			return ExposureDiagnostics{OpenPositions: 1, Concentration: map[string]float64{"BTCUSDT": 1}, TopConcentration: "BTCUSDT", TopConcentrationPct: 1, TotalMarketValue: 32500}
 		},
 		MetricsProvider: func() metrics.Snapshot {
 			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1, BlockReasons: map[string]int{"cooldown": 1}}
@@ -102,6 +106,12 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/execution-diagnostics", nil))
 	if !strings.Contains(w.Body.String(), "execution_attempts") || !strings.Contains(w.Body.String(), "ord-1") {
 		t.Fatalf("expected execution diagnostics response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/exposure-diagnostics", nil))
+	if !strings.Contains(w.Body.String(), "top_concentration") || !strings.Contains(w.Body.String(), "BTCUSDT") {
+		t.Fatalf("expected exposure diagnostics response, got %q", w.Body.String())
 	}
 
 	w = httptest.NewRecorder()

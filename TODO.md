@@ -10,7 +10,7 @@
 
 ### Risk management
 - [x] Fully wire `max-concentration` guard using live market value rather than cost-basis fallback
-- [ ] Add exposure / concentration diagnostics endpoints
+- [x] Add exposure / concentration diagnostics endpoints
 - [ ] Add max-open-position and concentration policy tuning docs/examples
 - [ ] Add additional guards for duplicate side suppression / max notional per symbol / account exposure
 

@@ -129,20 +129,40 @@ func New(cfg config.Config) (*App, error) {
 		schedulerService = strategyscheduler.NewService(cycleRunner, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
 	}
 
+	currentConcentration := func() map[string]float64 {
+		return portfolioTracker.Concentration(context.Background(), marketDataFeed)
+	}
+	topConcentration := func() (string, float64) {
+		concentration := currentConcentration()
+		var topSymbol string
+		var topPct float64
+		for symbol, pct := range concentration {
+			if pct > topPct {
+				topSymbol = symbol
+				topPct = pct
+			}
+		}
+		return topSymbol, topPct
+	}
+
 	handler := httpapi.NewHandler(httpapi.Dependencies{
 		StatusProvider: func() httpapi.Status {
 			return httpapi.Status{Name: "ultratrader-go", Ready: true, AccountCount: len(accountService.List())}
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
-			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), Concentration: portfolioTracker.Concentration(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), Concentration: currentConcentration(), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
-			return httpapi.PortfolioSummary{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: portfolioTracker.Concentration(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSummary{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: currentConcentration(), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
 		},
 		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
 			return httpapi.ExecutionDiagnostics{Summary: executionRepo.Summary(), Metrics: metricsTracker.Snapshot()}
+		},
+		ExposureDiagnosticsProvider: func() httpapi.ExposureDiagnostics {
+			topSymbol, topPct := topConcentration()
+			return httpapi.ExposureDiagnostics{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: currentConcentration(), TopConcentration: topSymbol, TopConcentrationPct: topPct, TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
 		},
 		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
 		GuardNamesProvider: func() []string { return pipeline.Names() },

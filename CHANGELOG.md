@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.22] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-20 Exposure and Trend Diagnostics Expansion**
+  - Added `/api/exposure-diagnostics` for operator-visible concentration and exposure summaries
+  - Added concentration-oriented and block-reason-oriented trend metadata to runtime report trend analysis
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-20-exposure-and-trend-diagnostics.md`
+
+### Changed
+- Enhanced the Go diagnostics API surface with richer operator views over exposure and report trends
+- Updated `TODO.md` to reflect completion of exposure/concentration diagnostics endpoints
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-20 additions and retains the existing runtime/reporting flow
+
 ## [2.0.21] - 2026-04-06
 
 ### Added
