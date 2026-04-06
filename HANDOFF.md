@@ -1,23 +1,22 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-fourth implementation wave focused on deployment packaging and environment profiles.
-- Added the following deployment assets under `ultratrader-go/`:
-  - `Dockerfile`
-  - `.dockerignore`
-  - `docker-compose.yml`
-  - config profiles for development timer mode, development stream mode, and paper-service mode.
-- Expanded deployment documentation and runtime usage guidance:
-  - `DEPLOY.md`
-  - `ultratrader-go/README.md`
-- Updated planning/docs to reflect completion of the deployment packaging milestone:
+- Continued the Go ultra-project into a twenty-fifth implementation wave focused on improving the browser-facing operator dashboard.
+- Added the following dashboard improvements under `ultratrader-go/`:
+  - summary cards,
+  - auto-refresh toggle,
+  - configurable refresh interval,
+  - metrics history table,
+  - valuation history table,
+  - more structured layout over the existing APIs.
+- Updated planning/docs:
   - `TODO.md`
   - `CHANGELOG.md`
-  - `docs/ai/implementation/go-phase-24-deployment-packaging-and-profiles.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-24-deployment-packaging-and-profiles.md`
+  - `docs/ai/implementation/go-phase-25-dashboard-enrichment.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-25-dashboard-enrichment.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.26`
-  - `CHANGELOG.md` with the 2.0.26 Phase-24 entry.
+  - `VERSION.md` → `2.0.27`
+  - `CHANGELOG.md` with the 2.0.27 Phase-25 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -28,18 +27,16 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has its first environment-profile and container-packaging baseline, making it significantly easier to run consistently across development setups and to evolve toward more formal deployment workflows.
+The Go runtime now has a meaningfully improved browser-facing operator surface. It is still lightweight, but it is increasingly useful as a real runtime console rather than just a debug page.
 
 ## Suggested Immediate Next Steps
-1. Add deeper analytics/reporting modules.
-2. Add more advanced stream-aware strategies.
-3. Continue legacy Python roadmap/module inventory reconciliation.
-4. Extend deployment hardening once real exchange adapters are introduced.
+1. Add richer chart visualizations.
+2. Add trend displays for concentration and block reasons.
+3. Continue deeper analytics/reporting modules.
+4. Continue legacy Python roadmap/module inventory reconciliation.
 
 ## Files to Review First Next Session
-- `DEPLOY.md`
-- `ultratrader-go/README.md`
-- `docs/ai/implementation/go-phase-24-deployment-packaging-and-profiles.md`
-- `ultratrader-go/config/development-timer.json`
-- `ultratrader-go/config/development-stream.json`
-- `ultratrader-go/config/paper-service.json`
+- `docs/ai/implementation/go-phase-25-dashboard-enrichment.md`
+- `ultratrader-go/internal/connectors/httpapi/dashboard.go`
+- `ultratrader-go/internal/connectors/httpapi/server.go`
+- `TODO.md`
