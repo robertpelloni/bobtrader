@@ -113,6 +113,7 @@ func New(cfg config.Config) (*App, error) {
 		strategyRuntime = strategy.NewRuntime(
 			strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"),
 			strategydemo.NewTickMomentumBurst("paper-main", "BTCUSDT", "0.01", 3, 0.05, 0.05),
+			strategydemo.NewTickMeanReversion("paper-main", "BTCUSDT", "0.01", 3, 0.1, 0.1),
 		)
 	} else {
 		strategyRuntime = strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))

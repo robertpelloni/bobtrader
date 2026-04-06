@@ -5,6 +5,21 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.31] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-29 Stream Strategy Library Expansion**
+  - Added `TickMeanReversion`, a third stream-aware demo strategy
+  - Expanded stream-mode runtime composition to support threshold, momentum, and mean-reversion tick strategies together
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-29-stream-strategy-library-expansion.md`
+
+### Changed
+- Strengthened the stream-mode runtime path by broadening the variety of event-driven strategy behaviors represented in the demo strategy library
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-29 additions and retains the stream-capable runtime flow
+
 ## [2.0.30] - 2026-04-06
 
 ### Added
