@@ -22,12 +22,22 @@ func TestSubscribeTicks(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	sub := feed.SubscribeTicks(ctx, "BTCUSDT", 5*time.Millisecond)
+	var firstPrice string
 	select {
 	case tick, ok := <-sub.Chan():
 		if !ok || tick.Symbol != "BTCUSDT" {
 			t.Fatalf("unexpected tick: %+v open=%v", tick, ok)
 		}
+		firstPrice = tick.Price
 	case <-time.After(50 * time.Millisecond):
-		t.Fatal("timed out waiting for tick")
+		t.Fatal("timed out waiting for first tick")
+	}
+	select {
+	case tick, ok := <-sub.Chan():
+		if !ok || tick.Price == firstPrice {
+			t.Fatalf("expected second simulated tick with changed price, got %+v open=%v", tick, ok)
+		}
+	case <-time.After(50 * time.Millisecond):
+		t.Fatal("timed out waiting for second tick")
 	}
 }

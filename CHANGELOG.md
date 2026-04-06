@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.18] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-16 Tick-Aware Strategy Runtime and Richer Paper Stream Simulation**
+  - Added tick-aware strategy runtime support via `TickStrategy` and runtime `TickEvent()` handling
+  - Added tick-driven demo strategy for stream-triggered threshold execution
+  - Added stream-mode scheduler execution path that passes market ticks directly into the runtime
+  - Enhanced the paper market-data feed with simulated varying tick sequences instead of a single repeated static price
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-16-tick-aware-runtime-and-stream-simulation.md`
+
+### Changed
+- Enhanced the Go app to select timer-mode or stream-mode strategy composition based on scheduler configuration
+- Updated TODO tracking to reflect completion of richer paper stream simulation patterns
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-16 additions and retains the current paper execution loop while enabling stream-aware strategy infrastructure
+
 ## [2.0.17] - 2026-04-06
 
 ### Added

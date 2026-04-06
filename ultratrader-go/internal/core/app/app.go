@@ -96,7 +96,12 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
-	strategyRuntime := strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
+	var strategyRuntime *strategy.Runtime
+	if cfg.Scheduler.Mode == "stream" {
+		strategyRuntime = strategy.NewRuntime(strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"))
+	} else {
+		strategyRuntime = strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
+	}
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
 	var schedulerService interface{ Start(context.Context) }
 	if cfg.Scheduler.Mode == "stream" {

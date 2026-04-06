@@ -11,14 +11,18 @@ type tickSubscriber interface {
 	SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) marketdata.TickSubscription
 }
 
+type tickRunner interface {
+	RunTick(ctx context.Context, tick marketdata.Tick) error
+}
+
 type StreamService struct {
-	runner   runner
+	runner   tickRunner
 	feed     tickSubscriber
 	symbols  []string
 	interval time.Duration
 }
 
-func NewStreamService(r runner, feed tickSubscriber, symbols []string, interval time.Duration) *StreamService {
+func NewStreamService(r tickRunner, feed tickSubscriber, symbols []string, interval time.Duration) *StreamService {
 	return &StreamService{runner: r, feed: feed, symbols: symbols, interval: interval}
 }
 
@@ -36,11 +40,11 @@ func (s *StreamService) Start(ctx context.Context) {
 				select {
 				case <-ctx.Done():
 					return
-				case _, ok := <-ch:
+				case tick, ok := <-ch:
 					if !ok {
 						return
 					}
-					_ = s.runner.RunOnce(ctx)
+					_ = s.runner.RunTick(ctx, tick)
 				}
 			}
 		}(sub.Chan())

@@ -1,6 +1,10 @@
 package strategy
 
-import "context"
+import (
+	"context"
+
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
+)
 
 type Signal struct {
 	AccountID string
@@ -16,6 +20,11 @@ type Strategy interface {
 	OnTick(ctx context.Context) ([]Signal, error)
 }
 
+type TickStrategy interface {
+	Strategy
+	OnMarketTick(ctx context.Context, tick marketdata.Tick) ([]Signal, error)
+}
+
 type Runtime struct {
 	strategies []Strategy
 }
@@ -28,6 +37,22 @@ func (r *Runtime) Tick(ctx context.Context) ([]Signal, error) {
 	var out []Signal
 	for _, strategy := range r.strategies {
 		signals, err := strategy.OnTick(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, signals...)
+	}
+	return out, nil
+}
+
+func (r *Runtime) TickEvent(ctx context.Context, tick marketdata.Tick) ([]Signal, error) {
+	var out []Signal
+	for _, candidate := range r.strategies {
+		strategy, ok := candidate.(TickStrategy)
+		if !ok {
+			continue
+		}
+		signals, err := strategy.OnMarketTick(ctx, tick)
 		if err != nil {
 			return nil, err
 		}

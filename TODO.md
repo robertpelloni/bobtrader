@@ -17,7 +17,7 @@
 ### Market data
 - [x] Add stream-driven strategy consumption path
 - [x] Add event/subscription interfaces beyond simple tick subscription
-- [ ] Add richer paper stream simulation patterns
+- [x] Add richer paper stream simulation patterns
 - [x] Add integration of stream-fed strategies into scheduler/runtime lifecycle
 
 ### Analytics and reporting

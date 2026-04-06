@@ -31,7 +31,10 @@ func (f fakeFeed) SubscribeTicks(ctx context.Context, symbol string, interval ti
 
 type countRunner struct{ count atomic.Int32 }
 
-func (r *countRunner) RunOnce(ctx context.Context) error { r.count.Add(1); return nil }
+func (r *countRunner) RunTick(ctx context.Context, tick marketdata.Tick) error {
+	r.count.Add(1)
+	return nil
+}
 
 func TestStreamServiceRunsOnTick(t *testing.T) {
 	runner := &countRunner{}

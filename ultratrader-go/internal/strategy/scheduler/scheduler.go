@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
@@ -25,7 +26,18 @@ func (s *Scheduler) RunOnce(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("runtime tick: %w", err)
 	}
+	return s.executeSignals(ctx, signals)
+}
 
+func (s *Scheduler) RunTick(ctx context.Context, tick marketdata.Tick) error {
+	signals, err := s.runtime.TickEvent(ctx, tick)
+	if err != nil {
+		return fmt.Errorf("runtime tick event: %w", err)
+	}
+	return s.executeSignals(ctx, signals)
+}
+
+func (s *Scheduler) executeSignals(ctx context.Context, signals []strategy.Signal) error {
 	for _, signal := range signals {
 		request, intent, err := toOrder(signal)
 		if err != nil {
