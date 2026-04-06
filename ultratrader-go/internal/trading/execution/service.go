@@ -2,6 +2,7 @@ package execution
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -56,10 +57,15 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 	}
 	log.Info("execution requested", map[string]any{"account_id": accountID, "symbol": request.Symbol, "side": request.Side, "type": request.Type})
 	if err := s.pipeline.Run(ctx, acct, intent); err != nil {
-		if s.metrics != nil {
-			s.metrics.RecordBlocked()
+		var guardErr risk.GuardError
+		reason := "unknown"
+		if errors.As(err, &guardErr) {
+			reason = guardErr.GuardName
 		}
-		log.Error("execution blocked by guard", map[string]any{"account_id": accountID, "symbol": request.Symbol, "error": err.Error()})
+		if s.metrics != nil {
+			s.metrics.RecordBlocked(reason)
+		}
+		log.Error("execution blocked by guard", map[string]any{"account_id": accountID, "symbol": request.Symbol, "error": err.Error(), "guard": reason})
 		return exchange.Order{}, err
 	}
 

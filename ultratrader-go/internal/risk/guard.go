@@ -18,6 +18,20 @@ type Guard interface {
 	Check(ctx context.Context, acct account.Account, intent OrderIntent) error
 }
 
+type GuardError struct {
+	GuardName string
+	Cause     error
+}
+
+func (e GuardError) Error() string {
+	if e.Cause == nil {
+		return fmt.Sprintf("guard %s failed", e.GuardName)
+	}
+	return fmt.Sprintf("guard %s failed: %v", e.GuardName, e.Cause)
+}
+
+func (e GuardError) Unwrap() error { return e.Cause }
+
 type Pipeline struct {
 	guards []Guard
 }
@@ -29,7 +43,7 @@ func NewPipeline(guards ...Guard) *Pipeline {
 func (p *Pipeline) Run(ctx context.Context, acct account.Account, intent OrderIntent) error {
 	for _, guard := range p.guards {
 		if err := guard.Check(ctx, acct, intent); err != nil {
-			return fmt.Errorf("guard %s failed: %w", guard.Name(), err)
+			return GuardError{GuardName: guard.Name(), Cause: err}
 		}
 	}
 	return nil

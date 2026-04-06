@@ -1,28 +1,19 @@
-# Handoff - 2026-04-05
+# Handoff - 2026-04-06
 
 ## Completed This Session
-- Finalized and committed the next Go ultra-project implementation wave centered on:
-  - persistent runtime report storage,
-  - market-data streaming abstractions,
-  - paper tick subscription support,
-  - concentration-control groundwork,
-  - richer governance/project-direction documentation.
-- Added and/or updated project-governance documents:
-  - `VISION.md`
-  - `MEMORY.md`
-  - `DEPLOY.md`
+- Continued the Go ultra-project into an eleventh implementation wave focused on making guard failures first-class diagnostics rather than opaque blocked events.
+- Added the following new capabilities under `ultratrader-go/`:
+  - structured `GuardError` propagation from the risk pipeline,
+  - block-reason tracking in the runtime metrics subsystem,
+  - `/api/guard-diagnostics` endpoint that combines active guards with metrics-backed block reasons.
+- Updated project tracking docs to reflect the new diagnostic depth:
+  - `CHANGELOG.md`
   - `TODO.md`
-  - `ROADMAP.md`
-- Updated model/agent instruction files to better reflect the universal-instructions-first hierarchy and the current dual-track Python + Go project state:
-  - `UNIVERSAL_LLM_INSTRUCTIONS.md`
-  - `AGENTS.md`
-  - `CLAUDE.md`
-  - `GEMINI.md`
-  - `GPT.md`
-  - `copilot-instructions.md`
+  - `docs/ai/implementation/go-phase-11-block-reasons-and-diagnostics-depth.md`
+  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.11`
-  - `CHANGELOG.md` with the 2.0.11 governance/streaming/reporting entry.
+  - `VERSION.md` → `2.0.12`
+  - `CHANGELOG.md` with the 2.0.12 Phase-11 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -33,52 +24,29 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The repository now has:
-- the legacy Python PowerTrader AI runtime,
-- a documented long-term convergence strategy,
-- a steadily growing Go ultra-project runtime,
-- strong governance docs describing vision, memory, deployment, and short-term execution priorities.
+The Go runtime now has:
+- policy-aware paper trading,
+- portfolio/PnL-aware runtime state,
+- metrics and diagnostics APIs,
+- explicit runtime lifecycle control,
+- durable runtime summary reporting,
+- and now a deeper diagnostics model that can explain *which guard* blocked execution activity.
 
-The Go runtime currently includes:
-- runtime composition root
-- config
-- structured logging
-- event log
-- exchange registry
-- paper exchange adapter
-- market-data feed + paper tick subscription support
-- risk pipeline with multiple guards
-- execution service
-- execution repository + summaries
-- order journal
-- snapshot store
-- runtime report store
-- portfolio valuation and PnL
-- metrics
-- diagnostics APIs
-- runtime lifecycle control
+This matters because the runtime is moving from simply reporting that execution was blocked to classifying the reason for operator analysis and future reporting.
 
 ## Suggested Immediate Next Steps
-1. Fully wire concentration enforcement using live valued exposure at runtime.
-2. Add richer block-reason diagnostics and guard-trigger summaries.
-3. Add coordinated full app shutdown tests spanning runtime + scheduler + logger + stream subscriptions.
-4. Add persistent metrics and valuation history beyond startup summaries.
-5. Add stream-driven strategy consumption paths.
-6. Add richer analytics/reporting modules over the journals + reports.
+1. Add persistent metrics and valuation history beyond startup summaries.
+2. Add richer execution-rate and symbol concentration diagnostics.
+3. Add stream-driven strategy consumption paths over the new market-data subscription abstraction.
+4. Add coordinated full app shutdown tests spanning runtime + scheduler + logger + streams.
+5. Add deeper exposure/concentration enforcement using live valued portfolio state in the runtime loop.
 
 ## Files to Review First Next Session
-- `VISION.md`
-- `MEMORY.md`
-- `DEPLOY.md`
 - `TODO.md`
-- `ROADMAP.md`
-- `UNIVERSAL_LLM_INSTRUCTIONS.md`
-- `AGENTS.md`
-- `docs/ai/implementation/go-phase-9-exposure-controls-and-marketdata-streams.md`
-- `docs/ai/implementation/go-phase-10-persistent-reports-and-exposure-controls.md`
+- `CHANGELOG.md`
+- `docs/ai/implementation/go-phase-11-block-reasons-and-diagnostics-depth.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-- `ultratrader-go/internal/persistence/reports/store.go`
-- `ultratrader-go/internal/marketdata/feed.go`
-- `ultratrader-go/internal/marketdata/paper/feed.go`
-- `ultratrader-go/internal/risk/max_concentration.go`
-- `ultratrader-go/internal/core/app/app.go`
+- `ultratrader-go/internal/risk/guard.go`
+- `ultratrader-go/internal/metrics/tracker.go`
+- `ultratrader-go/internal/connectors/httpapi/server.go`
+- `ultratrader-go/internal/trading/execution/service.go`

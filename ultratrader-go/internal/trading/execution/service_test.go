@@ -73,3 +73,26 @@ func TestExecutePlacesOrder(t *testing.T) {
 		t.Fatalf("unexpected metrics snapshot: %+v", snap)
 	}
 }
+
+func TestExecuteBlockedRecordsReason(t *testing.T) {
+	accounts, _ := account.NewService([]config.AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot"}}})
+	registry := exchange.NewRegistry()
+	_ = registry.Register("paper", func() exchange.Adapter { return paper.New() })
+	events, _ := eventlog.New(filepath.Join(t.TempDir(), "events.jsonl"))
+	orderStore, _ := orders.NewStore(filepath.Join(t.TempDir(), "orders.jsonl"))
+	logger, _ := logging.New(logging.Config{Path: filepath.Join(t.TempDir(), "app.jsonl"), Stdout: false})
+	defer func() { _ = logger.Close() }()
+	repo := NewRepository()
+	portfolioTracker := portfolio.NewTracker()
+	metricsTracker := metrics.NewTracker()
+	pipeline := risk.NewPipeline(risk.NewSymbolWhitelistGuard([]string{"ETHUSDT"}))
+	service := NewService(accounts, registry, pipeline, events, orderStore, repo, portfolioTracker, logger, metricsTracker)
+	_, err := service.Execute(context.Background(), "paper-main", exchange.OrderRequest{Symbol: "BTCUSDT", Side: exchange.Buy, Type: exchange.MarketOrder, Quantity: "0.01"}, risk.OrderIntent{AccountID: "paper-main", Symbol: "BTCUSDT", Notional: 100})
+	if err == nil {
+		t.Fatal("expected execution to be blocked")
+	}
+	snap := service.MetricsSnapshot()
+	if snap.ExecutionBlocked != 1 || snap.BlockReasons["symbol-whitelist"] != 1 {
+		t.Fatalf("unexpected blocked metrics snapshot: %+v", snap)
+	}
+}

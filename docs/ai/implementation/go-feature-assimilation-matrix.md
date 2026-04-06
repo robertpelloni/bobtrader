@@ -4,7 +4,7 @@
 Track how the emerging `ultratrader-go/` codebase maps to the audited source projects and to the long-term Go ultra-project plan.
 
 ## Current Status
-The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, runtime metrics, operator API surfaces, explicit runtime lifecycle control, persistent runtime summary reports, and a first market-data streaming abstraction. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
+The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, runtime metrics, operator API surfaces, explicit runtime lifecycle control, persistent runtime summary reports, market-data streaming abstractions, and block-reason-aware diagnostics. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
 
 ## Matrix
 
@@ -14,13 +14,14 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Config loading | Implemented | OpenAlice | PyCryptoBot, PowerTrader | Config now covers persistence, logging, server, scheduler, risk, and report history |
 | Structured logging | Implemented | platform ops patterns | OpenAlice, PowerTrader | Context-driven correlation IDs and JSON logging now exist |
 | Runtime metrics | Implemented | operator observability patterns | PowerTrader dashboard mentality | Attempts/successes/blocks tracked in memory |
+| Block-reason metrics | Implemented | operator diagnostics | policy-aware runtime supervision | Metrics now track which guards blocked executions |
 | Runtime report persistence | Implemented | OpenAlice durable state mindset | PowerTrader reporting mentality | Append-only startup summary reports now exist |
 | Event log | Implemented | OpenAlice | PowerTrader analytics mindset | JSONL append-only event durability remains central |
 | Unified account model | Implemented | OpenAlice UTA | PowerTrader account-centric operation | Accounts remain the main execution boundary |
 | Exchange capability vocabulary | Implemented | CCXT | BBGO | Capability-driven contract remains intact |
 | Exchange registry | Implemented | BBGO | OpenAlice broker registry concept | Factory-based registration in place |
 | Paper exchange adapter | Implemented | BBGO | PyCryptoBot paper/safe-first mindset | First safe adapter remains the execution target |
-| Guard pipeline framework | Implemented | OpenAlice | PowerTrader risk controls | General pipeline in place with diagnosable names |
+| Guard pipeline framework | Implemented | OpenAlice | PowerTrader risk controls | General pipeline in place with diagnosable names and structured guard errors |
 | Symbol whitelist guard | Implemented | OpenAlice | PowerTrader practical safeguards | Concrete symbol policy enforcement |
 | Max notional guard | Implemented | OpenAlice | PowerTrader position/risk bounds | Concrete monetary policy enforcement |
 | Cooldown guard | Implemented | OpenAlice | WolfBot/PowerTrader temporal control ideas | Prevents immediate repeated symbol execution per account |
@@ -43,6 +44,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Execution summary API | Implemented | operator diagnostics | PowerTrader state visibility | `/api/execution-summary` exposes order summary data |
 | Metrics API | Implemented | operator observability | PowerTrader-style runtime dashboards | `/api/metrics` exposes attempt/success/block counts |
 | Guards API | Implemented | operator diagnostics | OpenAlice introspection mindset | `/api/guards` exposes configured guard names |
+| Guard diagnostics API | Implemented | operator diagnostics | policy-aware supervision | `/api/guard-diagnostics` exposes active guards plus block reason metrics |
 | HTTP runtime wrapper | Implemented | platform ops patterns | OpenAlice connector/runtime thinking | Server lifecycle shell exists |
 | HTTP runtime shutdown control | Implemented | service lifecycle patterns | OpenAlice runtime discipline | Runtime start/shutdown now test-covered |
 | Market data interface | Implemented | BBGO | CCXT, WolfBot | Abstraction exists |

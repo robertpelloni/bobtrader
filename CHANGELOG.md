@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.12] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-11 Block Reasons and Diagnostics Depth**
+  - Added structured `GuardError` propagation from the risk pipeline
+  - Added block-reason tracking in runtime metrics
+  - Added `/api/guard-diagnostics` endpoint exposing active guards together with block-reason-aware metrics
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-11-block-reasons-and-diagnostics-depth.md`
+
+### Changed
+- Enhanced execution service to classify blocked executions by guard name and record those classifications in metrics
+- Enhanced the metrics tracker to retain per-guard block counts in addition to aggregate attempt/success/block totals
+- Enhanced diagnostics documentation to reflect the deeper supervisory/guard-visibility model
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-11 additions and emits the existing startup/runtime summary logs
+
 ## [2.0.11] - 2026-04-05
 
 ### Added

@@ -46,7 +46,7 @@ func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
 		OrdersProvider:           func() []exchange.Order { return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}} },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
 		MetricsProvider: func() metrics.Snapshot {
-			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}
+			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1, BlockReasons: map[string]int{"cooldown": 1}}
 		},
 		GuardNamesProvider: func() []string { return []string{"symbol-whitelist", "max-notional"} },
 	})
@@ -79,5 +79,11 @@ func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/guards", nil))
 	if !strings.Contains(w.Body.String(), "max-notional") {
 		t.Fatalf("expected guard response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/guard-diagnostics", nil))
+	if !strings.Contains(w.Body.String(), "cooldown") || !strings.Contains(w.Body.String(), "symbol-whitelist") {
+		t.Fatalf("expected guard diagnostics response, got %q", w.Body.String())
 	}
 }

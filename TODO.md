@@ -3,8 +3,8 @@
 ## Immediate Priorities for the Go Ultra-Project
 
 ### Runtime control and diagnostics
-- [ ] Add richer guard diagnostics beyond guard names
-- [ ] Expose block reasons and guard-trigger counts
+- [x] Add richer guard diagnostics beyond guard names
+- [x] Expose block reasons and guard-trigger counts
 - [ ] Add coordinated app shutdown tests spanning runtime + scheduler + logger + stream subscriptions
 - [ ] Add richer execution diagnostics including success/block rates and symbol concentration summaries
 

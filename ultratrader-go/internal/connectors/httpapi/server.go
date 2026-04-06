@@ -23,6 +23,11 @@ type PortfolioSnapshot struct {
 	TotalUnrealizedPnL float64              `json:"total_unrealized_pnl"`
 }
 
+type GuardDiagnostics struct {
+	ActiveGuards []string         `json:"active_guards"`
+	Metrics      metrics.Snapshot `json:"metrics"`
+}
+
 type Dependencies struct {
 	StatusProvider           func() Status
 	PortfolioProvider        func() PortfolioSnapshot
@@ -72,6 +77,10 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/guards", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"guards": deps.GuardNamesProvider()})
+	})
+	mux.HandleFunc("/api/guard-diagnostics", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(GuardDiagnostics{ActiveGuards: deps.GuardNamesProvider(), Metrics: deps.MetricsProvider()})
 	})
 	return mux
 }
