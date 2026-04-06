@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.20] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-18 Runtime Report Trend Analysis**
+  - Added report-trend analysis over persistent runtime reports
+  - Added `/api/runtime-reports/trends` endpoint exposing derived runtime trends
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-18-runtime-report-trends.md`
+
+### Changed
+- Enhanced the Go HTTP diagnostics layer to expose interpreted report trends instead of only raw latest/history report data
+- Enhanced app wiring to derive trend analytics from persistent metrics, valuation, and execution-summary reports
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-18 additions and retains the existing runtime reporting flow
+
 ## [2.0.19] - 2026-04-06
 
 ### Added

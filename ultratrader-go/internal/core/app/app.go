@@ -18,6 +18,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/snapshot"
+	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
@@ -75,6 +76,12 @@ func New(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create report store: %w", err)
 	}
+	buildReportTrends := func() reportinganalysis.RuntimeTrends {
+		metricHistory, _ := reportStore.ListByType("metrics-snapshot", 100)
+		valuationHistory, _ := reportStore.ListByType("portfolio-valuation", 100)
+		executionHistory, _ := reportStore.ListByType("execution-summary", 100)
+		return reportinganalysis.BuildRuntimeTrends(metricHistory, valuationHistory, executionHistory)
+	}
 	accountService, err := account.NewService(cfg.Accounts)
 	if err != nil {
 		return nil, fmt.Errorf("create account service: %w", err)
@@ -109,7 +116,7 @@ func New(cfg config.Config) (*App, error) {
 	reportProvider := func(ctx context.Context) []reports.Report {
 		return []reports.Report{
 			{Type: "metrics-snapshot", Payload: map[string]any{"metrics": metricsTracker.Snapshot()}},
-			{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed), "realized_pnl": portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed)}},
+			{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed), "realized_pnl": portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed), "concentration": portfolioTracker.Concentration(ctx, marketDataFeed)}},
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 		}
 	}
@@ -147,6 +154,7 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return history
 		},
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
 	})
 
 	var runtime *httpapi.Runtime

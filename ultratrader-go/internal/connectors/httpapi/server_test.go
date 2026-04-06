@@ -10,6 +10,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
+	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -24,6 +25,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		GuardNamesProvider:       func() []string { return nil },
 		LatestReportsProvider:    func() map[string]reports.Report { return nil },
 		ReportHistoryProvider:    func(reportType string, limit int) []reports.Report { return nil },
+		ReportTrendsProvider:     func() reportinganalysis.RuntimeTrends { return reportinganalysis.RuntimeTrends{} },
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -58,6 +60,9 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 		},
 		ReportHistoryProvider: func(reportType string, limit int) []reports.Report {
 			return []reports.Report{{Timestamp: time.Now(), Type: "startup-summary"}, {Timestamp: time.Now(), Type: "metrics-snapshot"}}
+		},
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends {
+			return reportinganalysis.RuntimeTrends{MetricsSamples: 2, PortfolioValue: reportinganalysis.NumericTrend{Latest: 32500, Previous: 30000, Delta: 2500}}
 		},
 	})
 
@@ -107,5 +112,11 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/runtime-reports/history?limit=2&type=startup-summary", nil))
 	if !strings.Contains(w.Body.String(), "startup-summary") {
 		t.Fatalf("expected report history response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/runtime-reports/trends", nil))
+	if !strings.Contains(w.Body.String(), "32500") {
+		t.Fatalf("expected report trends response, got %q", w.Body.String())
 	}
 }

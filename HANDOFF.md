@@ -1,19 +1,16 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a seventeenth implementation wave focused on making reporting continuous across scheduler cycles instead of mostly startup-driven.
+- Continued the Go ultra-project into an eighteenth implementation wave focused on trend analysis over persistent runtime reports.
 - Added the following new capabilities under `ultratrader-go/`:
-  - reporting wrapper for timer-driven scheduler execution,
-  - reporting wrapper for tick-driven scheduler execution,
-  - automatic per-cycle report generation for metrics snapshots, portfolio valuation, and execution summaries.
-- Updated planning/tracking docs to reflect completion of execution-summary history over time:
-  - `TODO.md`
-  - `CHANGELOG.md`
-  - `docs/ai/implementation/go-phase-17-continuous-cycle-reporting.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-17-continuous-cycle-reporting.md`
-- Updated versioning docs:
-  - `VERSION.md` → `2.0.19`
-  - `CHANGELOG.md` with the 2.0.19 Phase-17 entry.
+  - report trend analysis module,
+  - `/api/runtime-reports/trends` endpoint,
+  - app/provider wiring for trend derivation from metrics, valuation, and execution-summary report history.
+- Updated versioning/docs:
+  - `VERSION.md` → `2.0.20`
+  - `CHANGELOG.md` with the 2.0.20 Phase-18 entry.
+  - added `docs/ai/implementation/go-phase-18-runtime-report-trends.md`
+  - added `logs/handoffs/2026-04-06-gpt-go-phase-18-runtime-report-trends.md`
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -24,19 +21,23 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has continuous-cycle reporting infrastructure. That means persistent reports are no longer primarily a startup artifact; they can now reflect ongoing scheduler activity over time.
+The Go runtime can now provide:
+- raw runtime report history,
+- latest report snapshots,
+- and interpreted trends derived from that history.
+
+This is a major step from durable reporting toward actual analytics.
 
 ## Suggested Immediate Next Steps
-1. Add richer execution-rate and concentration trend reporting.
-2. Add persistent analytics modules over report history.
-3. Add more advanced tick-aware strategies.
-4. Add coordinated app lifecycle tests with active recurring scheduler execution.
-5. Continue legacy Python roadmap/module-inventory reconciliation.
+1. Add richer concentration and block-reason trend analytics.
+2. Add persistent time-series interpretation modules over metrics/valuation reports.
+3. Add more advanced stream-aware strategies.
+4. Add coordinated lifecycle tests with active recurring stream execution.
+5. Continue legacy Python roadmap/module inventory reconciliation.
 
 ## Files to Review First Next Session
-- `TODO.md`
-- `docs/ai/implementation/go-phase-17-continuous-cycle-reporting.md`
-- `ultratrader-go/internal/reporting/runtime/runner.go`
-- `ultratrader-go/internal/reporting/runtime/tick_runner.go`
+- `docs/ai/implementation/go-phase-18-runtime-report-trends.md`
+- `docs/ai/implementation/go-feature-assimilation-matrix.md`
+- `ultratrader-go/internal/reporting/analysis/runtime_trends.go`
+- `ultratrader-go/internal/connectors/httpapi/server.go`
 - `ultratrader-go/internal/core/app/app.go`
-- `ultratrader-go/internal/persistence/reports/store.go`

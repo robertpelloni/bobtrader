@@ -8,6 +8,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
+	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -40,6 +41,7 @@ type Dependencies struct {
 	GuardNamesProvider       func() []string
 	LatestReportsProvider    func() map[string]reports.Report
 	ReportHistoryProvider    func(reportType string, limit int) []reports.Report
+	ReportTrendsProvider     func() reportinganalysis.RuntimeTrends
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -96,6 +98,10 @@ func NewHandler(deps Dependencies) http.Handler {
 		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 		reportType := r.URL.Query().Get("type")
 		_ = json.NewEncoder(w).Encode(deps.ReportHistoryProvider(reportType, limit))
+	})
+	mux.HandleFunc("/api/runtime-reports/trends", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.ReportTrendsProvider())
 	})
 	return mux
 }
