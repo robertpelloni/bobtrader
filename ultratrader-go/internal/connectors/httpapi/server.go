@@ -3,6 +3,7 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
@@ -38,6 +39,7 @@ type Dependencies struct {
 	MetricsProvider          func() metrics.Snapshot
 	GuardNamesProvider       func() []string
 	LatestReportsProvider    func() map[string]reports.Report
+	ReportHistoryProvider    func(reportType string, limit int) []reports.Report
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -88,6 +90,12 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/runtime-reports/latest", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.LatestReportsProvider())
+	})
+	mux.HandleFunc("/api/runtime-reports/history", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		reportType := r.URL.Query().Get("type")
+		_ = json.NewEncoder(w).Encode(deps.ReportHistoryProvider(reportType, limit))
 	})
 	return mux
 }

@@ -47,4 +47,11 @@ func TestLatestAndLatestByType(t *testing.T) {
 	if byType["metrics"].Payload["a"].(float64) != 3 {
 		t.Fatalf("expected latest metrics payload 3, got %+v", byType["metrics"].Payload)
 	}
+	filtered, err := store.ListByType("metrics", 10)
+	if err != nil {
+		t.Fatalf("ListByType returned error: %v", err)
+	}
+	if len(filtered) != 2 {
+		t.Fatalf("expected 2 filtered reports, got %d", len(filtered))
+	}
 }

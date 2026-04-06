@@ -92,4 +92,21 @@ func (s *Store) LatestByType() (map[string]Report, error) {
 	return out, nil
 }
 
+func (s *Store) ListByType(reportType string, limit int) ([]Report, error) {
+	reports, err := s.Latest(1000)
+	if err != nil {
+		return nil, err
+	}
+	filtered := make([]Report, 0, len(reports))
+	for _, report := range reports {
+		if reportType == "" || report.Type == reportType {
+			filtered = append(filtered, report)
+		}
+	}
+	if limit > 0 && len(filtered) > limit {
+		return filtered[len(filtered)-limit:], nil
+	}
+	return filtered, nil
+}
+
 func (s *Store) Path() string { return s.path }

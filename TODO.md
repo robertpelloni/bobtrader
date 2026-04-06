@@ -23,7 +23,7 @@
 ### Analytics and reporting
 - [x] Add persistent metrics history
 - [x] Add persistent valuation / PnL history
-- [ ] Add runtime analytics/reporting modules on top of report storage
+- [x] Add runtime analytics/reporting modules on top of report storage
 - [ ] Add execution summary history over time
 
 ### Trading engine expansion

@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.17] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-15 Report History and Analytics Surface**
+  - Added report history retrieval by type and limit in the runtime report store
+  - Added `/api/runtime-reports/history` endpoint for operator-visible historical report access
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-15-report-history-and-analytics-surface.md`
+
+### Changed
+- Enhanced app wiring to expose report history through the HTTP diagnostics layer
+- Updated `TODO.md` to reflect completion of the first runtime analytics/reporting layer milestone on top of report storage
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-15 additions and report history is available to the runtime API surface
+
 ## [2.0.16] - 2026-04-06
 
 ### Added

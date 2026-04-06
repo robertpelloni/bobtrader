@@ -123,6 +123,13 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return latest
 		},
+		ReportHistoryProvider: func(reportType string, limit int) []reports.Report {
+			history, err := reportStore.ListByType(reportType, limit)
+			if err != nil {
+				return nil
+			}
+			return history
+		},
 	})
 
 	var runtime *httpapi.Runtime
