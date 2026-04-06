@@ -5,6 +5,28 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.11] - 2026-04-05
+
+### Added
+- **Go Ultra-Project Phase-11 Governance, Streaming, and Reporting Baseline**
+  - Added persistent runtime report storage and startup-summary persistence for the Go runtime
+  - Added market-data streaming abstractions and deterministic paper tick subscription support
+  - Added concentration-control groundwork and portfolio value helpers for future exposure enforcement
+  - Added project-governance documents:
+    - `VISION.md`
+    - `MEMORY.md`
+    - `DEPLOY.md`
+    - `TODO.md`
+
+### Changed
+- Updated `ROADMAP.md` to explicitly track the Go ultra-project as a parallel workstream
+- Updated `UNIVERSAL_LLM_INSTRUCTIONS.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `GPT.md`, and `copilot-instructions.md` to better reflect the current dual-track Python + Go project direction and universal instruction hierarchy
+- Updated `docs/ai/implementation/go-feature-assimilation-matrix.md` to reflect the current runtime/reporting/streaming state
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully with report persistence and paper-stream support
+
 ## [2.0.10] - 2026-04-05
 
 ### Added

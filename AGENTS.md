@@ -1,10 +1,12 @@
 # Agent Instructions - PowerTrader AI
 
-**Version:** 2.0.0
-**Last Updated:** 2026-01-18
-**Purpose:** Comprehensive instructions for all AI agents working on PowerTrader AI
+**Version:** 2.0.11
+**Last Updated:** 2026-04-05
+**Purpose:** Comprehensive instructions for all AI agents working on PowerTrader AI and the Go ultra-project
 
 **Parent Document:** [UNIVERSAL_LLM_INSTRUCTIONS.md](UNIVERSAL_LLM_INSTRUCTIONS.md)
+
+> **Always read `UNIVERSAL_LLM_INSTRUCTIONS.md` first.** Then consult `VISION.md`, `MEMORY.md`, `ROADMAP.md`, `TODO.md`, `DEPLOY.md`, and `HANDOFF.md` before major implementation sessions.
 
 ---
 

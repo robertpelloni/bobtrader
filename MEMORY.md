@@ -84,3 +84,8 @@ Maintain and update:
 
 ### 10. Versioning memory
 Every meaningful build/session should increment the version and mention the bump in the commit message.
+
+### 11. Runtime operations memory
+- Using `127.0.0.1:0` as the default Go HTTP bind address avoids frequent local port-collision failures during repeated development/test runs.
+- Logger/file-backed components need explicit cleanup paths to keep tests reliable on Windows.
+- Runtime summary persistence is now useful as a bridge between raw journals and future analytics/reporting layers.

@@ -1,10 +1,12 @@
 # GPT Model-Specific Instructions - PowerTrader AI
 
-**Version:** 2.0.0
-**Last Updated:** 2026-01-18
-**Purpose:** Instructions for OpenAI GPT working on PowerTrader AI
+**Version:** 2.0.11
+**Last Updated:** 2026-04-05
+**Purpose:** Instructions for OpenAI GPT working on PowerTrader AI and the Go ultra-project
 
 **Parent Document:** [UNIVERSAL_LLM_INSTRUCTIONS.md](UNIVERSAL_LLM_INSTRUCTIONS.md)
+
+> **Read `UNIVERSAL_LLM_INSTRUCTIONS.md` first.** For current strategic direction also review `VISION.md`, `ROADMAP.md`, `TODO.md`, `MEMORY.md`, and `HANDOFF.md`.
 
 ---
 

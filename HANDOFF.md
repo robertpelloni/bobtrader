@@ -1,35 +1,28 @@
 # Handoff - 2026-04-05
 
 ## Completed This Session
-- Continued the Go ultra-project into a combined ninth/tenth implementation wave focused on persistent runtime summaries, exposure-control groundwork, market-data streams, and richer operator diagnostics.
-- Added the following new capabilities under `ultratrader-go/`:
-  - persistent runtime report store,
-  - market-data subscription abstractions,
+- Finalized and committed the next Go ultra-project implementation wave centered on:
+  - persistent runtime report storage,
+  - market-data streaming abstractions,
   - paper tick subscription support,
-  - `max-concentration` guard scaffold,
-  - `max-open-positions` guard integration,
-  - richer portfolio value helpers for exposure control,
-  - `/api/guards` endpoint for guard diagnostics,
-  - explicit HTTP runtime address/shutdown lifecycle control.
-- Expanded app startup so it now persists a durable startup-summary report containing:
-  - metrics snapshot,
-  - portfolio value,
-  - realized/unrealized PnL,
-  - active guards,
-  - order count.
-- Added and updated strategic project documentation:
+  - concentration-control groundwork,
+  - richer governance/project-direction documentation.
+- Added and/or updated project-governance documents:
   - `VISION.md`
   - `MEMORY.md`
   - `DEPLOY.md`
   - `TODO.md`
-  - updated `ROADMAP.md`
+  - `ROADMAP.md`
+- Updated model/agent instruction files to better reflect the universal-instructions-first hierarchy and the current dual-track Python + Go project state:
+  - `UNIVERSAL_LLM_INSTRUCTIONS.md`
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `GEMINI.md`
+  - `GPT.md`
+  - `copilot-instructions.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.10`
-  - `CHANGELOG.md` with the 2.0.10 Phase-9/10 and documentation entry.
-- Added detailed implementation documentation:
-  - `docs/ai/implementation/go-phase-9-exposure-controls-and-marketdata-streams.md`
-  - `docs/ai/implementation/go-phase-10-persistent-reports-and-exposure-controls.md`
-  - updated `docs/ai/implementation/go-feature-assimilation-matrix.md`
+  - `VERSION.md` → `2.0.11`
+  - `CHANGELOG.md` with the 2.0.11 governance/streaming/reporting entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -40,43 +33,47 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The project now has:
-- policy-aware paper trading,
-- structured observability,
-- metrics and diagnostics APIs,
-- PnL-aware portfolio state,
-- explicit runtime lifecycle control,
-- persistent runtime summary reports,
-- the first market-data stream/subscription abstraction,
-- portfolio-aware exposure-control building blocks,
-- centralized vision/memory/deploy/todo documentation.
+The repository now has:
+- the legacy Python PowerTrader AI runtime,
+- a documented long-term convergence strategy,
+- a steadily growing Go ultra-project runtime,
+- strong governance docs describing vision, memory, deployment, and short-term execution priorities.
 
-Current runtime path now includes:
-1. structured startup logging,
-2. event/snapshot/order/report persistence,
-3. market-data-aware strategy evaluation,
-4. scheduler-to-execution routing,
-5. configurable temporal + position-based protections,
-6. paper execution,
-7. in-memory order/portfolio/metrics updates,
-8. operator-readable APIs for status, portfolio, orders, execution summary, metrics, and guards.
-
-This is the deepest and most platform-like Go runtime built so far.
+The Go runtime currently includes:
+- runtime composition root
+- config
+- structured logging
+- event log
+- exchange registry
+- paper exchange adapter
+- market-data feed + paper tick subscription support
+- risk pipeline with multiple guards
+- execution service
+- execution repository + summaries
+- order journal
+- snapshot store
+- runtime report store
+- portfolio valuation and PnL
+- metrics
+- diagnostics APIs
+- runtime lifecycle control
 
 ## Suggested Immediate Next Steps
-1. Fully wire `max-concentration` guard using live valued exposure.
-2. Add block-reason diagnostics and richer execution-rate reporting.
-3. Add stream-driven strategy consumption paths.
-4. Add coordinated full app shutdown tests spanning runtime + scheduler + logger + stream subscriptions.
-5. Add persistent metrics and valuation history beyond startup summaries.
-6. Add exposure/concentration diagnostics endpoints.
-7. Begin dedicated analytics/reporting modules for the Go runtime.
+1. Fully wire concentration enforcement using live valued exposure at runtime.
+2. Add richer block-reason diagnostics and guard-trigger summaries.
+3. Add coordinated full app shutdown tests spanning runtime + scheduler + logger + stream subscriptions.
+4. Add persistent metrics and valuation history beyond startup summaries.
+5. Add stream-driven strategy consumption paths.
+6. Add richer analytics/reporting modules over the journals + reports.
 
 ## Files to Review First Next Session
 - `VISION.md`
 - `MEMORY.md`
 - `DEPLOY.md`
 - `TODO.md`
+- `ROADMAP.md`
+- `UNIVERSAL_LLM_INSTRUCTIONS.md`
+- `AGENTS.md`
 - `docs/ai/implementation/go-phase-9-exposure-controls-and-marketdata-streams.md`
 - `docs/ai/implementation/go-phase-10-persistent-reports-and-exposure-controls.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`

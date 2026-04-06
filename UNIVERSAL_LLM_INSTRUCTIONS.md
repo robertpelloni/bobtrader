@@ -1,20 +1,26 @@
 # Universal LLM Instructions - PowerTrader AI
 
-**Version:** 2.0.0
-**Last Updated:** 2026-01-18
-**Purpose:** Universal instructions applicable to all LLM agents working on PowerTrader AI
+**Version:** 2.0.11
+**Last Updated:** 2026-04-05
+**Purpose:** Universal instructions applicable to all LLM agents working on PowerTrader AI and its evolving Go ultra-project
 
 ---
 
 ## Project Overview
 
-**PowerTrader AI** is a fully automated crypto trading bot powered by:
+**PowerTrader AI** is now a dual-track project consisting of:
+- the legacy Python/Tkinter PowerTrader AI runtime, and
+- the emerging clean-room Go ultra-project under `ultratrader-go/`.
+
+The legacy system is a fully automated crypto trading bot powered by:
 - Custom kNN-based price prediction AI
 - Structured/tiered DCA (Dollar-Cost Averaging) system
 - Multi-exchange price aggregation
 - Persistent trade analytics
 - Multi-platform notification system
 - Volume-based analysis
+
+The Go ultra-project is intended to assimilate the strongest architecture and subsystem ideas from PowerTrader AI and the imported submodule corpus into a modular, observable, daemon-grade Go platform.
 
 **Core Philosophy:**
 - Long-term spot trading (no futures, no leverage)
