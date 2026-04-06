@@ -5,9 +5,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -20,6 +22,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{} },
 		MetricsProvider:          func() metrics.Snapshot { return metrics.Snapshot{} },
 		GuardNamesProvider:       func() []string { return nil },
+		LatestReportsProvider:    func() map[string]reports.Report { return nil },
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -37,7 +40,7 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 	}
 }
 
-func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
+func TestDiagnosticsEndpoints(t *testing.T) {
 	h := NewHandler(Dependencies{
 		StatusProvider: func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
 		PortfolioProvider: func() PortfolioSnapshot {
@@ -49,6 +52,9 @@ func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
 			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1, BlockReasons: map[string]int{"cooldown": 1}}
 		},
 		GuardNamesProvider: func() []string { return []string{"symbol-whitelist", "max-notional"} },
+		LatestReportsProvider: func() map[string]reports.Report {
+			return map[string]reports.Report{"startup-summary": {Timestamp: time.Now(), Type: "startup-summary"}}
+		},
 	})
 
 	w := httptest.NewRecorder()
@@ -85,5 +91,11 @@ func TestPortfolioOrdersSummaryMetricsAndGuardsEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/guard-diagnostics", nil))
 	if !strings.Contains(w.Body.String(), "cooldown") || !strings.Contains(w.Body.String(), "symbol-whitelist") {
 		t.Fatalf("expected guard diagnostics response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/runtime-reports/latest", nil))
+	if !strings.Contains(w.Body.String(), "startup-summary") {
+		t.Fatalf("expected latest reports response, got %q", w.Body.String())
 	}
 }

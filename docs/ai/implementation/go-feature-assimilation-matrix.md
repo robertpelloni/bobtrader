@@ -4,7 +4,7 @@
 Track how the emerging `ultratrader-go/` codebase maps to the audited source projects and to the long-term Go ultra-project plan.
 
 ## Current Status
-The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, runtime metrics, operator API surfaces, explicit runtime lifecycle control, persistent runtime summary reports, market-data streaming abstractions, and block-reason-aware diagnostics. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
+The project now has a policy-aware paper trading loop, in-memory runtime state, structured logging, market-value estimation, PnL tracking, runtime metrics, operator API surfaces, explicit runtime lifecycle control, persistent runtime summary reports, market-data streaming abstractions, block-reason-aware diagnostics, and app-level shutdown validation. It increasingly resembles a supervised service kernel rather than a bootstrap harness.
 
 ## Matrix
 
@@ -15,7 +15,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Structured logging | Implemented | platform ops patterns | OpenAlice, PowerTrader | Context-driven correlation IDs and JSON logging now exist |
 | Runtime metrics | Implemented | operator observability patterns | PowerTrader dashboard mentality | Attempts/successes/blocks tracked in memory |
 | Block-reason metrics | Implemented | operator diagnostics | policy-aware runtime supervision | Metrics now track which guards blocked executions |
-| Runtime report persistence | Implemented | OpenAlice durable state mindset | PowerTrader reporting mentality | Append-only startup summary reports now exist |
+| Runtime report persistence | Implemented | OpenAlice durable state mindset | PowerTrader reporting mentality | Startup summaries, metrics snapshots, and valuation snapshots now persist |
 | Event log | Implemented | OpenAlice | PowerTrader analytics mindset | JSONL append-only event durability remains central |
 | Unified account model | Implemented | OpenAlice UTA | PowerTrader account-centric operation | Accounts remain the main execution boundary |
 | Exchange capability vocabulary | Implemented | CCXT | BBGO | Capability-driven contract remains intact |
@@ -27,7 +27,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Cooldown guard | Implemented | OpenAlice | WolfBot/PowerTrader temporal control ideas | Prevents immediate repeated symbol execution per account |
 | Duplicate symbol guard | Implemented | OpenAlice | runtime safety patterns | Uses recent repository history to block repeated symbol execution |
 | Max open positions guard | Implemented | OpenAlice | portfolio-aware runtime control | Uses live portfolio state to constrain expansion |
-| Concentration guard primitives | Implemented scaffold | PowerTrader analytics/risk thinking | portfolio-aware control patterns | Portfolio value methods and max concentration guard exist for deeper future wiring |
+| Concentration guard | Implemented scaffold + live-valued exposure wiring | PowerTrader analytics/risk thinking | portfolio-aware control patterns | Now wired through live-valued exposure view |
 | Execution service | Implemented | BBGO | OpenAlice service composition | Real account -> guard -> adapter -> persistence flow exists |
 | Correlation-aware execution logs | Implemented | platform observability patterns | OpenAlice runtime introspection | Execution flow carries correlation IDs into logs and journals |
 | Execution repository | Implemented | platform state management patterns | BBGO runtime direction | In-memory order state and summary data exist |
@@ -45,8 +45,10 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Metrics API | Implemented | operator observability | PowerTrader-style runtime dashboards | `/api/metrics` exposes attempt/success/block counts |
 | Guards API | Implemented | operator diagnostics | OpenAlice introspection mindset | `/api/guards` exposes configured guard names |
 | Guard diagnostics API | Implemented | operator diagnostics | policy-aware supervision | `/api/guard-diagnostics` exposes active guards plus block reason metrics |
+| Runtime reports API | Implemented | durable state introspection | reporting-oriented runtime governance | `/api/runtime-reports/latest` exposes latest report-by-type snapshots |
 | HTTP runtime wrapper | Implemented | platform ops patterns | OpenAlice connector/runtime thinking | Server lifecycle shell exists |
-| HTTP runtime shutdown control | Implemented | service lifecycle patterns | OpenAlice runtime discipline | Runtime start/shutdown now test-covered |
+| HTTP runtime shutdown control | Implemented | service lifecycle patterns | OpenAlice runtime discipline | Runtime start/shutdown is test-covered |
+| App-level shutdown integration | Implemented | daemon readiness patterns | OpenAlice runtime discipline | App startup + health + shutdown path now integration-tested |
 | Market data interface | Implemented | BBGO | CCXT, WolfBot | Abstraction exists |
 | Market data streaming interface | Implemented | BBGO stream-first thinking | WolfBot runtime event flow | Subscription abstraction now exists |
 | Paper market data feed | Implemented | BBGO | PowerTrader practical bootstrap needs | Deterministic local feed supports strategy development |

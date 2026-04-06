@@ -1,6 +1,7 @@
 package reports
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,6 +47,49 @@ func (s *Store) Append(_ context.Context, report Report) error {
 		return fmt.Errorf("encode report: %w", err)
 	}
 	return nil
+}
+
+func (s *Store) Latest(limit int) ([]Report, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	f, err := os.Open(s.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("open report store for read: %w", err)
+	}
+	defer f.Close()
+
+	var all []Report
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		var report Report
+		if err := json.Unmarshal(scanner.Bytes(), &report); err != nil {
+			continue
+		}
+		all = append(all, report)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scan report store: %w", err)
+	}
+	if len(all) <= limit {
+		return all, nil
+	}
+	return all[len(all)-limit:], nil
+}
+
+func (s *Store) LatestByType() (map[string]Report, error) {
+	reports, err := s.Latest(1000)
+	if err != nil {
+		return nil, err
+	}
+	out := make(map[string]Report)
+	for _, report := range reports {
+		out[report.Type] = report
+	}
+	return out, nil
 }
 
 func (s *Store) Path() string { return s.path }

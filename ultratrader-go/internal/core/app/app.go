@@ -36,7 +36,7 @@ type App struct {
 	reportStore      *reports.Store
 	accountService   *account.Service
 	exchangeRegistry *exchange.Registry
-	marketDataFeed   marketdata.Feed
+	marketDataFeed   marketdata.StreamFeed
 	metricsTracker   *metrics.Tracker
 	executionRepo    *execution.Repository
 	portfolioTracker *portfolio.Tracker
@@ -84,13 +84,14 @@ func New(cfg config.Config) (*App, error) {
 	metricsTracker := metrics.NewTracker()
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
+	exposureView := portfolio.NewExposureView(portfolioTracker, marketDataFeed)
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
 		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
 		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
 		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
-		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, portfolioTracker),
+		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
 	strategyRuntime := strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
@@ -108,6 +109,13 @@ func New(cfg config.Config) (*App, error) {
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		MetricsProvider:          func() metrics.Snapshot { return metricsTracker.Snapshot() },
 		GuardNamesProvider:       func() []string { return pipeline.Names() },
+		LatestReportsProvider: func() map[string]reports.Report {
+			latest, err := reportStore.LatestByType()
+			if err != nil {
+				return map[string]reports.Report{}
+			}
+			return latest
+		},
 	})
 
 	var runtime *httpapi.Runtime
@@ -147,16 +155,15 @@ func (a *App) Start(ctx context.Context) error {
 	if err := a.scheduler.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
-	reportPayload := map[string]any{
-		"orders":          len(a.executionRepo.List()),
-		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
-		"realized_pnl":    a.portfolioTracker.TotalRealizedPnL(),
-		"unrealized_pnl":  a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
-		"metrics":         a.metricsTracker.Snapshot(),
-		"guards":          a.pipeline.Names(),
-	}
+	reportPayload := map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed), "metrics": a.metricsTracker.Snapshot(), "guards": a.pipeline.Names()}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
+	}
+	if err := a.reportStore.Append(ctx, reports.Report{Type: "metrics-snapshot", Payload: map[string]any{"metrics": a.metricsTracker.Snapshot()}}); err != nil {
+		return fmt.Errorf("append metrics report: %w", err)
+	}
+	if err := a.reportStore.Append(ctx, reports.Report{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed)}}); err != nil {
+		return fmt.Errorf("append valuation report: %w", err)
 	}
 	a.logger.Info("app startup completed", reportPayload)
 	return nil
@@ -172,3 +179,9 @@ func (a *App) Shutdown(ctx context.Context) error {
 }
 
 func (a *App) Handler() http.Handler { return a.httpHandler }
+func (a *App) Address() string {
+	if a.httpRuntime != nil {
+		return a.httpRuntime.Address()
+	}
+	return ""
+}

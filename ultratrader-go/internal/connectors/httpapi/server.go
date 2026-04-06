@@ -6,6 +6,7 @@ import (
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -35,6 +36,7 @@ type Dependencies struct {
 	ExecutionSummaryProvider func() execution.Summary
 	MetricsProvider          func() metrics.Snapshot
 	GuardNamesProvider       func() []string
+	LatestReportsProvider    func() map[string]reports.Report
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -81,6 +83,10 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/guard-diagnostics", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(GuardDiagnostics{ActiveGuards: deps.GuardNamesProvider(), Metrics: deps.MetricsProvider()})
+	})
+	mux.HandleFunc("/api/runtime-reports/latest", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.LatestReportsProvider())
 	})
 	return mux
 }

@@ -25,3 +25,26 @@ func TestAppendReport(t *testing.T) {
 		t.Fatalf("expected report content, got %q", string(data))
 	}
 }
+
+func TestLatestAndLatestByType(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "reports.jsonl")
+	store, _ := NewStore(path)
+	_ = store.Append(context.Background(), Report{Type: "metrics", Payload: map[string]any{"a": 1}})
+	_ = store.Append(context.Background(), Report{Type: "valuation", Payload: map[string]any{"v": 2}})
+	_ = store.Append(context.Background(), Report{Type: "metrics", Payload: map[string]any{"a": 3}})
+
+	latest, err := store.Latest(2)
+	if err != nil {
+		t.Fatalf("Latest returned error: %v", err)
+	}
+	if len(latest) != 2 {
+		t.Fatalf("expected 2 latest reports, got %d", len(latest))
+	}
+	byType, err := store.LatestByType()
+	if err != nil {
+		t.Fatalf("LatestByType returned error: %v", err)
+	}
+	if byType["metrics"].Payload["a"].(float64) != 3 {
+		t.Fatalf("expected latest metrics payload 3, got %+v", byType["metrics"].Payload)
+	}
+}
