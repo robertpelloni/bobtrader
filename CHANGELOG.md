@@ -5,6 +5,21 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.29] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-27 Dashboard Diagnostics Visualization Expansion**
+  - Added dashboard bar charts for exposure concentration and guard block reasons
+  - Extended the dashboard's historical/operator surface beyond line charts into categorical diagnostics visualizations
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-27-dashboard-diagnostics-visualization-expansion.md`
+
+### Changed
+- Enhanced the dashboard to visualize concentration percentages and block-reason counts using existing diagnostics APIs and report history surfaces
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-27 dashboard visualization updates
+
 ## [2.0.28] - 2026-04-06
 
 ### Added

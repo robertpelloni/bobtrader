@@ -77,6 +77,16 @@ const dashboardHTML = `<!doctype html>
           <div id="metrics-chart" class="chart">loading...</div>
         </div>
       </div>
+      <div class="split" style="margin-top:16px;">
+        <div>
+          <h3>Exposure Concentration</h3>
+          <div id="concentration-chart" class="chart">loading...</div>
+        </div>
+        <div>
+          <h3>Block Reasons</h3>
+          <div id="block-reasons-chart" class="chart">loading...</div>
+        </div>
+      </div>
     </section>
     <section style="grid-column: 1 / -1;"><h2>Metrics History</h2><div id="metrics-history">loading...</div></section>
     <section style="grid-column: 1 / -1;"><h2>Valuation History</h2><div id="valuation-history">loading...</div></section>
@@ -142,6 +152,31 @@ const dashboardHTML = `<!doctype html>
         + '</svg>';
     }
 
+    function renderBarChart(elId, entries, color) {
+      const el = document.getElementById(elId);
+      if (!entries || entries.length === 0) {
+        el.innerHTML = '<div class="empty">No data</div>';
+        return;
+      }
+      const width = 600;
+      const height = 180;
+      const pad = 24;
+      const max = Math.max(...entries.map(e => e.value), 1);
+      const barWidth = Math.max(20, Math.floor((width - pad * 2) / entries.length) - 10);
+      let svg = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">'
+        + '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="#0f1729" />';
+      entries.forEach((entry, index) => {
+        const x = pad + index * ((width - pad * 2) / entries.length);
+        const barHeight = (entry.value / max) * (height - pad * 2);
+        const y = height - pad - barHeight;
+        svg += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + barWidth + '" height="' + barHeight.toFixed(1) + '" fill="' + color + '" rx="4" />';
+        svg += '<text x="' + (x + barWidth / 2).toFixed(1) + '" y="' + (height - 6) + '" text-anchor="middle" fill="#9fb0c8" font-size="11">' + entry.label + '</text>';
+        svg += '<text x="' + (x + barWidth / 2).toFixed(1) + '" y="' + (y - 4).toFixed(1) + '" text-anchor="middle" fill="#d7e2f0" font-size="11">' + entry.display + '</text>';
+      });
+      svg += '</svg>';
+      el.innerHTML = svg;
+    }
+
     async function refreshDashboard() {
       try {
         const [status, portfolioSummary, executionDiagnostics, exposureDiagnostics, guardDiagnostics, trends, latestReports, metricsHistory, valuationHistory] = await Promise.all([
@@ -192,6 +227,20 @@ const dashboardHTML = `<!doctype html>
 
         renderLineChart('valuation-chart', valuationHistory, r => Number(r.payload?.portfolio_value ?? 0), '#59d089');
         renderLineChart('metrics-chart', metricsHistory, r => Number((r.payload?.metrics?.success_rate ?? 0) * 100), '#4dabf7');
+
+        const concentrationEntries = Object.entries(exposureDiagnostics.concentration || {}).map(([label, value]) => ({
+          label,
+          value: Number(value),
+          display: (Number(value) * 100).toFixed(1) + '%'
+        }));
+        renderBarChart('concentration-chart', concentrationEntries, '#9b7bff');
+
+        const blockReasonEntries = Object.entries(guardDiagnostics.metrics?.block_reasons || {}).map(([label, value]) => ({
+          label,
+          value: Number(value),
+          display: String(value)
+        }));
+        renderBarChart('block-reasons-chart', blockReasonEntries, '#f07178');
 
         document.getElementById('last-updated').textContent = 'last updated ' + new Date().toLocaleTimeString();
       } catch (error) {
