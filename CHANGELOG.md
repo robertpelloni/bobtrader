@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.21] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-19 Operator Diagnostics Surface Expansion**
+  - Added `/api/portfolio-summary` for aggregate portfolio/operator views separate from raw positions
+  - Added `/api/execution-diagnostics` combining execution summary and runtime metrics
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-19-operator-diagnostics-surface-expansion.md`
+
+### Changed
+- Enhanced the Go app diagnostics layer to expose richer portfolio and execution operator views
+- Updated `TODO.md` to reflect completion of richer operator-facing diagnostics APIs and a distinct portfolio summary endpoint
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-19 additions and retains the existing runtime/reporting behavior
+
 ## [2.0.20] - 2026-04-06
 
 ### Added

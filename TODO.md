@@ -34,8 +34,8 @@
 - [ ] Add reconciliation/fill state improvements
 
 ### Operator surfaces
-- [ ] Add richer operator-facing diagnostics APIs
-- [ ] Add portfolio summary endpoint distinct from raw positions
+- [x] Add richer operator-facing diagnostics APIs
+- [x] Add portfolio summary endpoint distinct from raw positions
 - [ ] Add UI/dashboard layer for Go runtime
 - [ ] Add deployment packaging and environment profiles
 

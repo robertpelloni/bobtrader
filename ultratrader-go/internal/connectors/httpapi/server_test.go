@@ -17,15 +17,17 @@ import (
 
 func TestNewHandlerHealthAndReady(t *testing.T) {
 	h := NewHandler(Dependencies{
-		StatusProvider:           func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
-		PortfolioProvider:        func() PortfolioSnapshot { return PortfolioSnapshot{} },
-		OrdersProvider:           func() []exchange.Order { return nil },
-		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{} },
-		MetricsProvider:          func() metrics.Snapshot { return metrics.Snapshot{} },
-		GuardNamesProvider:       func() []string { return nil },
-		LatestReportsProvider:    func() map[string]reports.Report { return nil },
-		ReportHistoryProvider:    func(reportType string, limit int) []reports.Report { return nil },
-		ReportTrendsProvider:     func() reportinganalysis.RuntimeTrends { return reportinganalysis.RuntimeTrends{} },
+		StatusProvider:               func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
+		PortfolioProvider:            func() PortfolioSnapshot { return PortfolioSnapshot{} },
+		PortfolioSummaryProvider:     func() PortfolioSummary { return PortfolioSummary{} },
+		OrdersProvider:               func() []exchange.Order { return nil },
+		ExecutionSummaryProvider:     func() execution.Summary { return execution.Summary{} },
+		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics { return ExecutionDiagnostics{} },
+		MetricsProvider:              func() metrics.Snapshot { return metrics.Snapshot{} },
+		GuardNamesProvider:           func() []string { return nil },
+		LatestReportsProvider:        func() map[string]reports.Report { return nil },
+		ReportHistoryProvider:        func(reportType string, limit int) []reports.Report { return nil },
+		ReportTrendsProvider:         func() reportinganalysis.RuntimeTrends { return reportinganalysis.RuntimeTrends{} },
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -49,8 +51,14 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 		PortfolioProvider: func() PortfolioSnapshot {
 			return PortfolioSnapshot{Positions: []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}}, Concentration: map[string]float64{"BTCUSDT": 1}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
 		},
+		PortfolioSummaryProvider: func() PortfolioSummary {
+			return PortfolioSummary{OpenPositions: 1, Concentration: map[string]float64{"BTCUSDT": 1}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
+		},
 		OrdersProvider:           func() []exchange.Order { return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}} },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
+		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics {
+			return ExecutionDiagnostics{Summary: execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"}, Metrics: metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}}
+		},
 		MetricsProvider: func() metrics.Snapshot {
 			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1, BlockReasons: map[string]int{"cooldown": 1}}
 		},
@@ -73,6 +81,12 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/portfolio-summary", nil))
+	if !strings.Contains(w.Body.String(), "open_positions") || !strings.Contains(w.Body.String(), "32500") {
+		t.Fatalf("expected portfolio summary response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/orders", nil))
 	if !strings.Contains(w.Body.String(), "ord-1") {
 		t.Fatalf("expected ord-1 in orders response, got %q", w.Body.String())
@@ -82,6 +96,12 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/execution-summary", nil))
 	if !strings.Contains(w.Body.String(), "ord-1") {
 		t.Fatalf("expected execution summary in response, got %q", w.Body.String())
+	}
+
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/execution-diagnostics", nil))
+	if !strings.Contains(w.Body.String(), "execution_attempts") || !strings.Contains(w.Body.String(), "ord-1") {
+		t.Fatalf("expected execution diagnostics response, got %q", w.Body.String())
 	}
 
 	w = httptest.NewRecorder()

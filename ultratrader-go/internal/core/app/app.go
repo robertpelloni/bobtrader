@@ -136,10 +136,16 @@ func New(cfg config.Config) (*App, error) {
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
 			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), Concentration: portfolioTracker.Concentration(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
 		},
+		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
+			return httpapi.PortfolioSummary{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: portfolioTracker.Concentration(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+		},
 		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
-		MetricsProvider:          func() metrics.Snapshot { return metricsTracker.Snapshot() },
-		GuardNamesProvider:       func() []string { return pipeline.Names() },
+		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
+			return httpapi.ExecutionDiagnostics{Summary: executionRepo.Summary(), Metrics: metricsTracker.Snapshot()}
+		},
+		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
+		GuardNamesProvider: func() []string { return pipeline.Names() },
 		LatestReportsProvider: func() map[string]reports.Report {
 			latest, err := reportStore.LatestByType()
 			if err != nil {
