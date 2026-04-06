@@ -6,6 +6,8 @@ type Snapshot struct {
 	ExecutionAttempts int            `json:"execution_attempts"`
 	ExecutionSuccess  int            `json:"execution_success"`
 	ExecutionBlocked  int            `json:"execution_blocked"`
+	SuccessRate       float64        `json:"success_rate"`
+	BlockedRate       float64        `json:"blocked_rate"`
 	BlockReasons      map[string]int `json:"block_reasons,omitempty"`
 }
 
@@ -48,5 +50,11 @@ func (t *Tracker) Snapshot() Snapshot {
 	for k, v := range t.blockReasons {
 		reasons[k] = v
 	}
-	return Snapshot{ExecutionAttempts: t.executionAttempts, ExecutionSuccess: t.executionSuccess, ExecutionBlocked: t.executionBlocked, BlockReasons: reasons}
+	var successRate float64
+	var blockedRate float64
+	if t.executionAttempts > 0 {
+		successRate = float64(t.executionSuccess) / float64(t.executionAttempts)
+		blockedRate = float64(t.executionBlocked) / float64(t.executionAttempts)
+	}
+	return Snapshot{ExecutionAttempts: t.executionAttempts, ExecutionSuccess: t.executionSuccess, ExecutionBlocked: t.executionBlocked, SuccessRate: successRate, BlockedRate: blockedRate, BlockReasons: reasons}
 }

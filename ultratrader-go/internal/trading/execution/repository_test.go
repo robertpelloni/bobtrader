@@ -28,6 +28,9 @@ func TestRepositorySummaryAndRecentSymbol(t *testing.T) {
 	if summary.TotalOrders != 2 || summary.OrdersBySymbol["BTCUSDT"] != 2 {
 		t.Fatalf("unexpected summary: %+v", summary)
 	}
+	if summary.UniqueSymbols != 1 || summary.TopSymbol != "BTCUSDT" || summary.TopSymbolCount != 2 {
+		t.Fatalf("unexpected summary ranking fields: %+v", summary)
+	}
 	if !repo.HasRecentSymbol("BTCUSDT", time.Minute) {
 		t.Fatal("expected recent BTCUSDT order")
 	}

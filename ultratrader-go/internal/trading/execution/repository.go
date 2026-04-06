@@ -17,6 +17,9 @@ type StoredOrder struct {
 type Summary struct {
 	TotalOrders    int            `json:"total_orders"`
 	OrdersBySymbol map[string]int `json:"orders_by_symbol"`
+	UniqueSymbols  int            `json:"unique_symbols"`
+	TopSymbol      string         `json:"top_symbol,omitempty"`
+	TopSymbolCount int            `json:"top_symbol_count,omitempty"`
 	LastOrderID    string         `json:"last_order_id,omitempty"`
 	LastSymbol     string         `json:"last_symbol,omitempty"`
 }
@@ -78,8 +81,13 @@ func (r *Repository) Summary() Summary {
 	for _, item := range stored {
 		symbol := strings.ToUpper(strings.TrimSpace(item.Order.Symbol))
 		summary.OrdersBySymbol[symbol]++
+		if summary.OrdersBySymbol[symbol] > summary.TopSymbolCount {
+			summary.TopSymbol = symbol
+			summary.TopSymbolCount = summary.OrdersBySymbol[symbol]
+		}
 		summary.LastOrderID = item.Order.ID
 		summary.LastSymbol = symbol
 	}
+	summary.UniqueSymbols = len(summary.OrdersBySymbol)
 	return summary
 }

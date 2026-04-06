@@ -47,4 +47,8 @@ func TestValuationAndPnL(t *testing.T) {
 	if tracker.TotalValue() != 30000 {
 		t.Fatalf("expected total value 30000, got %v", tracker.TotalValue())
 	}
+	concentration := tracker.Concentration(context.Background(), marketdatapaper.New())
+	if concentration["BTCUSDT"] != 1 {
+		t.Fatalf("expected full concentration in BTCUSDT, got %+v", concentration)
+	}
 }

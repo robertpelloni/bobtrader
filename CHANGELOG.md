@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.15] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-13 Execution Rates, Concentration Summaries, and Guard-Reason Metrics**
+  - Added success-rate and blocked-rate calculations to runtime metrics
+  - Added richer execution summary fields including unique symbol count and top-symbol activity
+  - Added portfolio concentration summaries derived from live-valued positions
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-13-rates-concentration-and-reporting-summaries.md`
+
+### Changed
+- Enhanced operator diagnostics APIs so portfolio responses now include concentration data and metrics responses include rate information
+- Enhanced execution/repository summaries to expose richer order-distribution context
+- Updated `TODO.md` to reflect completion of richer execution diagnostics including success/block rates and concentration summaries
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-13 additions and now emits richer metric-rate information at startup
+
 ## [2.0.14] - 2026-04-06
 
 ### Added

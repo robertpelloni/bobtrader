@@ -6,7 +6,7 @@
 - [x] Add richer guard diagnostics beyond guard names
 - [x] Expose block reasons and guard-trigger counts
 - [x] Add coordinated app shutdown tests spanning runtime + scheduler + logger + stream subscriptions
-- [ ] Add richer execution diagnostics including success/block rates and symbol concentration summaries
+- [x] Add richer execution diagnostics including success/block rates and symbol concentration summaries
 
 ### Risk management
 - [x] Fully wire `max-concentration` guard using live market value rather than cost-basis fallback

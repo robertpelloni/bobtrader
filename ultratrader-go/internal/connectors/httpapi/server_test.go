@@ -44,7 +44,7 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 	h := NewHandler(Dependencies{
 		StatusProvider: func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
 		PortfolioProvider: func() PortfolioSnapshot {
-			return PortfolioSnapshot{Positions: []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
+			return PortfolioSnapshot{Positions: []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}}, Concentration: map[string]float64{"BTCUSDT": 1}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
 		},
 		OrdersProvider:           func() []exchange.Order { return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}} },
 		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
@@ -59,7 +59,7 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/portfolio", nil))
-	if !strings.Contains(w.Body.String(), "BTCUSDT") || !strings.Contains(w.Body.String(), "2500") {
+	if !strings.Contains(w.Body.String(), "BTCUSDT") || !strings.Contains(w.Body.String(), "2500") || !strings.Contains(w.Body.String(), "concentration") {
 		t.Fatalf("unexpected portfolio response %q", w.Body.String())
 	}
 

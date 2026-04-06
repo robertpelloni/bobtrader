@@ -148,6 +148,22 @@ func (t *Tracker) TotalMarketValue(ctx context.Context, feed marketdata.Feed) fl
 	return total
 }
 
+func (t *Tracker) Concentration(ctx context.Context, feed marketdata.Feed) map[string]float64 {
+	positions := t.ValuedPositions(ctx, feed)
+	var total float64
+	for _, position := range positions {
+		total += position.MarketValue
+	}
+	out := make(map[string]float64, len(positions))
+	if total <= 0 {
+		return out
+	}
+	for _, position := range positions {
+		out[position.Symbol] = position.MarketValue / total
+	}
+	return out
+}
+
 func (t *Tracker) TotalUnrealizedPnL(ctx context.Context, feed marketdata.Feed) float64 {
 	var total float64
 	for _, position := range t.ValuedPositions(ctx, feed) {

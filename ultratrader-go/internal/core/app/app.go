@@ -103,7 +103,7 @@ func New(cfg config.Config) (*App, error) {
 			return httpapi.Status{Name: "ultratrader-go", Ready: true, AccountCount: len(accountService.List())}
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
-			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), Concentration: portfolioTracker.Concentration(context.Background(), marketDataFeed), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
 		},
 		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },

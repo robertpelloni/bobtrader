@@ -19,6 +19,7 @@ type Status struct {
 
 type PortfolioSnapshot struct {
 	Positions          []portfolio.Position `json:"positions"`
+	Concentration      map[string]float64   `json:"concentration,omitempty"`
 	TotalMarketValue   float64              `json:"total_market_value"`
 	TotalRealizedPnL   float64              `json:"total_realized_pnl"`
 	TotalUnrealizedPnL float64              `json:"total_unrealized_pnl"`
