@@ -75,6 +75,20 @@ func (r *Repository) HasRecentSymbol(symbol string, within time.Duration) bool {
 	return false
 }
 
+func (r *Repository) HasRecentSymbolSide(symbol string, side exchange.OrderSide, within time.Duration) bool {
+	if within <= 0 {
+		return false
+	}
+	now := time.Now().UTC()
+	symbol = strings.ToUpper(strings.TrimSpace(symbol))
+	for _, item := range r.ListStored() {
+		if strings.ToUpper(strings.TrimSpace(item.Order.Symbol)) == symbol && item.Order.Side == side && now.Sub(item.SavedAt) <= within {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Repository) Summary() Summary {
 	stored := r.ListStored()
 	summary := Summary{OrdersBySymbol: map[string]int{}, TotalOrders: len(stored)}

@@ -22,8 +22,8 @@ func TestRepositorySaveAndList(t *testing.T) {
 
 func TestRepositorySummaryAndRecentSymbol(t *testing.T) {
 	repo := NewRepository()
-	repo.Save(exchange.Order{ID: "1", Symbol: "BTCUSDT"})
-	repo.Save(exchange.Order{ID: "2", Symbol: "BTCUSDT"})
+	repo.Save(exchange.Order{ID: "1", Symbol: "BTCUSDT", Side: exchange.Buy})
+	repo.Save(exchange.Order{ID: "2", Symbol: "BTCUSDT", Side: exchange.Buy})
 	summary := repo.Summary()
 	if summary.TotalOrders != 2 || summary.OrdersBySymbol["BTCUSDT"] != 2 {
 		t.Fatalf("unexpected summary: %+v", summary)
@@ -33,5 +33,8 @@ func TestRepositorySummaryAndRecentSymbol(t *testing.T) {
 	}
 	if !repo.HasRecentSymbol("BTCUSDT", time.Minute) {
 		t.Fatal("expected recent BTCUSDT order")
+	}
+	if !repo.HasRecentSymbolSide("BTCUSDT", exchange.Buy, time.Minute) {
+		t.Fatal("expected recent BTCUSDT buy order")
 	}
 }

@@ -100,8 +100,10 @@ func New(cfg config.Config) (*App, error) {
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
 		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
+		risk.NewMaxNotionalPerSymbolGuard(cfg.Risk.MaxNotionalPerSymbol, exposureView),
 		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
 		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
+		risk.NewDuplicateSideGuard(executionRepo, exchange.Buy, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)

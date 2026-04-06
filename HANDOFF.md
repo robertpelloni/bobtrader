@@ -1,16 +1,20 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-second implementation wave focused on expanding the stream-aware strategy library.
+- Continued the Go ultra-project into a twenty-third implementation wave focused on strengthening the risk layer with more specific symbol/side controls.
 - Added the following new capabilities under `ultratrader-go/`:
-  - `TickMomentumBurst`, a second tick-aware demo strategy using short-window momentum rather than static threshold crossing alone.
-- Expanded stream-mode app wiring so multiple event-driven strategies can now run together.
-- Added documentation for this phase:
-  - `docs/ai/implementation/go-phase-22-stream-aware-strategy-library-growth.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-22-stream-aware-strategy-library-growth.md`
+  - `max-notional-per-symbol` guard,
+  - `duplicate-side` guard,
+  - config support for per-symbol notional limits and duplicate-side timing windows.
+- Wired the new guards into the active Go runtime pipeline.
+- Updated planning/docs to reflect completion of the additional-guards TODO item:
+  - `TODO.md`
+  - `CHANGELOG.md`
+  - `docs/ai/implementation/go-phase-23-advanced-risk-guards.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-23-advanced-risk-guards.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.24`
-  - `CHANGELOG.md` with the 2.0.24 Phase-22 entry.
+  - `VERSION.md` → `2.0.25`
+  - `CHANGELOG.md` with the 2.0.25 Phase-23 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -21,17 +25,17 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has multiple stream-aware strategy examples, making the event-driven execution path more representative of the intended long-term architecture.
+The Go runtime now has a more mature and specific risk pipeline, including protections against repeated same-side executions and over-allocation to a single symbol by projected notional.
 
 ## Suggested Immediate Next Steps
-1. Add more advanced stream-aware strategies.
-2. Add richer paper stream simulation patterns or regimes.
+1. Add max-open-position and concentration policy tuning docs/examples.
+2. Add richer concentration and block-reason trend reporting.
 3. Continue deeper analytics/reporting modules over reports + journals.
 4. Continue legacy Python roadmap/module inventory reconciliation.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-22-stream-aware-strategy-library-growth.md`
-- `ultratrader-go/internal/strategy/demo/tick_momentum_burst.go`
-- `ultratrader-go/internal/strategy/runtime.go`
-- `ultratrader-go/internal/strategy/scheduler/scheduler.go`
+- `TODO.md`
+- `docs/ai/implementation/go-phase-23-advanced-risk-guards.md`
+- `ultratrader-go/internal/risk/duplicate_side.go`
+- `ultratrader-go/internal/risk/max_notional_per_symbol.go`
 - `ultratrader-go/internal/core/app/app.go`

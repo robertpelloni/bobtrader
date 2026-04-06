@@ -50,12 +50,14 @@ type SchedulerConfig struct {
 }
 
 type RiskConfig struct {
-	MaxNotional         float64  `json:"max_notional"`
-	AllowedSymbols      []string `json:"allowed_symbols"`
-	CooldownMS          int      `json:"cooldown_ms"`
-	DuplicateWindowMS   int      `json:"duplicate_window_ms"`
-	MaxOpenPositions    int      `json:"max_open_positions"`
-	MaxConcentrationPct float64  `json:"max_concentration_pct"`
+	MaxNotional           float64  `json:"max_notional"`
+	MaxNotionalPerSymbol  float64  `json:"max_notional_per_symbol"`
+	AllowedSymbols        []string `json:"allowed_symbols"`
+	CooldownMS            int      `json:"cooldown_ms"`
+	DuplicateWindowMS     int      `json:"duplicate_window_ms"`
+	DuplicateSideWindowMS int      `json:"duplicate_side_window_ms"`
+	MaxOpenPositions      int      `json:"max_open_positions"`
+	MaxConcentrationPct   float64  `json:"max_concentration_pct"`
 }
 
 type AccountConfig struct {
@@ -76,7 +78,7 @@ func Default() Config {
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
 		Scheduler:   SchedulerConfig{Enabled: false, Mode: "timer", IntervalMS: 1000},
-		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, MaxOpenPositions: 0, MaxConcentrationPct: 0},
+		Risk:        RiskConfig{MaxNotional: 1000, MaxNotionalPerSymbol: 0, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, DuplicateSideWindowMS: 0, MaxOpenPositions: 0, MaxConcentrationPct: 0},
 		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
 	}
 }
@@ -120,6 +122,9 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Risk.MaxNotional == 0 {
 		cfg.Risk.MaxNotional = defaults.Risk.MaxNotional
+	}
+	if cfg.Risk.MaxNotionalPerSymbol == 0 {
+		cfg.Risk.MaxNotionalPerSymbol = defaults.Risk.MaxNotionalPerSymbol
 	}
 	if len(cfg.Risk.AllowedSymbols) == 0 {
 		cfg.Risk.AllowedSymbols = defaults.Risk.AllowedSymbols

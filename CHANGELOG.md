@@ -5,6 +5,23 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.25] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-23 Advanced Risk Guards**
+  - Added `duplicate-side` guard to suppress repeated same-side execution within a configured time window
+  - Added `max-notional-per-symbol` guard to cap projected notional per symbol
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-23-advanced-risk-guards.md`
+
+### Changed
+- Expanded Go runtime risk configuration with `max_notional_per_symbol` and `duplicate_side_window_ms`
+- Wired the new guards into the active runtime guard pipeline
+- Updated `TODO.md` to reflect completion of the additional-guards milestone
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-23 additions and retains the current diagnostics/reporting behavior
+
 ## [2.0.24] - 2026-04-06
 
 ### Added
