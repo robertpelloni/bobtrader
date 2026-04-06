@@ -24,6 +24,8 @@ type RuntimeTrends struct {
 	PortfolioValue            NumericTrend       `json:"portfolio_value"`
 	RealizedPnL               NumericTrend       `json:"realized_pnl"`
 	UnrealizedPnL             NumericTrend       `json:"unrealized_pnl"`
+	DominantBlockCount        NumericTrend       `json:"dominant_block_count"`
+	TopConcentrationPct       NumericTrend       `json:"top_concentration_pct"`
 	LatestBlockReasons        map[string]int     `json:"latest_block_reasons,omitempty"`
 	LatestDominantBlockReason string             `json:"latest_dominant_block_reason,omitempty"`
 	LatestDominantBlockCount  int                `json:"latest_dominant_block_count,omitempty"`
@@ -65,6 +67,8 @@ func BuildRuntimeTrends(metricReports, valuationReports, executionReports []repo
 	trends.PortfolioValue = numericTrendFromValuation(valuationPayloads, func(p valuationPayload) float64 { return p.PortfolioValue })
 	trends.RealizedPnL = numericTrendFromValuation(valuationPayloads, func(p valuationPayload) float64 { return p.RealizedPnL })
 	trends.UnrealizedPnL = numericTrendFromValuation(valuationPayloads, func(p valuationPayload) float64 { return p.UnrealizedPnL })
+	trends.DominantBlockCount = numericTrendFromMetrics(metricPayloads, func(p metricsPayload) float64 { return float64(maxCount(p.Metrics.BlockReasons)) })
+	trends.TopConcentrationPct = numericTrendFromValuation(valuationPayloads, func(p valuationPayload) float64 { return maxConcentration(p.Concentration) })
 
 	if len(metricPayloads) > 0 {
 		trends.LatestBlockReasons = metricPayloads[len(metricPayloads)-1].Metrics.BlockReasons
@@ -130,4 +134,24 @@ func numericTrend[T any](items []T, selector func(T) float64) NumericTrend {
 	}
 	trend.Previous = trend.Latest
 	return trend
+}
+
+func maxCount(values map[string]int) int {
+	max := 0
+	for _, v := range values {
+		if v > max {
+			max = v
+		}
+	}
+	return max
+}
+
+func maxConcentration(values map[string]float64) float64 {
+	max := 0.0
+	for _, v := range values {
+		if v > max {
+			max = v
+		}
+	}
+	return max
 }

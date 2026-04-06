@@ -36,4 +36,7 @@ func TestBuildRuntimeTrends(t *testing.T) {
 	if trends.LatestTopConcentration != "BTCUSDT" || trends.LatestTopConcentrationPct != 0.8 {
 		t.Fatalf("unexpected concentration trend metadata: %+v", trends)
 	}
+	if trends.DominantBlockCount.Latest != 2 || trends.TopConcentrationPct.Latest != 0.8 {
+		t.Fatalf("unexpected derived trend values: %+v", trends)
+	}
 }

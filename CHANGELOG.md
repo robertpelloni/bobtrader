@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.30] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-28 Trend Widget Expansion**
+  - Added dashboard visualizations for concentration drift and blocked-count trends
+  - Added derived trend metrics for dominant block count and top concentration percentage in the runtime analysis layer
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-28-trend-widget-expansion.md`
+
+### Changed
+- Enhanced the dashboard to visualize both categorical diagnostics and time-varying risk/blocked behavior more clearly
+- Enhanced runtime trend analysis with stronger derived metrics over concentration and block-reason history
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-28 visualization and trend-analysis additions
+
 ## [2.0.29] - 2026-04-06
 
 ### Added

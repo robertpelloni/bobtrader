@@ -87,6 +87,16 @@ const dashboardHTML = `<!doctype html>
           <div id="block-reasons-chart" class="chart">loading...</div>
         </div>
       </div>
+      <div class="split" style="margin-top:16px;">
+        <div>
+          <h3>Concentration Drift</h3>
+          <div id="concentration-trend-chart" class="chart">loading...</div>
+        </div>
+        <div>
+          <h3>Blocked Count Trend</h3>
+          <div id="blocked-trend-chart" class="chart">loading...</div>
+        </div>
+      </div>
     </section>
     <section style="grid-column: 1 / -1;"><h2>Metrics History</h2><div id="metrics-history">loading...</div></section>
     <section style="grid-column: 1 / -1;"><h2>Valuation History</h2><div id="valuation-history">loading...</div></section>
@@ -241,6 +251,12 @@ const dashboardHTML = `<!doctype html>
           display: String(value)
         }));
         renderBarChart('block-reasons-chart', blockReasonEntries, '#f07178');
+
+        renderLineChart('concentration-trend-chart', valuationHistory, r => {
+          const values = Object.values(r.payload?.concentration || {});
+          return values.length ? Math.max(...values) * 100 : 0;
+        }, '#9b7bff');
+        renderLineChart('blocked-trend-chart', metricsHistory, r => Number(r.payload?.metrics?.execution_blocked ?? 0), '#f07178');
 
         document.getElementById('last-updated').textContent = 'last updated ' + new Date().toLocaleTimeString();
       } catch (error) {
