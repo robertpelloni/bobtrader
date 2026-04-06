@@ -1,26 +1,16 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-first implementation wave focused on delivering the first true browser-facing operator dashboard.
-- Added the following new capability under `ultratrader-go/`:
-  - built-in HTML dashboard page served directly from the Go HTTP layer.
-- The dashboard now pulls together existing diagnostics surfaces into one operator view:
-  - status
-  - portfolio summary
-  - execution diagnostics
-  - exposure diagnostics
-  - metrics
-  - guards
-  - report trends
-  - latest reports
-- Updated planning/docs to reflect completion of the initial UI/dashboard layer:
-  - `TODO.md`
-  - `CHANGELOG.md`
-  - `docs/ai/implementation/go-phase-21-operator-dashboard-bootstrap.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-21-operator-dashboard-bootstrap.md`
+- Continued the Go ultra-project into a twenty-second implementation wave focused on expanding the stream-aware strategy library.
+- Added the following new capabilities under `ultratrader-go/`:
+  - `TickMomentumBurst`, a second tick-aware demo strategy using short-window momentum rather than static threshold crossing alone.
+- Expanded stream-mode app wiring so multiple event-driven strategies can now run together.
+- Added documentation for this phase:
+  - `docs/ai/implementation/go-phase-22-stream-aware-strategy-library-growth.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-22-stream-aware-strategy-library-growth.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.23`
-  - `CHANGELOG.md` with the 2.0.23 Phase-21 entry.
+  - `VERSION.md` → `2.0.24`
+  - `CHANGELOG.md` with the 2.0.24 Phase-22 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -31,18 +21,17 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has its first integrated human-facing dashboard surface. This is the clearest operator experience milestone so far and proves the existing API layer is coherent enough to support a real UI.
+The Go runtime now has multiple stream-aware strategy examples, making the event-driven execution path more representative of the intended long-term architecture.
 
 ## Suggested Immediate Next Steps
-1. Add richer dashboard visualizations over trends and history.
-2. Add persistent metrics/valuation visualization modules.
-3. Add more advanced stream-aware strategies.
-4. Add deployment packaging and environment profiles.
-5. Continue legacy Python roadmap/module inventory reconciliation.
+1. Add more advanced stream-aware strategies.
+2. Add richer paper stream simulation patterns or regimes.
+3. Continue deeper analytics/reporting modules over reports + journals.
+4. Continue legacy Python roadmap/module inventory reconciliation.
 
 ## Files to Review First Next Session
-- `TODO.md`
-- `docs/ai/implementation/go-phase-21-operator-dashboard-bootstrap.md`
-- `ultratrader-go/internal/connectors/httpapi/dashboard.go`
-- `ultratrader-go/internal/connectors/httpapi/server.go`
+- `docs/ai/implementation/go-phase-22-stream-aware-strategy-library-growth.md`
+- `ultratrader-go/internal/strategy/demo/tick_momentum_burst.go`
+- `ultratrader-go/internal/strategy/runtime.go`
+- `ultratrader-go/internal/strategy/scheduler/scheduler.go`
 - `ultratrader-go/internal/core/app/app.go`

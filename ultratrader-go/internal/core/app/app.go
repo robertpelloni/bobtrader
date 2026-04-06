@@ -108,7 +108,10 @@ func New(cfg config.Config) (*App, error) {
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
 	var strategyRuntime *strategy.Runtime
 	if cfg.Scheduler.Mode == "stream" {
-		strategyRuntime = strategy.NewRuntime(strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"))
+		strategyRuntime = strategy.NewRuntime(
+			strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"),
+			strategydemo.NewTickMomentumBurst("paper-main", "BTCUSDT", "0.01", 3, 0.05, 0.05),
+		)
 	} else {
 		strategyRuntime = strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
 	}

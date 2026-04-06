@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.24] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-22 Stream-Aware Strategy Library Growth**
+  - Added `TickMomentumBurst`, a second event-driven demo strategy for stream mode
+  - Extended stream-mode runtime composition so multiple tick-aware strategies can execute together
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-22-stream-aware-strategy-library-growth.md`
+
+### Changed
+- Enhanced the paper-stream runtime path so it now supports both threshold-driven and momentum-driven tick strategies
+- Strengthened the credibility of the event-driven architecture by expanding beyond a single demo stream strategy
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-22 additions and retains the stream-capable runtime path
+
 ## [2.0.23] - 2026-04-06
 
 ### Added
