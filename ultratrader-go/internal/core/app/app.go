@@ -18,6 +18,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/snapshot"
+	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
@@ -28,6 +29,7 @@ import (
 )
 
 type starter interface{ Start(context.Context) }
+type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
 	config           config.Config
@@ -46,6 +48,7 @@ type App struct {
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.Scheduler
 	schedulerService starter
+	cycleRunner      cycleRunner
 	pipeline         *risk.Pipeline
 	httpHandler      http.Handler
 	httpRuntime      *httpapi.Runtime
@@ -103,11 +106,20 @@ func New(cfg config.Config) (*App, error) {
 		strategyRuntime = strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
 	}
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
+	reportProvider := func(ctx context.Context) []reports.Report {
+		return []reports.Report{
+			{Type: "metrics-snapshot", Payload: map[string]any{"metrics": metricsTracker.Snapshot()}},
+			{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed), "realized_pnl": portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed)}},
+			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
+		}
+	}
+	cycleRunner := reportingruntime.NewReportingRunner(scheduler, reportStore, reportProvider)
 	var schedulerService interface{ Start(context.Context) }
 	if cfg.Scheduler.Mode == "stream" {
-		schedulerService = strategyscheduler.NewStreamService(scheduler, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+		reportingTickRunner := reportingruntime.NewReportingTickRunner(scheduler, reportStore, reportProvider)
+		schedulerService = strategyscheduler.NewStreamService(reportingTickRunner, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
 	} else {
-		schedulerService = strategyscheduler.NewService(scheduler, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+		schedulerService = strategyscheduler.NewService(cycleRunner, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
 	}
 
 	handler := httpapi.NewHandler(httpapi.Dependencies{
@@ -141,7 +153,7 @@ func New(cfg config.Config) (*App, error) {
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
-	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, reportStore: reportStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, metricsTracker: metricsTracker, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, pipeline: pipeline, httpHandler: handler, httpRuntime: runtime}, nil
+	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, reportStore: reportStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, metricsTracker: metricsTracker, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, cycleRunner: cycleRunner, pipeline: pipeline, httpHandler: handler, httpRuntime: runtime}, nil
 }
 
 func (a *App) Close() error {
@@ -171,18 +183,12 @@ func (a *App) Start(ctx context.Context) error {
 		a.schedulerService.Start(ctx)
 		a.logger.Info("scheduler service started", map[string]any{"interval_ms": a.config.Scheduler.IntervalMS, "mode": a.config.Scheduler.Mode})
 	}
-	if err := a.scheduler.RunOnce(ctx); err != nil {
+	if err := a.cycleRunner.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
 	reportPayload := map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed), "metrics": a.metricsTracker.Snapshot(), "guards": a.pipeline.Names()}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
-	}
-	if err := a.reportStore.Append(ctx, reports.Report{Type: "metrics-snapshot", Payload: map[string]any{"metrics": a.metricsTracker.Snapshot()}}); err != nil {
-		return fmt.Errorf("append metrics report: %w", err)
-	}
-	if err := a.reportStore.Append(ctx, reports.Report{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed)}}); err != nil {
-		return fmt.Errorf("append valuation report: %w", err)
 	}
 	a.logger.Info("app startup completed", reportPayload)
 	return nil

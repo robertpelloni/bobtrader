@@ -62,7 +62,7 @@ func TestAppStartWritesEventSnapshotOrderLogAndReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read report log: %v", err)
 	}
-	if !strings.Contains(string(reports), "startup-summary") || !strings.Contains(string(reports), "portfolio-valuation") || !strings.Contains(string(reports), "metrics-snapshot") {
+	if !strings.Contains(string(reports), "startup-summary") || !strings.Contains(string(reports), "portfolio-valuation") || !strings.Contains(string(reports), "metrics-snapshot") || !strings.Contains(string(reports), "execution-summary") {
 		t.Fatalf("expected runtime reports, got %q", string(reports))
 	}
 

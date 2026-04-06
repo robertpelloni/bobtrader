@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.19] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-17 Continuous Cycle Reporting**
+  - Added reporting wrappers for both timer-driven and tick-driven scheduler execution paths
+  - Added per-cycle durable report generation for metrics snapshots, portfolio valuation, and execution summaries
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-17-continuous-cycle-reporting.md`
+
+### Changed
+- Enhanced the Go app to route scheduler execution through reporting-aware wrappers so runtime history grows beyond startup-only writes
+- Updated `TODO.md` to reflect completion of execution summary history over time
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-17 additions and continues to emit startup/runtime report data through the persistent reporting layer
+
 ## [2.0.18] - 2026-04-06
 
 ### Added
