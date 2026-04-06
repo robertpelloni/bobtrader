@@ -5,6 +5,22 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.16] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-14 Stream-Driven Strategy Consumption**
+  - Added scheduler stream service that triggers runtime evaluation from subscribed market-data ticks
+  - Added scheduler mode configuration to support `timer` and `stream` execution styles
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-14-stream-driven-strategy-consumption.md`
+
+### Changed
+- Enhanced the Go app to choose between timer-driven and stream-driven scheduler services based on config
+- Updated TODO tracking to reflect completion of stream-driven strategy consumption and integration of stream-fed scheduling into the runtime lifecycle
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-14 additions and supports the scheduler mode configuration path
+
 ## [2.0.15] - 2026-04-06
 
 ### Added

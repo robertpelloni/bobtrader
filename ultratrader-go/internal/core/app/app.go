@@ -27,6 +27,8 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
+type starter interface{ Start(context.Context) }
+
 type App struct {
 	config           config.Config
 	logger           *logging.Logger
@@ -43,7 +45,7 @@ type App struct {
 	executionService *execution.Service
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.Scheduler
-	schedulerService *strategyscheduler.Service
+	schedulerService starter
 	pipeline         *risk.Pipeline
 	httpHandler      http.Handler
 	httpRuntime      *httpapi.Runtime
@@ -96,7 +98,12 @@ func New(cfg config.Config) (*App, error) {
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
 	strategyRuntime := strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
-	schedulerService := strategyscheduler.NewService(scheduler, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+	var schedulerService interface{ Start(context.Context) }
+	if cfg.Scheduler.Mode == "stream" {
+		schedulerService = strategyscheduler.NewStreamService(scheduler, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+	} else {
+		schedulerService = strategyscheduler.NewService(scheduler, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+	}
 
 	handler := httpapi.NewHandler(httpapi.Dependencies{
 		StatusProvider: func() httpapi.Status {
@@ -150,7 +157,7 @@ func (a *App) Start(ctx context.Context) error {
 	}
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
-		a.logger.Info("scheduler service started", map[string]any{"interval_ms": a.config.Scheduler.IntervalMS})
+		a.logger.Info("scheduler service started", map[string]any{"interval_ms": a.config.Scheduler.IntervalMS, "mode": a.config.Scheduler.Mode})
 	}
 	if err := a.scheduler.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)

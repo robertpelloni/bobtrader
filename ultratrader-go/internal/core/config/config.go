@@ -44,8 +44,9 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	Enabled    bool `json:"enabled"`
-	IntervalMS int  `json:"interval_ms"`
+	Enabled    bool   `json:"enabled"`
+	Mode       string `json:"mode"`
+	IntervalMS int    `json:"interval_ms"`
 }
 
 type RiskConfig struct {
@@ -74,7 +75,7 @@ func Default() Config {
 		Reports:     ReportConfig{Path: filepath.Join("data", "reports", "runtime.jsonl")},
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
-		Scheduler:   SchedulerConfig{Enabled: false, IntervalMS: 1000},
+		Scheduler:   SchedulerConfig{Enabled: false, Mode: "timer", IntervalMS: 1000},
 		Risk:        RiskConfig{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, MaxOpenPositions: 0, MaxConcentrationPct: 0},
 		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
 	}
@@ -110,6 +111,9 @@ func Load(path string) (Config, error) {
 	}
 	if cfg.Server.Address == "" {
 		cfg.Server.Address = defaults.Server.Address
+	}
+	if cfg.Scheduler.Mode == "" {
+		cfg.Scheduler.Mode = defaults.Scheduler.Mode
 	}
 	if cfg.Scheduler.IntervalMS <= 0 {
 		cfg.Scheduler.IntervalMS = defaults.Scheduler.IntervalMS

@@ -15,10 +15,10 @@
 - [ ] Add additional guards for duplicate side suppression / max notional per symbol / account exposure
 
 ### Market data
-- [ ] Add stream-driven strategy consumption path
+- [x] Add stream-driven strategy consumption path
 - [x] Add event/subscription interfaces beyond simple tick subscription
 - [ ] Add richer paper stream simulation patterns
-- [ ] Add integration of stream-fed strategies into scheduler/runtime lifecycle
+- [x] Add integration of stream-fed strategies into scheduler/runtime lifecycle
 
 ### Analytics and reporting
 - [x] Add persistent metrics history

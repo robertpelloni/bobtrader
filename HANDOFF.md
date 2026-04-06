@@ -1,20 +1,19 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a thirteenth implementation wave focused on richer runtime diagnostics and concentration-aware reporting summaries.
+- Continued the Go ultra-project into a fourteenth implementation wave focused on moving strategy evaluation from purely timer-driven execution toward optional stream-driven execution.
 - Added the following new capabilities under `ultratrader-go/`:
-  - success-rate and blocked-rate calculations in runtime metrics,
-  - richer execution summary fields (`unique_symbols`, `top_symbol`, `top_symbol_count`),
-  - portfolio concentration summaries derived from live-valued positions.
-- Updated operator/API visibility so runtime summaries are now more interpretable than raw counts alone.
-- Updated planning/docs to reflect the new diagnostic depth:
-  - `CHANGELOG.md`
+  - scheduler stream service,
+  - scheduler mode configuration (`timer` vs `stream`),
+  - app wiring that selects between timer-driven and stream-driven scheduler services.
+- Updated planning/docs to reflect the new stream-consumption milestone:
   - `TODO.md`
-  - `docs/ai/implementation/go-phase-13-rates-concentration-and-reporting-summaries.md`
-  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+  - `CHANGELOG.md`
+  - `docs/ai/implementation/go-phase-14-stream-driven-strategy-consumption.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-14-stream-driven-strategy-consumption.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.15`
-  - `CHANGELOG.md` with the 2.0.15 Phase-13 entry.
+  - `VERSION.md` → `2.0.16`
+  - `CHANGELOG.md` with the 2.0.16 Phase-14 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -25,30 +24,23 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has:
-- policy-aware paper trading,
-- block-reason-aware diagnostics,
-- success/block rate metrics,
-- execution summary ranking data,
-- portfolio concentration summaries,
-- persistent runtime reports,
-- explicit runtime lifecycle control,
-- app-level startup/shutdown coverage.
+The Go runtime now supports both:
+- timer-driven scheduler triggering, and
+- stream-driven scheduler triggering via market-data subscriptions.
 
-This is the most diagnostically expressive version of the runtime so far.
+This is a major runtime evolution because it creates the first pathway toward event-driven strategy execution in the Go ultra-project.
 
 ## Suggested Immediate Next Steps
-1. Add stream-driven strategy consumption.
-2. Add richer paper stream simulation patterns.
-3. Add persistent metrics and valuation time-series beyond startup report writes.
-4. Add deeper analytics/reporting modules over reports + journals + summaries.
-5. Add concentration drift diagnostics and richer block-reason trends.
+1. Add richer paper stream simulation patterns.
+2. Add persistent metrics and valuation time-series beyond startup reports.
+3. Add deeper analytics/reporting modules over reports + journals.
+4. Add richer execution-rate / concentration diagnostics trends over time.
+5. Add coordinated lifecycle tests with active recurring scheduler + stream subscriptions.
 
 ## Files to Review First Next Session
 - `TODO.md`
-- `docs/ai/implementation/go-phase-13-rates-concentration-and-reporting-summaries.md`
-- `docs/ai/implementation/go-feature-assimilation-matrix.md`
-- `ultratrader-go/internal/metrics/tracker.go`
-- `ultratrader-go/internal/trading/execution/repository.go`
-- `ultratrader-go/internal/trading/portfolio/tracker.go`
-- `ultratrader-go/internal/connectors/httpapi/server.go`
+- `docs/ai/implementation/go-phase-14-stream-driven-strategy-consumption.md`
+- `ultratrader-go/internal/strategy/scheduler/stream_service.go`
+- `ultratrader-go/internal/strategy/scheduler/stream_service_test.go`
+- `ultratrader-go/internal/core/config/config.go`
+- `ultratrader-go/internal/core/app/app.go`
