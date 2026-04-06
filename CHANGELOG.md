@@ -5,6 +5,21 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.28] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-26 Dashboard Visualization Layer**
+  - Added inline chart rendering for portfolio value history and execution success-rate history
+  - Added richer dashboard layout sections for chart-focused operator inspection
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-26-dashboard-visualization-layer.md`
+
+### Changed
+- Enhanced the Go dashboard from a text-first console into a more visual operator surface with chart panels and richer history presentation
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-26 dashboard visualization improvements
+
 ## [2.0.27] - 2026-04-06
 
 ### Added

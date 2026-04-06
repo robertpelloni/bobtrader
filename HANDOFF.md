@@ -1,22 +1,19 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-fifth implementation wave focused on improving the browser-facing operator dashboard.
+- Continued the Go ultra-project into a twenty-sixth implementation wave focused on improving the operator dashboard with actual visualizations.
 - Added the following dashboard improvements under `ultratrader-go/`:
-  - summary cards,
-  - auto-refresh toggle,
-  - configurable refresh interval,
-  - metrics history table,
-  - valuation history table,
-  - more structured layout over the existing APIs.
+  - portfolio value line chart,
+  - execution success-rate line chart,
+  - richer chart-focused layout section.
+- The dashboard now uses existing runtime report history endpoints to render lightweight time-series visualizations in-browser.
 - Updated planning/docs:
-  - `TODO.md`
   - `CHANGELOG.md`
-  - `docs/ai/implementation/go-phase-25-dashboard-enrichment.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-25-dashboard-enrichment.md`
+  - `docs/ai/implementation/go-phase-26-dashboard-visualization-layer.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-26-dashboard-visualization-layer.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.27`
-  - `CHANGELOG.md` with the 2.0.27 Phase-25 entry.
+  - `VERSION.md` → `2.0.28`
+  - `CHANGELOG.md` with the 2.0.28 Phase-26 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -27,16 +24,15 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has a meaningfully improved browser-facing operator surface. It is still lightweight, but it is increasingly useful as a real runtime console rather than just a debug page.
+The Go runtime dashboard is now meaningfully visual, not just textual. This is an important operator-experience milestone because the runtime can now present historical movement in a way that is much easier to interpret quickly.
 
 ## Suggested Immediate Next Steps
-1. Add richer chart visualizations.
-2. Add trend displays for concentration and block reasons.
-3. Continue deeper analytics/reporting modules.
-4. Continue legacy Python roadmap/module inventory reconciliation.
+1. Add concentration and block-reason visualizations.
+2. Add deeper analytics modules over runtime report history.
+3. Continue legacy Python roadmap/module inventory reconciliation.
+4. Expand the dashboard into a fuller operational console.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-25-dashboard-enrichment.md`
+- `docs/ai/implementation/go-phase-26-dashboard-visualization-layer.md`
 - `ultratrader-go/internal/connectors/httpapi/dashboard.go`
-- `ultratrader-go/internal/connectors/httpapi/server.go`
 - `TODO.md`

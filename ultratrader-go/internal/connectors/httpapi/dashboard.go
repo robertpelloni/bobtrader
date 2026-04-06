@@ -30,6 +30,11 @@ const dashboardHTML = `<!doctype html>
     .ok { color: #59d089; }
     .warn { color: #f0c36d; }
     .error { color: #f07178; }
+    .chart { width: 100%; height: 180px; background: #0f1729; border: 1px solid #22324e; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .chart svg { width: 100%; height: 100%; }
+    .chart .empty { color: #7f93ac; font-size: 12px; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -60,6 +65,19 @@ const dashboardHTML = `<!doctype html>
     <section><h2>Guard Diagnostics</h2><pre id="guards">loading...</pre></section>
     <section><h2>Report Trends</h2><pre id="report-trends">loading...</pre></section>
     <section><h2>Latest Reports</h2><pre id="runtime-reports">loading...</pre></section>
+    <section style="grid-column: 1 / -1;">
+      <h2>Charts</h2>
+      <div class="split">
+        <div>
+          <h3>Portfolio Value</h3>
+          <div id="valuation-chart" class="chart">loading...</div>
+        </div>
+        <div>
+          <h3>Execution Success Rate</h3>
+          <div id="metrics-chart" class="chart">loading...</div>
+        </div>
+      </div>
+    </section>
     <section style="grid-column: 1 / -1;"><h2>Metrics History</h2><div id="metrics-history">loading...</div></section>
     <section style="grid-column: 1 / -1;"><h2>Valuation History</h2><div id="valuation-history">loading...</div></section>
   </main>
@@ -92,6 +110,36 @@ const dashboardHTML = `<!doctype html>
       }
       html += '</tbody></table>';
       el.innerHTML = html;
+    }
+
+    function renderLineChart(elId, rows, extractor, color) {
+      const el = document.getElementById(elId);
+      if (!rows || rows.length === 0) {
+        el.innerHTML = '<div class="empty">No data</div>';
+        return;
+      }
+      const values = rows.map(extractor).filter(v => typeof v === 'number' && !Number.isNaN(v));
+      if (values.length === 0) {
+        el.innerHTML = '<div class="empty">No numeric data</div>';
+        return;
+      }
+      const width = 600;
+      const height = 180;
+      const pad = 20;
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min || 1;
+      const points = values.map((v, i) => {
+        const x = pad + (i * (width - pad * 2) / Math.max(1, values.length - 1));
+        const y = height - pad - (((v - min) / range) * (height - pad * 2));
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      el.innerHTML = '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">'
+        + '<rect x="0" y="0" width="' + width + '" height="' + height + '" fill="#0f1729" />'
+        + '<polyline fill="none" stroke="' + color + '" stroke-width="3" points="' + points + '" />'
+        + '<text x="' + pad + '" y="18" fill="#9fb0c8" font-size="12">max ' + max.toFixed(2) + '</text>'
+        + '<text x="' + pad + '" y="' + (height - 6) + '" fill="#9fb0c8" font-size="12">min ' + min.toFixed(2) + '</text>'
+        + '</svg>';
     }
 
     async function refreshDashboard() {
@@ -141,6 +189,9 @@ const dashboardHTML = `<!doctype html>
           { label: 'Realized PnL', get: r => r.payload?.realized_pnl },
           { label: 'Unrealized PnL', get: r => r.payload?.unrealized_pnl }
         ]);
+
+        renderLineChart('valuation-chart', valuationHistory, r => Number(r.payload?.portfolio_value ?? 0), '#59d089');
+        renderLineChart('metrics-chart', metricsHistory, r => Number((r.payload?.metrics?.success_rate ?? 0) * 100), '#4dabf7');
 
         document.getElementById('last-updated').textContent = 'last updated ' + new Date().toLocaleTimeString();
       } catch (error) {
