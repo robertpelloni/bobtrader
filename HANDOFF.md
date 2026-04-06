@@ -1,20 +1,23 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-third implementation wave focused on strengthening the risk layer with more specific symbol/side controls.
-- Added the following new capabilities under `ultratrader-go/`:
-  - `max-notional-per-symbol` guard,
-  - `duplicate-side` guard,
-  - config support for per-symbol notional limits and duplicate-side timing windows.
-- Wired the new guards into the active Go runtime pipeline.
-- Updated planning/docs to reflect completion of the additional-guards TODO item:
+- Continued the Go ultra-project into a twenty-fourth implementation wave focused on deployment packaging and environment profiles.
+- Added the following deployment assets under `ultratrader-go/`:
+  - `Dockerfile`
+  - `.dockerignore`
+  - `docker-compose.yml`
+  - config profiles for development timer mode, development stream mode, and paper-service mode.
+- Expanded deployment documentation and runtime usage guidance:
+  - `DEPLOY.md`
+  - `ultratrader-go/README.md`
+- Updated planning/docs to reflect completion of the deployment packaging milestone:
   - `TODO.md`
   - `CHANGELOG.md`
-  - `docs/ai/implementation/go-phase-23-advanced-risk-guards.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-23-advanced-risk-guards.md`
+  - `docs/ai/implementation/go-phase-24-deployment-packaging-and-profiles.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-24-deployment-packaging-and-profiles.md`
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.25`
-  - `CHANGELOG.md` with the 2.0.25 Phase-23 entry.
+  - `VERSION.md` → `2.0.26`
+  - `CHANGELOG.md` with the 2.0.26 Phase-24 entry.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -25,17 +28,18 @@ Inside `ultratrader-go/`:
 All succeeded.
 
 ## Current Strategic Position
-The Go runtime now has a more mature and specific risk pipeline, including protections against repeated same-side executions and over-allocation to a single symbol by projected notional.
+The Go runtime now has its first environment-profile and container-packaging baseline, making it significantly easier to run consistently across development setups and to evolve toward more formal deployment workflows.
 
 ## Suggested Immediate Next Steps
-1. Add max-open-position and concentration policy tuning docs/examples.
-2. Add richer concentration and block-reason trend reporting.
-3. Continue deeper analytics/reporting modules over reports + journals.
-4. Continue legacy Python roadmap/module inventory reconciliation.
+1. Add deeper analytics/reporting modules.
+2. Add more advanced stream-aware strategies.
+3. Continue legacy Python roadmap/module inventory reconciliation.
+4. Extend deployment hardening once real exchange adapters are introduced.
 
 ## Files to Review First Next Session
-- `TODO.md`
-- `docs/ai/implementation/go-phase-23-advanced-risk-guards.md`
-- `ultratrader-go/internal/risk/duplicate_side.go`
-- `ultratrader-go/internal/risk/max_notional_per_symbol.go`
-- `ultratrader-go/internal/core/app/app.go`
+- `DEPLOY.md`
+- `ultratrader-go/README.md`
+- `docs/ai/implementation/go-phase-24-deployment-packaging-and-profiles.md`
+- `ultratrader-go/config/development-timer.json`
+- `ultratrader-go/config/development-stream.json`
+- `ultratrader-go/config/paper-service.json`

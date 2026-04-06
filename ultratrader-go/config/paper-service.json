@@ -1,0 +1,31 @@
+{
+  "environment": "service-paper",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8080"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 500
+  },
+  "risk": {
+    "max_notional": 500,
+    "max_notional_per_symbol": 500,
+    "allowed_symbols": ["BTCUSDT"],
+    "cooldown_ms": 1000,
+    "duplicate_window_ms": 2000,
+    "duplicate_side_window_ms": 2000,
+    "max_open_positions": 1,
+    "max_concentration_pct": 100
+  },
+  "accounts": [
+    {
+      "id": "paper-main",
+      "name": "Paper Main",
+      "enabled": true,
+      "exchange": "paper",
+      "capabilities": ["spot", "paper", "candles", "balances", "orders"]
+    }
+  ]
+}

@@ -34,6 +34,12 @@ cd ultratrader-go
 go run ./cmd/ultratrader
 ```
 
+### Run with config profile
+```bash
+cd ultratrader-go
+go run ./cmd/ultratrader --config config/development-timer.json
+```
+
 ### Test
 ```bash
 cd ultratrader-go
@@ -48,6 +54,11 @@ By default the Go runtime:
 - performs one startup scheduler pass,
 - writes startup artifacts to `data/` under the Go module.
 
+### Included config profiles
+- `ultratrader-go/config/development-timer.json`
+- `ultratrader-go/config/development-stream.json`
+- `ultratrader-go/config/paper-service.json`
+
 ### Current persisted files
 Under `ultratrader-go/data/` the runtime may create:
 - event log
@@ -58,14 +69,23 @@ Under `ultratrader-go/data/` the runtime may create:
 
 ### Current diagnostics APIs
 The runtime currently exposes handler routes including:
+- `/`
+- `/dashboard`
 - `/healthz`
 - `/readyz`
 - `/api/status`
 - `/api/portfolio`
+- `/api/portfolio-summary`
 - `/api/orders`
 - `/api/execution-summary`
+- `/api/execution-diagnostics`
+- `/api/exposure-diagnostics`
 - `/api/metrics`
 - `/api/guards`
+- `/api/guard-diagnostics`
+- `/api/runtime-reports/latest`
+- `/api/runtime-reports/history`
+- `/api/runtime-reports/trends`
 
 ### Config behavior
 If no config file is provided, defaults are used.
@@ -76,6 +96,24 @@ go run ./cmd/ultratrader --config path/to/config.json
 ```
 
 ## 3. Deployment Recommendations
+### Local containerized deployment
+Build:
+```bash
+cd ultratrader-go
+docker build -t ultratrader-go .
+```
+
+Run:
+```bash
+docker run --rm -p 8080:8080 ultratrader-go
+```
+
+Compose:
+```bash
+cd ultratrader-go
+docker compose up --build
+```
+
 ### Current best practice
 For now, treat `ultratrader-go/` as:
 - a local development runtime,
@@ -99,12 +137,11 @@ Before broader deployment, verify:
 
 ## 5. Future Deployment Work
 Still needed before stronger deployment guidance:
-- coordinated app shutdown tests
 - persistent metrics/valuation history
 - deeper diagnostics and reporting
 - stronger risk policies
 - real exchange adapters beyond paper mode
-- deployment packaging and environment-specific configs
+- deployment packaging hardening beyond the initial Docker/Compose baseline
 
 ## 6. Notes
 Do **not** use destructive process-kill commands that could terminate the coding session or unrelated local services.

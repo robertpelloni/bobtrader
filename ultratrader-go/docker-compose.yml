@@ -1,0 +1,10 @@
+services:
+  ultratrader-go:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    command: ["--config", "/app/config/development-timer.json"]

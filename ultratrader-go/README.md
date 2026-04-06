@@ -28,7 +28,29 @@ This scaffold now establishes the first stable foundation for the future system:
 go run ./cmd/ultratrader
 ```
 
+With a config profile:
+```bash
+go run ./cmd/ultratrader --config config/development-timer.json
+```
+
 ## Test
 ```bash
 go test ./...
+```
+
+## Config Profiles
+- `config/development-timer.json`
+- `config/development-stream.json`
+- `config/paper-service.json`
+
+## Container
+Build and run:
+```bash
+docker build -t ultratrader-go .
+docker run --rm -p 8080:8080 ultratrader-go
+```
+
+Or with Compose:
+```bash
+docker compose up --build
 ```

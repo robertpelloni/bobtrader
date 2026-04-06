@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.26] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-24 Deployment Packaging and Environment Profiles**
+  - Added initial Go runtime Dockerfile
+  - Added `.dockerignore`
+  - Added `docker-compose.yml`
+  - Added example config profiles for timer, stream, and paper-service modes under `ultratrader-go/config/`
+
+### Changed
+- Expanded `DEPLOY.md` with containerized run guidance and the current Go runtime endpoint surface
+- Updated `ultratrader-go/README.md` with config-profile and container usage examples
+- Updated `TODO.md` to reflect completion of deployment packaging and environment profile support
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after the packaging/documentation additions
+
 ## [2.0.25] - 2026-04-06
 
 ### Added
