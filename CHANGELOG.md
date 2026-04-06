@@ -5,6 +5,23 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.23] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-21 Operator Dashboard Bootstrap**
+  - Added a built-in HTML dashboard page for the Go runtime
+  - Dashboard consumes existing status, portfolio, execution, metrics, guards, and report APIs from the browser
+  - Added HTTP tests verifying dashboard serving from the runtime handler
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-21-operator-dashboard-bootstrap.md`
+
+### Changed
+- Updated `TODO.md` to reflect completion of the initial Go runtime UI/dashboard layer
+- Enhanced the HTTP root/dashboard routes to serve a lightweight operator interface over the existing diagnostics APIs
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-21 additions and serves the dashboard page through the Go HTTP layer
+
 ## [2.0.22] - 2026-04-06
 
 ### Added

@@ -36,7 +36,7 @@
 ### Operator surfaces
 - [x] Add richer operator-facing diagnostics APIs
 - [x] Add portfolio summary endpoint distinct from raw positions
-- [ ] Add UI/dashboard layer for Go runtime
+- [x] Add UI/dashboard layer for Go runtime
 - [ ] Add deployment packaging and environment profiles
 
 ## Legacy PowerTrader AI Documentation / Cleanup

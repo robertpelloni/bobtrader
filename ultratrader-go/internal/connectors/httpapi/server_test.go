@@ -31,8 +31,15 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 		ReportTrendsProvider:         func() reportinganalysis.RuntimeTrends { return reportinganalysis.RuntimeTrends{} },
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "UltraTrader Go Dashboard") {
+		t.Fatalf("dashboard expected 200 and title, got status=%d body=%q", w.Code, w.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("healthz expected 200, got %d", w.Code)
