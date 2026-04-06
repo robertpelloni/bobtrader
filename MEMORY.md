@@ -89,3 +89,5 @@ Every meaningful build/session should increment the version and mention the bump
 - Using `127.0.0.1:0` as the default Go HTTP bind address avoids frequent local port-collision failures during repeated development/test runs.
 - Logger/file-backed components need explicit cleanup paths to keep tests reliable on Windows.
 - Runtime summary persistence is now useful as a bridge between raw journals and future analytics/reporting layers.
+- Report readback (`Latest`, `LatestByType`) is the next key step after simple persistence because it turns durable artifacts into something the runtime and operator APIs can actually consume.
+- Live-valued exposure views are preferable to cost-basis-only exposure estimates when preparing concentration controls.

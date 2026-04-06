@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.14] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-12 Runtime History Readback and Exposure View**
+  - Added report-store readback helpers for latest reports and latest-by-type snapshots
+  - Added `/api/runtime-reports/latest` endpoint for operator-visible report history access
+  - Added live-valued `ExposureView` to support more realistic portfolio concentration evaluation
+  - Added detailed implementation notes at `docs/ai/implementation/go-phase-12-history-and-shutdown-integration.md`
+
+### Changed
+- Enhanced app startup to persist multiple durable report types (`startup-summary`, `metrics-snapshot`, `portfolio-valuation`)
+- Enhanced app integration tests to cover startup with active HTTP runtime and coordinated shutdown behavior
+- Enhanced `TODO.md` and the Go feature assimilation matrix to reflect durable report history and exposure-view progress
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/`
+- `go run ./cmd/ultratrader` initializes successfully after Phase-12 additions and emits persistent runtime report data
+
 ## [2.0.13] - 2026-04-06
 
 ### Added

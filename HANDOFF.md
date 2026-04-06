@@ -1,23 +1,16 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twelfth implementation wave focused on persistent runtime history and coordinated runtime shutdown validation.
+- Continued the Go ultra-project with a focused implementation wave on durable runtime history readback, live-valued exposure support, and stronger app-level lifecycle validation.
 - Added the following new capabilities under `ultratrader-go/`:
-  - report-store readback support (`Latest`, `LatestByType`),
+  - report-store readback helpers (`Latest`, `LatestByType`),
   - `/api/runtime-reports/latest` endpoint,
-  - live-valued portfolio `ExposureView`,
-  - app-level startup + HTTP runtime + shutdown integration coverage.
-- Expanded app startup so it now persists multiple runtime report types:
-  - `startup-summary`
-  - `metrics-snapshot`
-  - `portfolio-valuation`
-- Updated planning/tracking documentation:
-  - `TODO.md`
-  - `docs/ai/implementation/go-phase-12-history-and-shutdown-integration.md`
-  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+  - live-valued `ExposureView` for portfolio concentration groundwork,
+  - app integration coverage for startup with an active HTTP runtime plus coordinated shutdown.
 - Updated versioning docs:
-  - `VERSION.md` → `2.0.13`
-  - `CHANGELOG.md` with the 2.0.13 Phase-12 entry.
+  - `VERSION.md` → `2.0.14`
+  - `CHANGELOG.md` with the 2.0.14 Phase-12 entry.
+- Updated memory and planning docs to reflect the new persistent-history and exposure-view capabilities.
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -34,36 +27,25 @@ The Go runtime now has:
 - metrics and diagnostics APIs,
 - PnL-aware portfolio state,
 - explicit runtime lifecycle control,
-- persistent runtime summary reports with readback,
-- the first market-data stream/subscription abstraction,
-- live-valued exposure-control building blocks,
+- persistent runtime summary reports with readback support,
+- live-valued exposure-control foundations,
 - app-level startup/shutdown integration coverage.
 
-Current runtime path now includes:
-1. structured startup logging,
-2. event/snapshot/order/report persistence,
-3. market-data-aware strategy evaluation,
-4. scheduler-to-execution routing,
-5. configurable temporal + position-based protections,
-6. paper execution,
-7. in-memory order/portfolio/metrics updates,
-8. operator-readable APIs for status, portfolio, orders, execution summary, metrics, guards, and latest reports,
-9. coordinated shutdown support for the active HTTP runtime.
-
-This is the most integrated and lifecycle-aware version of the Go ultra-project so far.
+This pushes the runtime further from "bootstrap harness" toward "durable, inspectable service platform."
 
 ## Suggested Immediate Next Steps
-1. Add richer execution-rate and symbol concentration diagnostics.
-2. Add stream-driven strategy consumption paths over the subscription abstraction.
-3. Add persistent metrics/valuation time-series beyond startup-only snapshots.
-4. Add concentration/exposure diagnostics endpoints.
-5. Add coordinated lifecycle tests that include active recurring scheduler execution.
+1. Add stream-driven strategy consumption over the subscription abstraction.
+2. Add richer paper stream simulation patterns.
+3. Add richer execution-rate and symbol concentration diagnostics.
+4. Add persistent metrics and valuation history beyond startup-triggered report writes.
+5. Add coordinated app shutdown tests that include active scheduler + stream subscriptions.
 6. Add deeper analytics/reporting modules over reports + journals.
 
 ## Files to Review First Next Session
-- `TODO.md`
 - `docs/ai/implementation/go-phase-12-history-and-shutdown-integration.md`
 - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+- `TODO.md`
+- `MEMORY.md`
 - `ultratrader-go/internal/persistence/reports/store.go`
 - `ultratrader-go/internal/connectors/httpapi/server.go`
 - `ultratrader-go/internal/core/app/app.go`
