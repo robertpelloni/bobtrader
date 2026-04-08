@@ -11,20 +11,42 @@ type tickRunner interface {
 	RunTick(ctx context.Context, tick marketdata.Tick) error
 }
 
-type ReportingTickRunner struct {
-	runner   tickRunner
-	store    *reports.Store
-	provider ReportProvider
+type candleRunner interface {
+	RunCandle(ctx context.Context, candle marketdata.Candle) error
 }
 
-func NewReportingTickRunner(r tickRunner, store *reports.Store, provider ReportProvider) *ReportingTickRunner {
-	return &ReportingTickRunner{runner: r, store: store, provider: provider}
+type ReportingStreamRunner struct {
+	tickRunner   tickRunner
+	candleRunner candleRunner
+	store        *reports.Store
+	provider     ReportProvider
 }
 
-func (r *ReportingTickRunner) RunTick(ctx context.Context, tick marketdata.Tick) error {
-	if err := r.runner.RunTick(ctx, tick); err != nil {
+func NewReportingStreamRunner(tr tickRunner, cr candleRunner, store *reports.Store, provider ReportProvider) *ReportingStreamRunner {
+	return &ReportingStreamRunner{tickRunner: tr, candleRunner: cr, store: store, provider: provider}
+}
+
+func (r *ReportingStreamRunner) RunTick(ctx context.Context, tick marketdata.Tick) error {
+	if r.tickRunner == nil {
+		return nil
+	}
+	if err := r.tickRunner.RunTick(ctx, tick); err != nil {
 		return err
 	}
+	return r.record(ctx)
+}
+
+func (r *ReportingStreamRunner) RunCandle(ctx context.Context, candle marketdata.Candle) error {
+	if r.candleRunner == nil {
+		return nil
+	}
+	if err := r.candleRunner.RunCandle(ctx, candle); err != nil {
+		return err
+	}
+	return r.record(ctx)
+}
+
+func (r *ReportingStreamRunner) record(ctx context.Context) error {
 	if r.store == nil || r.provider == nil {
 		return nil
 	}

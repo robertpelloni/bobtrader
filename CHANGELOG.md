@@ -5,6 +5,34 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.38] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-36 Live Candle Streaming**
+  - Extended `marketdata.StreamFeed` interface with `SubscribeCandles(ctx, symbol, interval)` returning a `CandleSubscription` channel.
+  - Added `CandleSubscription` interface to `marketdata/feed.go` for typed candle stream consumption.
+  - Implemented `SubscribeCandles` and `nextStreamCandle` in the paper feed (`marketdata/paper/feed.go`) to emit simulated OHLCV candles on a 5-second interval.
+  - Created `CandleStreamService` in `strategy/scheduler/candle_stream_service.go` — subscribes to a candle feed for multiple symbols and dispatches each candle through `RunCandle()`.
+  - Added `RunCandle(ctx, Candle)` method to `scheduler.Scheduler` to route candle events through `runtime.CandleEvent` and execute resulting signals.
+  - Unified reporting runner: replaced `ReportingTickRunner` with `ReportingStreamRunner` that handles both `RunTick` and `RunCandle` with automatic report persistence.
+  - Added `candle-stream` scheduler mode to `core/app` — when `scheduler.mode = "candle-stream"`, the app wires up `CandleSMACross` strategy and the `CandleStreamService`.
+  - Wrote `candle_stream_service_test.go` with mock feed/runner validating end-to-end candle dispatch.
+  - Wrote updated `tick_runner_test.go` (renamed `stubStreamRunner`) testing both tick and candle paths through `ReportingStreamRunner`.
+  - Documented architecture in `docs/ai/implementation/go-phase-36-live-candle-streaming.md`.
+
+### Changed
+- `marketdata/feed.go`: Added `CandleSubscription` interface and extended `StreamFeed` with `SubscribeCandles`.
+- `marketdata/paper/feed.go`: Added `candleSubscription` type, `SubscribeCandles`, `nextStreamCandle` methods.
+- `reporting/runtime/tick_runner.go`: Renamed from `ReportingTickRunner` to `ReportingStreamRunner` with dual `RunTick`/`RunCandle` support.
+- `reporting/runtime/tick_runner_test.go`: Renamed `stubTickRunner` to `stubStreamRunner`, added candle test coverage.
+- `strategy/scheduler/scheduler.go`: Added `RunCandle` method.
+- `core/app/app.go`: Added `candle-stream` mode branching with `CandleSMACross` strategy and `CandleStreamService`.
+
+### Verified
+- `go build ./cmd/ultratrader` compiles cleanly.
+- All 14 internal test packages pass individually.
+- Binary runs and produces valid structured JSON output with full guard pipeline active.
+
 ## [2.0.37] - 2026-04-06
 
 ### Added

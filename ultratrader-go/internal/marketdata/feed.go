@@ -14,7 +14,12 @@ type TickSubscription interface {
 	Chan() <-chan Tick
 }
 
+type CandleSubscription interface {
+	Chan() <-chan Candle
+}
+
 type StreamFeed interface {
 	Feed
 	SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) TickSubscription
+	SubscribeCandles(ctx context.Context, symbol, interval string) CandleSubscription
 }

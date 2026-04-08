@@ -109,11 +109,12 @@ func New(cfg config.Config) (*App, error) {
 	)
 	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
 	var strategyRuntime *strategy.Runtime
-	if cfg.Scheduler.Mode == "stream" {
+	if cfg.Scheduler.Mode == "stream" || cfg.Scheduler.Mode == "candle-stream" {
 		strategyRuntime = strategy.NewRuntime(
 			strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"),
 			strategydemo.NewTickMomentumBurst("paper-main", "BTCUSDT", "0.01", 3, 0.05, 0.05),
 			strategydemo.NewTickMeanReversion("paper-main", "BTCUSDT", "0.01", 3, 0.1, 0.1),
+			strategydemo.NewCandleSMACross("paper-main", "BTCUSDT", "0.01", 5, 10),
 		)
 	} else {
 		strategyRuntime = strategy.NewRuntime(
@@ -132,8 +133,12 @@ func New(cfg config.Config) (*App, error) {
 	cycleRunner := reportingruntime.NewReportingRunner(scheduler, reportStore, reportProvider)
 	var schedulerService interface{ Start(context.Context) }
 	if cfg.Scheduler.Mode == "stream" {
-		reportingTickRunner := reportingruntime.NewReportingTickRunner(scheduler, reportStore, reportProvider)
-		schedulerService = strategyscheduler.NewStreamService(reportingTickRunner, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+		reportingStreamRunner := reportingruntime.NewReportingStreamRunner(scheduler, scheduler, reportStore, reportProvider)
+		schedulerService = strategyscheduler.NewStreamService(reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+	} else if cfg.Scheduler.Mode == "candle-stream" {
+		reportingStreamRunner := reportingruntime.NewReportingStreamRunner(scheduler, scheduler, reportStore, reportProvider)
+		// We use 1m interval for candle stream tests
+		schedulerService = strategyscheduler.NewCandleStreamService(reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols, "1m")
 	} else {
 		schedulerService = strategyscheduler.NewService(cycleRunner, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
 	}

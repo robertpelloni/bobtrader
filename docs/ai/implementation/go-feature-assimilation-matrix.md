@@ -62,6 +62,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Multi-Timeframe Logic | Implemented | BBGO | WolfBot | Strategies can implement `CandleStrategy` to consume historical and live k-line/candle arrays. |
 | Market Emulation | Implemented | BBGO | PowerTrader | Configurable slippage and maker/taker fees integrated natively into simulated backtest `Engine.processSignals` |
 | Optimization | Implemented | BBGO | WolfBot | `optimizer` package features Grid Search utilizing goroutine worker pools to iterate over permutations and score strategies. |
+| Live Candle Streaming | Implemented | BBGO | WolfBot, PowerTrader | `candle-stream` scheduler mode subscribes to OHLCV feeds and dispatches through `CandleStreamService` + `ReportingStreamRunner`. |
 | Arbitrage engine | Not yet implemented | WolfBot | kelvinau, ericjang, polymarket repos | Later advanced module |
 | Notifications | Not yet implemented in Go | PowerTrader | BBGO, OpenAlice | Still reference-only |
 | Dashboard / operator UI | Not yet implemented in Go | PowerTrader | BBGO, OpenAlice | Operator APIs exist, but full UI remains deferred |
@@ -89,6 +90,9 @@ This matrix continues to protect the project from random feature sprawl. New wor
 1. the target architecture,
 2. audited inspirations,
 3. convergence value for the unified Go platform.
+
+### Phase 36 additions
+Live candle streaming connects the candle-strategy backtesting pipeline (Phase 32) to the live App runtime. This is a critical bridge — strategies proven in simulation can now run against streaming candle data in production without code changes.
 
 ## Recommended use
 Update this matrix whenever a major subsystem is added or materially strengthened.

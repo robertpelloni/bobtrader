@@ -1,34 +1,36 @@
-# Handoff - 2026-04-06
+# Handoff - 2026-04-08
 
 ## Completed This Session
-- Advancing the Go ultra-project: Executed Phase 35, establishing **Concurrent Optimization**.
-- Heavily upgraded `ultratrader-go/internal/backtest/optimizer/grid.go`:
-  - Replaced the sequential grid execution loop with an idiomatic Go concurrent worker pool.
-  - Implemented channel-based fan-out/fan-in to safely dispatch parameter permutations and collect strategy evaluation results across threads.
-  - Introduced `OptimizationConfig` to allow manual tuning of CPU core utilization.
-- Added a 100-permutation stress test to validate thread safety, execution isolation, and result sorting accuracy across parallel loops.
-- Updated versioning and documentation:
-  - `VERSION.md` → `2.0.37`
-  - `CHANGELOG.md` with the 2.0.37 Phase-35 entry.
-  - `docs/ai/implementation/go-phase-35-concurrent-optimization.md`
-  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-35-concurrent-optimization.md`
+- **Phase 36: Live Candle Streaming** — Bridges the candle-strategy pipeline from backtesting into the live App runtime.
+- Extended `marketdata.StreamFeed` with `SubscribeCandles` and `CandleSubscription` interface.
+- Implemented paper candle feed emitting mock OHLCV candles on 5-second intervals.
+- Created `CandleStreamService` in `strategy/scheduler` subscribing to candle feeds and dispatching through `RunCandle()`.
+- Added `RunCandle(ctx, Candle)` to `Scheduler` routing candle events through `runtime.CandleEvent` → signal execution.
+- Unified reporting: replaced `ReportingTickRunner` with `ReportingStreamRunner` supporting both tick and candle paths.
+- Added `candle-stream` scheduler mode to `core/app` wiring `CandleSMACross` + `CandleStreamService`.
+- Fixed test name collision (`stubStreamRunner`) in `reporting/runtime/tick_runner_test.go`.
+- All 14 internal test packages pass individually. Binary builds and runs cleanly.
+- Updated version to 2.0.38, CHANGELOG, TODO.md, feature assimilation matrix.
 
 ## Verification Performed
-Inside `ultratrader-go/`:
-- `gofmt -w ./internal`
-- `go test ./internal/backtest/optimizer/...`
-
-All tests pass cleanly. The optimization engine accurately dispatches 100 parallel permutations evaluating a memory-bound candle array, returning perfectly sorted results in ~30 milliseconds.
+- `go build ./cmd/ultratrader` — clean
+- `go test ./internal/...` — all 14 packages pass
+- Binary execution — produces valid JSON output with full guard pipeline active
 
 ## Current Strategic Position
-The Go platform's quantitative pipeline is now complete and highly optimized. It solves the exact GIL bottleneck that restricts the Python legacy codebase during complex Machine Learning grid searches. The focus should now shift from the simulation back to live data ingestion and exchange routing.
+The Go platform now has a complete bidirectional strategy pipeline:
+- **Simulation path**: indicators → candle strategies → backtest engine → friction model → concurrent optimizer
+- **Live path**: candle/tick feeds → stream services → scheduler → risk pipeline → execution service
+
+The next logical step is expanding the indicator library (MACD, Bollinger Bands, ATR) to enrich strategy signal quality, followed by real exchange adapter integration.
 
 ## Suggested Immediate Next Steps
-1.  **Live Candle Streaming:** The simulation pipeline is highly mature. Shift focus back to the live execution paths by building out the `marketdata` feed to subscribe to live exchange websocket K-Line feeds and dispatch them via `runtime.CandleEvent`.
-2.  **Real Exchange Adapters:** Start integrating real REST/Websocket connections (like Binance) into the `exchange` registry to replace the paper adapter for live trading.
+1. **Additional Indicators** — MACD, Bollinger Bands, ATR in `internal/indicator/`
+2. **Real Exchange Adapters** — Binance REST/WebSocket adapter replacing paper feed for live trading
+3. **Walk-Forward Optimization** — Combine concurrent optimizer with live streaming for continuous parameter re-tuning
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-35-concurrent-optimization.md`
-- `ultratrader-go/internal/backtest/optimizer/grid.go`
-- `ultratrader-go/internal/backtest/optimizer/grid_test.go`
+- `docs/ai/implementation/go-phase-36-live-candle-streaming.md`
+- `ultratrader-go/internal/strategy/scheduler/candle_stream_service.go`
+- `ultratrader-go/internal/marketdata/feed.go`
+- `ultratrader-go/internal/reporting/runtime/tick_runner.go`

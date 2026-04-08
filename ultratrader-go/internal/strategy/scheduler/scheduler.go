@@ -37,6 +37,14 @@ func (s *Scheduler) RunTick(ctx context.Context, tick marketdata.Tick) error {
 	return s.executeSignals(ctx, signals)
 }
 
+func (s *Scheduler) RunCandle(ctx context.Context, candle marketdata.Candle) error {
+	signals, err := s.runtime.CandleEvent(ctx, candle)
+	if err != nil {
+		return fmt.Errorf("runtime candle event: %w", err)
+	}
+	return s.executeSignals(ctx, signals)
+}
+
 func (s *Scheduler) executeSignals(ctx context.Context, signals []strategy.Signal) error {
 	for _, signal := range signals {
 		request, intent, err := toOrder(signal)

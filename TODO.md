@@ -19,6 +19,7 @@
 - [x] Add event/subscription interfaces beyond simple tick subscription
 - [x] Add richer paper stream simulation patterns
 - [x] Add integration of stream-fed strategies into scheduler/runtime lifecycle
+- [x] Add live candle streaming with `CandleSubscription` and `CandleStreamService`
 
 ### Analytics and reporting
 - [x] Add persistent metrics history
@@ -31,6 +32,8 @@
 - [x] Add candle/multi-timeframe strategy support
 - [x] Add advanced market emulation (fees, slippage, maker/taker)
 - [x] Add optimization subsystem (Parallel execution)
+- [x] Add live candle streaming to scheduler (candle-stream mode)
+- [ ] Add MACD, Bollinger Bands, ATR indicators
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements
 
