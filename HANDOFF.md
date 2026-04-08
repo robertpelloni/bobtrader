@@ -1,35 +1,34 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Advancing the Go ultra-project: Executed Phase 32 focused on **Candle-Driven Backtesting and Strategy Enhancements**.
-- Added the following capabilities under `ultratrader-go/`:
-  - Upgraded `internal/strategy/runtime.go` to support a new `CandleStrategy` interface and dispatch them via `CandleEvent()`.
-  - Upgraded `internal/backtest/engine.go` to support `CandleHistoryProvider` and execute strategy simulations specifically over historical interval data (`RunCandles()`).
-  - Added the `CandleSMACross` demo strategy, demonstrating technical indicator logic mapped cleanly to historical K-line `Close` prices.
-- Added comprehensive tests for candle-based strategy evaluation and backtesting iteration.
+- Advancing the Go ultra-project: Executed Phase 33 focused on **Advanced Market Emulation (Fees & Slippage)**.
+- Enhanced `ultratrader-go/internal/backtest/engine.go`:
+  - Introduced `EmulatorOptions` to define custom slippage, maker, and taker rates.
+  - Implemented mathematical modifiers in the backtester's simulated order execution, altering the `Price` of fills to realistically penalize strategy PnL based on trading friction.
+- Added test coverage in `engine_test.go` (`TestEngineRunFriction`) to validate that compounding fee arithmetic works exactly as modeled without breaking the underlying portfolio tracker.
 - Updated versioning and documentation:
-  - `VERSION.md` → `2.0.34`
-  - `CHANGELOG.md` with the 2.0.34 Phase-32 entry.
-  - `docs/ai/implementation/go-phase-32-candle-backtesting-and-strategies.md`
+  - `VERSION.md` → `2.0.35`
+  - `CHANGELOG.md` with the 2.0.35 Phase-33 entry.
+  - `docs/ai/implementation/go-phase-33-advanced-market-emulation.md`
   - `docs/ai/implementation/go-feature-assimilation-matrix.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-32-candle-backtesting.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-33-advanced-market-emulation.md`
 
 ## Verification Performed
 Inside `ultratrader-go/`:
 - `gofmt -w ./internal`
-- `go test ./internal/strategy/... ./internal/backtest/...`
+- `go test ./internal/backtest/...`
 
-All succeeded. The correct interaction between historical candles, moving average indicators, and the backtesting simulation logic was validated.
+All tests pass. The zero-friction tests remain untouched via config overrides, while the new friction test perfectly validates the PnL degradation logic.
 
 ## Current Strategic Position
-The system is now capable of testing multi-timeframe and K-line based strategies. This aligns directly with the architectural patterns found in the `bbgo` submodule and the core AI pipelines of the legacy `PowerTrader` python project.
+The backtester is now a highly reliable, realistic simulation tool. It operates quickly in memory, supports multi-timeframe candles, and correctly penalizes strategies for over-trading by modeling the inescapable drag of exchange commissions and slippage.
 
 ## Suggested Immediate Next Steps
-1.  **Advanced Market Emulation:** Add simulated slippage, commission fees, and maker/taker spread mechanics to `Engine.processSignals` to make backtest PnL reporting realistic.
+1.  **Optimization Subsystem:** Now that the backtester is fast, handles candles, and produces realistic PnL numbers with fees, we are perfectly positioned to implement parameter tuning pipelines (e.g., Grid search) to find the best indicator lengths.
 2.  **Live Candle Streaming:** Build out the `marketdata` feed and `scheduler` to subscribe to live exchange websocket K-Line feeds and dispatch them via `runtime.CandleEvent`.
-3.  **Optimization Subsystem:** Scaffold parameter tuning pipelines (Grid search, genetic algos) for the `CandleSMACross` strategy over large datasets.
+3.  **Real Exchange Adapters:** Start integrating CCXT or Binance-specific REST/Websocket connections beyond the `paper` adapter.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-32-candle-backtesting-and-strategies.md`
+- `docs/ai/implementation/go-phase-33-advanced-market-emulation.md`
 - `ultratrader-go/internal/backtest/engine.go`
-- `ultratrader-go/internal/strategy/demo/candle_sma_crossover.go`
+- `ultratrader-go/internal/backtest/engine_test.go`

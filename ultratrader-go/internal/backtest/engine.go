@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
@@ -32,24 +33,44 @@ type Result struct {
 	Orders              []exchange.Order
 }
 
+// EmulatorOptions defines the simulated trading friction for the backtesting engine.
+type EmulatorOptions struct {
+	MakerFeeRate float64 // e.g., 0.001 for 0.1% maker fee
+	TakerFeeRate float64 // e.g., 0.001 for 0.1% taker fee
+	SlippageRate float64 // e.g., 0.0005 for 0.05% slippage on market orders
+}
+
+// DefaultEmulatorOptions provides a baseline setup with 0.1% fees and zero slippage.
+func DefaultEmulatorOptions() EmulatorOptions {
+	return EmulatorOptions{
+		MakerFeeRate: 0.001,
+		TakerFeeRate: 0.001,
+		SlippageRate: 0.0,
+	}
+}
+
 // Engine orchestrates the historical simulation.
 type Engine struct {
 	strategy strategy.Strategy
 	tracker  *portfolio.Tracker
 	orders   []exchange.Order
+	opts     EmulatorOptions
 }
 
-// NewEngine creates a new backtesting engine.
+// NewEngine creates a new backtesting engine with default emulator options.
 func NewEngine(s strategy.Strategy, initialCapital float64) *Engine {
-	// Initialize a simulated portfolio tracker.
+	return NewEngineWithOptions(s, initialCapital, DefaultEmulatorOptions())
+}
+
+// NewEngineWithOptions creates a new backtesting engine with specific emulation friction.
+func NewEngineWithOptions(s strategy.Strategy, initialCapital float64, opts EmulatorOptions) *Engine {
 	tracker := portfolio.NewTracker()
-	// Optionally, we could pre-fund the tracker with initialCapital if it tracked cash.
-	// For now, our tracker mainly tracks symbol quantities and PnL.
 
 	return &Engine{
 		strategy: s,
 		tracker:  tracker,
 		orders:   make([]exchange.Order, 0),
+		opts:     opts,
 	}
 }
 
@@ -127,7 +148,7 @@ func (e *Engine) RunCandles(ctx context.Context, h CandleHistoryProvider) (Resul
 	return e.buildResult(ctx, lastPrice, startTime, endTime), nil
 }
 
-func (e *Engine) processSignals(signals []strategy.Signal, price string) {
+func (e *Engine) processSignals(signals []strategy.Signal, rawPrice string) {
 	// Process generated signals into simulated orders.
 	for _, sig := range signals {
 		var side exchange.OrderSide
@@ -139,16 +160,26 @@ func (e *Engine) processSignals(signals []strategy.Signal, price string) {
 			continue // Ignore unsupported actions
 		}
 
-		// Simulate order execution at the current price.
-		// In a more advanced backtester, slippage, fees, and spread would be modeled here.
+		priceVal := utils.ParseFloat(rawPrice)
+		
+		// Apply simulated slippage and fees. All demo strategy orders are treated as Market orders.
+		// A more complex emulator would check if sig.OrderType is "limit" and apply MakerFeeRate.
+		if side == exchange.Buy {
+			priceVal = priceVal * (1.0 + e.opts.SlippageRate) * (1.0 + e.opts.TakerFeeRate)
+		} else {
+			priceVal = priceVal * (1.0 - e.opts.SlippageRate) * (1.0 - e.opts.TakerFeeRate)
+		}
+		
+		simulatedPriceStr := fmt.Sprintf("%f", priceVal)
+
 		order := exchange.Order{
 			ID:       fmt.Sprintf("bt-ord-%d", len(e.orders)+1),
 			Symbol:   sig.Symbol,
 			Side:     side,
-			Type:     exchange.MarketOrder,
+			Type:     exchange.MarketOrder, // Treating signals as market execution by default
 			Status:   "filled",
 			Quantity: sig.Quantity,
-			Price:    price,
+			Price:    simulatedPriceStr,
 		}
 		e.orders = append(e.orders, order)
 

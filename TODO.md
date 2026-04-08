@@ -29,8 +29,8 @@
 ### Backtesting and Simulation
 - [x] Add backtesting subsystem
 - [x] Add candle/multi-timeframe strategy support
+- [x] Add advanced market emulation (fees, slippage, maker/taker)
 - [ ] Add optimization subsystem
-- [ ] Add advanced market emulation (fees, slippage, maker/taker)
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements
 

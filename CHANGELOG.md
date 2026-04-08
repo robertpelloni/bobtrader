@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.35] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-33 Advanced Market Emulation**
+  - Added `EmulatorOptions` configuration struct to the `internal/backtest` engine to handle Maker/Taker fees and execution slippage rates.
+  - Implemented mathematical modifiers in `processSignals` to adjust the simulated execution price, accurately penalizing strategy profitability by raising the effective buy entry and lowering the effective sell exit.
+  - Added `DefaultEmulatorOptions` enforcing a standard 0.1% fee simulation.
+  - Wrote a dedicated testing suite (`TestEngineRunFriction`) validating the exact compounding arithmetic of 5% slippage alongside 1% fees.
+  - Detailed findings and architecture in `docs/ai/implementation/go-phase-33-advanced-market-emulation.md`.
+
+### Changed
+- Refactored `NewEngine` to default to the 0.1% standard fee emulator.
+- Added `NewEngineWithOptions` for zero-friction test overriding or complex parameter tuning.
+- Updated `TODO.md` to reflect the completion of advanced market emulation for the backtesting engine.
+
+### Verified
+- `go test ./internal/backtest/...` accurately captures the simulated value drain caused by slippage and commissions.
+
 ## [2.0.34] - 2026-04-06
 
 ### Added

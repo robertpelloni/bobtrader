@@ -60,6 +60,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Recurring scheduler service | Implemented | WolfBot event loop direction | BBGO daemon trajectory | Repeated execution behavior is test-covered |
 | Backtesting | Implemented | BBGO | WolfBot, PowerTrader | Basic event-driven simulation engine over historical ticks with portfolio tracking |
 | Multi-Timeframe Logic | Implemented | BBGO | WolfBot | Strategies can implement `CandleStrategy` to consume historical and live k-line/candle arrays. |
+| Market Emulation | Implemented | BBGO | PowerTrader | Configurable slippage and maker/taker fees integrated natively into simulated backtest `Engine.processSignals` |
 | Optimization | Not yet implemented | BBGO | WolfBot | Deferred |
 | Arbitrage engine | Not yet implemented | WolfBot | kelvinau, ericjang, polymarket repos | Later advanced module |
 | Notifications | Not yet implemented in Go | PowerTrader | BBGO, OpenAlice | Still reference-only |
