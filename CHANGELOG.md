@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.36] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-34 Optimization Subsystem**
+  - Added the `internal/backtest/optimizer` package for systematically testing strategy parameters against historical data.
+  - Implemented `GridSearchCandles`, orchestrating multiple sequential `backtest.Engine` runs against a Cartesian product of parameter combinations.
+  - Added `StrategyBuilder` interface to dynamically spawn strategies with injected parameters.
+  - Added `ScoringFunction` abstraction (defaulting to maximizing `RealizedPnL`).
+  - Added comprehensive `grid_test.go` proving grid generation accuracy and correct sorting of optimization results using the `CandleSMACross` demo strategy.
+  - Documented findings in `docs/ai/implementation/go-phase-34-optimization-subsystem.md`.
+
+### Changed
+- Updated `TODO.md` tracking to check off "Add optimization subsystem".
+- Updated `go-feature-assimilation-matrix.md` to reflect full optimization capabilities natively in Go.
+
+### Verified
+- Executed `go test ./internal/backtest/optimizer/...` seamlessly, demonstrating extreme in-memory speed for repetitive backtest runs.
+
 ## [2.0.35] - 2026-04-06
 
 ### Added
