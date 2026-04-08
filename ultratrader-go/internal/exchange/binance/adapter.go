@@ -182,7 +182,57 @@ func (a *Adapter) PlaceOrder(ctx context.Context, request exchange.OrderRequest)
 	}, nil
 }
 
-// GetTickerPrice fetches the latest price for a symbol.
+// QueryOrder fetches the current status of an order from Binance.
+func (a *Adapter) QueryOrder(ctx context.Context, symbol, orderID string) (OrderStatus, error) {
+	if a.config.APIKey == "" {
+		return OrderStatus{}, fmt.Errorf("api key required for order queries")
+	}
+
+	params := url.Values{}
+	params.Set("symbol", symbol)
+	params.Set("orderId", orderID)
+
+	var resp struct {
+		Symbol        string `json:"symbol"`
+		OrderID       int64  `json:"orderId"`
+		ClientOrderID string `json:"clientOrderId"`
+		Price         string `json:"price"`
+		OrigQty       string `json:"origQty"`
+		ExecutedQty   string `json:"executedQty"`
+		Status        string `json:"status"`
+		Type          string `json:"type"`
+		Side          string `json:"side"`
+		Time          int64  `json:"time"`
+	}
+	if err := a.signedGet(ctx, "/api/v3/order", params, &resp); err != nil {
+		return OrderStatus{}, fmt.Errorf("query order: %w", err)
+	}
+
+	return OrderStatus{
+		ID:              strconv.FormatInt(resp.OrderID, 10),
+		Symbol:          resp.Symbol,
+		Side:            exchange.OrderSide(strings.ToLower(resp.Side)),
+		Type:            exchange.OrderType(strings.ToLower(resp.Type)),
+		Status:          resp.Status,
+		Quantity:        resp.OrigQty,
+		ExecutedQty:     resp.ExecutedQty,
+		Price:           resp.Price,
+		TransactionTime: time.UnixMilli(resp.Time),
+	}, nil
+}
+
+// OrderStatus represents the current state of an order on Binance.
+type OrderStatus struct {
+	ID              string
+	Symbol          string
+	Side            exchange.OrderSide
+	Type            exchange.OrderType
+	Status          string
+	Quantity        string
+	ExecutedQty     string
+	Price           string
+	TransactionTime time.Time
+}
 func (a *Adapter) GetTickerPrice(ctx context.Context, symbol string) (string, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)

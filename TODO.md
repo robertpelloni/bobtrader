@@ -38,7 +38,9 @@
 - [x] Add Binance market data feed implementing StreamFeed
 - [x] Add walk-forward optimization for out-of-sample parameter validation
 - [ ] Add Binance WebSocket adapter for real-time streaming
-- [ ] Add reconciliation/fill state improvements
+- [x] Add reconciliation/fill state improvements (Order Reconciliation)
+- [ ] Add periodic reconciliation service (background auto-sync)
+- [ ] Add trade history sync from exchange
 
 ### Operator surfaces
 - [x] Add richer operator-facing diagnostics APIs

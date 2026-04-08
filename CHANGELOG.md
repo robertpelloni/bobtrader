@@ -5,6 +5,27 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.45] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-43 Order Reconciliation**
+  - Created `internal/trading/reconciliation/reconciler.go` with order state verification engine.
+  - `Reconciler` compares internal order state against exchange state to detect discrepancies.
+  - `ReconcileOrders()` batch-checks orders with `OrderQuerier` interface adapters.
+  - `ReconcileResult` tracking matched, filled, partially-filled, canceled, rejected, expired, and unknown orders.
+  - `Discrepancy` struct for internal-vs-exchange status mismatches.
+  - `Summary()` method for human-readable reconciliation output.
+  - Added `QueryOrder()` method to Binance adapter querying `/api/v3/order` for live order status.
+  - Binance `OrderStatus` struct with executed quantity, transaction time, and normalized status.
+  - Graceful fallback when adapter doesn't implement `OrderQuerier`.
+  - Comprehensive test suite: matched orders, discrepancies, no-querier fallback, summary formatting.
+  - Documented in `docs/ai/implementation/go-phase-43-order-reconciliation.md`.
+
+### Verified
+- `go test ./internal/trading/reconciliation/...` — all tests pass.
+- `go test ./internal/exchange/binance/...` — all tests pass.
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.44] - 2026-04-08
 
 ### Added
