@@ -2,7 +2,9 @@ package optimizer
 
 import (
 	"context"
+	"runtime"
 	"sort"
+	"sync"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/backtest"
 )
@@ -50,32 +52,79 @@ func GridSearchCandles(
 	opts backtest.EmulatorOptions,
 	paramGrid map[string][]interface{},
 	scorer ScoringFunction,
+	optConfig OptimizationConfig,
 ) ([]RunResult, error) {
 	if scorer == nil {
 		scorer = DefaultScorer
 	}
 
 	perms := generateGrid(paramGrid)
-	var results []RunResult
+	if len(perms) == 0 {
+		return nil, nil
+	}
 
-	// Currently running sequentially. Could be optimized with goroutines for massive grids.
+	workers := optConfig.MaxWorkers
+	if workers <= 0 {
+		workers = runtime.NumCPU()
+	}
+	if workers > len(perms) {
+		workers = len(perms)
+	}
+
+	jobs := make(chan ParameterMap, len(perms))
+	resultsCh := make(chan RunResult, len(perms))
+
+	var wg sync.WaitGroup
+
+	// Start worker pool
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for p := range jobs {
+				// Check context cancellation
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				strat, err := builder(p)
+				if err != nil {
+					continue // Skip invalid parameter combinations
+				}
+
+				eng := backtest.NewEngineWithOptions(strat, initialCapital, opts)
+				res, err := eng.RunCandles(ctx, history)
+				if err != nil {
+					continue // Skip runs that fail
+				}
+
+				resultsCh <- RunResult{
+					Params: p,
+					Result: res,
+					Score:  scorer(res),
+				}
+			}
+		}()
+	}
+
+	// Dispatch jobs
 	for _, p := range perms {
-		strat, err := builder(p)
-		if err != nil {
-			continue // Skip invalid parameter combinations
-		}
+		jobs <- p
+	}
+	close(jobs)
 
-		eng := backtest.NewEngineWithOptions(strat, initialCapital, opts)
-		res, err := eng.RunCandles(ctx, history)
-		if err != nil {
-			continue // Skip runs that fail
-		}
+	// Wait for workers to finish in a separate goroutine
+	go func() {
+		wg.Wait()
+		close(resultsCh)
+	}()
 
-		results = append(results, RunResult{
-			Params: p,
-			Result: res,
-			Score:  scorer(res),
-		})
+	// Collect results
+	var results []RunResult
+	for r := range resultsCh {
+		results = append(results, r)
 	}
 
 	// Sort descending by score

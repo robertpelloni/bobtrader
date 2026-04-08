@@ -5,6 +5,18 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
 
+// OptimizationConfig controls the execution behavior of the optimization run.
+type OptimizationConfig struct {
+	MaxWorkers int // Maximum number of concurrent backtest workers. 0 defaults to runtime.NumCPU().
+}
+
+// DefaultOptimizationConfig provides sensible defaults.
+func DefaultOptimizationConfig() OptimizationConfig {
+	return OptimizationConfig{
+		MaxWorkers: 0, // 0 means use runtime.NumCPU() in the runner
+	}
+}
+
 // ParameterMap holds a specific combination of strategy parameters.
 type ParameterMap map[string]interface{}
 

@@ -30,7 +30,7 @@
 - [x] Add backtesting subsystem
 - [x] Add candle/multi-timeframe strategy support
 - [x] Add advanced market emulation (fees, slippage, maker/taker)
-- [x] Add optimization subsystem
+- [x] Add optimization subsystem (Parallel execution)
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements
 

@@ -63,6 +63,7 @@ func TestGridSearchCandles(t *testing.T) {
 		opts,
 		paramGrid,
 		optimizer.DefaultScorer, // Maximizing Realized PnL
+		optimizer.DefaultOptimizationConfig(),
 	)
 
 	if err != nil {
@@ -86,5 +87,62 @@ func TestGridSearchCandles(t *testing.T) {
 	bestParams := results[0].Params
 	if _, ok := bestParams["fast_period"]; !ok {
 		t.Errorf("best parameters missing fast_period")
+	}
+}
+
+func TestGridSearchConcurrentStress(t *testing.T) {
+	now := time.Now()
+	// Larger artificial wave
+	var candles []marketdata.Candle
+	for i := 0; i < 100; i++ {
+		price := 10.0 + float64(i%10) // Simple cyclical pattern
+		candles = append(candles, marketdata.Candle{
+			Symbol:    "BTCUSDT",
+			Close:     fmt.Sprintf("%f", price),
+			Timestamp: now.Add(time.Duration(i) * time.Hour),
+		})
+	}
+	history := backtest.NewMemoryCandleHistory(candles)
+
+	// 10x10 Grid = 100 permutations
+	paramGrid := map[string][]interface{}{}
+	var fasts []interface{}
+	var slows []interface{}
+	for i := 2; i <= 11; i++ {
+		fasts = append(fasts, i)
+		slows = append(slows, i+10) // ensures fast < slow always
+	}
+	paramGrid["fast_period"] = fasts
+	paramGrid["slow_period"] = slows
+
+	builder := func(params optimizer.ParameterMap) (strategy.Strategy, error) {
+		fast := params["fast_period"].(int)
+		slow := params["slow_period"].(int)
+		return demo.NewCandleSMACross("stress", "BTCUSDT", "1.0", fast, slow), nil
+	}
+
+	opts := backtest.EmulatorOptions{MakerFeeRate: 0, TakerFeeRate: 0, SlippageRate: 0}
+
+	// Force concurrent execution
+	optConfig := optimizer.OptimizationConfig{MaxWorkers: 8}
+
+	results, err := optimizer.GridSearchCandles(
+		context.Background(),
+		builder,
+		history,
+		1000.0,
+		opts,
+		paramGrid,
+		optimizer.DefaultScorer,
+		optConfig,
+	)
+
+	if err != nil {
+		t.Fatalf("unexpected error during stress test: %v", err)
+	}
+
+	// Expect exactly 100 results from 100 permutations
+	if len(results) != 100 {
+		t.Fatalf("expected 100 results, got %d", len(results))
 	}
 }
