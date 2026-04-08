@@ -5,6 +5,20 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.40] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-38 Indicator-Based Strategies**
+  - **MACDCrossover**: Candle strategy generating buy/sell signals on MACD histogram zero-line crossover. Configurable fast/slow/signal EMA periods.
+  - **BollingerReversion**: Candle mean-reversion strategy buying at the lower Bollinger Band (oversold) and selling at the upper band (overbought). Configurable period and multiplier.
+  - **ATRSizing**: Candle strategy combining SMA crossover with ATR-based dynamic position sizing. Scales order quantity inversely with volatility — smaller positions in volatile markets, larger positions in calm markets.
+  - Comprehensive test coverage for all three new strategies with realistic price sequences.
+  - Documented in `docs/ai/implementation/go-phase-38-indicator-strategies.md`.
+
+### Verified
+- `go test ./internal/strategy/demo/...` — all tests pass.
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.39] - 2026-04-08
 
 ### Added
