@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.42] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-40 Binance Market Data Feed**
+  - Created `internal/marketdata/binance/feed.go` implementing the full `marketdata.StreamFeed` interface using the Binance REST adapter.
+  - `LatestTick(symbol)` — polls `/api/v3/ticker/price` for real-time price.
+  - `LatestCandle(symbol, interval)` — polls `/api/v3/klines` for latest OHLCV candle.
+  - `SubscribeTicks(symbol, interval)` — goroutine-based polling subscription emitting `Tick` on configurable interval.
+  - `SubscribeCandles(symbol, interval)` — goroutine-based polling subscription emitting `Candle` on Binance interval duration.
+  - Interval parser supporting Binance formats: `1s`, `1m`, `5m`, `1h`, `4h`, `1d`, `1w`.
+  - `SetBaseURL` method on Binance adapter for test injection.
+  - Comprehensive test suite using `httptest.Server` for deterministic validation.
+  - Documented in `docs/ai/implementation/go-phase-40-binance-market-data-feed.md`.
+
+### Verified
+- `go test ./internal/marketdata/binance/...` — all tests pass.
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.41] - 2026-04-08
 
 ### Added

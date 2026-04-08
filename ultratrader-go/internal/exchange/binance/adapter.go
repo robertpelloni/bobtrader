@@ -50,6 +50,8 @@ func New(cfg Config) *Adapter {
 
 func (a *Adapter) Name() string { return "binance" }
 
+func (a *Adapter) SetBaseURL(url string) { a.baseURL = url }
+
 func (a *Adapter) Capabilities() []exchange.Capability {
 	return []exchange.Capability{
 		exchange.CapabilitySpot,
