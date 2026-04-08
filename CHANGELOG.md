@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.39] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-37 Expanded Indicator Library**
+  - **MACD** (Moving Average Convergence Divergence): Produces MACD line, Signal line, and Histogram. Configurable fast/slow/signal periods. Built on top of EMA.
+  - **Bollinger Bands**: Calculates Upper, Middle (SMA), and Lower bands with configurable multiplier (default 2.0 std deviations). Includes Bandwidth metric for volatility measurement.
+  - **ATR** (Average True Range): Volatility indicator computing the greatest of high-low range, |high-prev_close|, |low-prev_close|. Wilder smoothing after warmup period.
+  - Added comprehensive test coverage for all three new indicators with mathematical validation.
+  - Documented architecture in `docs/ai/implementation/go-phase-37-expanded-indicator-library.md`.
+
+### Changed
+- Added `math` import to `internal/indicator/indicators.go` for standard deviation and absolute value calculations.
+- Extended `indicators_test.go` with 7 new test cases covering MACD crossover, Bollinger constant/varying/insufficient data, and ATR warmup/smoothing.
+
+### Verified
+- `go test ./internal/indicator/...` — all 10 tests pass (3 original + 7 new).
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.38] - 2026-04-08
 
 ### Added

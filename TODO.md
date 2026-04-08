@@ -33,7 +33,7 @@
 - [x] Add advanced market emulation (fees, slippage, maker/taker)
 - [x] Add optimization subsystem (Parallel execution)
 - [x] Add live candle streaming to scheduler (candle-stream mode)
-- [ ] Add MACD, Bollinger Bands, ATR indicators
+- [x] Add MACD, Bollinger Bands, ATR indicators
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements
 
