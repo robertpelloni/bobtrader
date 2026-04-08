@@ -58,7 +58,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Market-data-aware strategy | Implemented | BBGO | WolfBot, PowerTrader | Strategy consumes feed data |
 | Strategy scheduler | Implemented | WolfBot event flow | BBGO runtime thinking | Converts signals into execution requests |
 | Recurring scheduler service | Implemented | WolfBot event loop direction | BBGO daemon trajectory | Repeated execution behavior is test-covered |
-| Backtesting | Not yet implemented | BBGO | WolfBot, PowerTrader | Deferred |
+| Backtesting | Implemented | BBGO | WolfBot, PowerTrader | Basic event-driven simulation engine over historical ticks with portfolio tracking |
 | Optimization | Not yet implemented | BBGO | WolfBot | Deferred |
 | Arbitrage engine | Not yet implemented | WolfBot | kelvinau, ericjang, polymarket repos | Later advanced module |
 | Notifications | Not yet implemented in Go | PowerTrader | BBGO, OpenAlice | Still reference-only |

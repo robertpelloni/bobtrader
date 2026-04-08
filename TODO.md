@@ -28,7 +28,7 @@
 
 ### Trading engine expansion
 - [x] Add richer strategy library
-- [ ] Add backtesting subsystem
+- [x] Add backtesting subsystem
 - [ ] Add optimization subsystem
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements

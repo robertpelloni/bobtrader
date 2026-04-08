@@ -5,6 +5,25 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.33] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-31 Backtesting Foundation**
+  - Created a new `internal/backtest` package to simulate strategy execution against historical market data.
+  - Implemented a `HistoryProvider` interface for injecting historical data arrays (e.g., `MemoryHistory`).
+  - Added an isolated `Engine` that iteratively feeds historical ticks to a strategy and intercepts its signals.
+  - Implemented simulated market execution within the backtest engine that calculates realized/unrealized PnL using the underlying `portfolio.Tracker`.
+  - Added unit test suite `engine_test.go` to validate total trades and expected PnL on deterministic price sequences.
+  - Added detailed documentation of this step in `docs/ai/implementation/go-phase-31-backtesting-foundation.md`.
+
+### Changed
+- Updated `TODO.md` to reflect completion of the initial backtesting subsystem.
+- Updated `go-feature-assimilation-matrix.md` to show the backtesting subsystem as implemented.
+
+### Verified
+- `go test ./internal/backtest/...` passes cleanly, confirming isolated simulated execution logic.
+- Entire Go workspace format and compilation checks passed.
+
 ## [2.0.32] - 2026-04-06
 
 ### Added
