@@ -5,6 +5,26 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.32] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-30 Core Indicator Library and Technical Analysis**
+  - Created a new `internal/indicator` package to house technical analysis tools, laying the groundwork for complex strategy creation.
+  - Implemented the `SMA` (Simple Moving Average) indicator.
+  - Implemented the `EMA` (Exponential Moving Average) indicator.
+  - Implemented the `RSI` (Relative Strength Index) indicator.
+  - Added `demo-ema-crossover` strategy to `internal/strategy/demo`, demonstrating the integration of technical indicators within the trading runtime.
+  - Added documentation reflecting the completion of the core indicator library and strategy expansion at `docs/ai/implementation/go-phase-30-core-indicator-library.md`.
+
+### Changed
+- Refactored numeric string parsing into a centralized `utils.ParseFloat` function (`internal/core/utils/conv.go`) to unify calculation logic across portfolio, strategy, and execution domains.
+- Updated `TODO.md` and the feature assimilation matrix to reflect the addition of a richer strategy library and foundational technical analysis capabilities.
+- Updated the `app.go` runtime composition to integrate the `EMACrossover` strategy into the active schedule when running in timer mode.
+
+### Verified
+- `go test ./...` passes inside `ultratrader-go/` ensuring accuracy of mathematical indicator implementations.
+- `go run ./cmd/ultratrader` initializes successfully after Phase-30 additions, properly scheduling indicator-driven strategies.
+
 ## [2.0.31] - 2026-04-06
 
 ### Added

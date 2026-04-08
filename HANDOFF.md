@@ -1,15 +1,19 @@
 # Handoff - 2026-04-06
 
 ## Completed This Session
-- Continued the Go ultra-project into a twenty-ninth implementation wave focused on growing the stream-aware strategy library again.
-- Added the following new capability under `ultratrader-go/`:
-  - `TickMeanReversion`, a third stream-aware demo strategy using short-window mean-reversion logic.
-- Expanded stream-mode runtime composition so threshold, momentum, and mean-reversion tick strategies now run together.
-- Updated versioning/docs:
-  - `VERSION.md` → `2.0.31`
-  - `CHANGELOG.md` with the 2.0.31 Phase-29 entry.
-  - `docs/ai/implementation/go-phase-29-stream-strategy-library-expansion.md`
-  - `logs/handoffs/2026-04-06-gpt-go-phase-29-stream-strategy-library-expansion.md`
+- Advancing the Go ultra-project, Phase 30 focused on the Core Indicator Library and Technical Analysis, moving beyond basic threshold strategies.
+- Added the following capabilities under `ultratrader-go/`:
+  - `internal/indicator` package to house technical analysis logic.
+  - Implemented `SMA`, `EMA`, and `RSI` indicators.
+  - Added `demo-ema-crossover` strategy integrating the new EMA indicators.
+  - Refactored numeric parsing to a centralized `internal/core/utils/conv.go`.
+- The application runtime (`app.go`) now defaults to running the `EMACrossover` strategy when in `timer` mode, demonstrating integration.
+- Updated versioning and documentation:
+  - `VERSION.md` → `2.0.32`
+  - `CHANGELOG.md` with the 2.0.32 Phase-30 entry.
+  - `docs/ai/implementation/go-phase-30-core-indicator-library.md`
+  - `docs/ai/implementation/go-feature-assimilation-matrix.md`
+  - `logs/handoffs/2026-04-06-gpt-go-phase-30-core-indicator-library.md`
 
 ## Verification Performed
 Inside `ultratrader-go/`:
@@ -17,18 +21,20 @@ Inside `ultratrader-go/`:
 - `go test ./...`
 - `go run ./cmd/ultratrader`
 
-All succeeded.
+All succeeded. The mathematical correctness of the indicators was verified via unit tests.
 
 ## Current Strategic Position
-The Go runtime now has three distinct stream-aware demo strategies, making the event-driven execution path significantly stronger and less toy-like.
+The Go runtime is no longer limited to simple price comparisons. It now possesses the foundational mathematical tools required for complex, trend-following, and momentum-based strategy development. This sets the stage for assimilating the advanced logic found in reference projects like BBGO.
 
 ## Suggested Immediate Next Steps
-1. Continue deeper analytics/reporting modules.
-2. Continue legacy Python roadmap/module inventory reconciliation.
-3. Add real exchange adapters beyond paper mode.
-4. Expand stream strategies beyond demo-level heuristics.
+1.  **Backtesting Subsystem:** Now that we have indicators, we need a way to test them historically. This is the highest priority.
+2.  **Additional Indicators:** Expand the library with MACD, Bollinger Bands, and ATR.
+3.  **Optimization Subsystem:** Introduce parameter optimization to tune indicator lengths (e.g., fast/slow EMA periods).
+4.  **Real Exchange Adapters:** Start integrating real REST/Websocket connections beyond the paper adapter.
 
 ## Files to Review First Next Session
-- `docs/ai/implementation/go-phase-29-stream-strategy-library-expansion.md`
-- `ultratrader-go/internal/strategy/demo/tick_mean_reversion.go`
+- `docs/ai/implementation/go-phase-30-core-indicator-library.md`
+- `ultratrader-go/internal/indicator/indicators.go`
+- `ultratrader-go/internal/strategy/demo/ema_cross.go`
+- `ultratrader-go/internal/core/utils/conv.go`
 - `ultratrader-go/internal/core/app/app.go`

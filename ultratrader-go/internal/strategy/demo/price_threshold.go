@@ -2,8 +2,8 @@ package demo
 
 import (
 	"context"
-	"strings"
 
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
@@ -46,36 +46,13 @@ func (s *PriceThreshold) OnTick(ctx context.Context) ([]strategy.Signal, error) 
 }
 
 func compareDecimalStrings(left, right string) int {
-	left = normalizeDecimal(left)
-	right = normalizeDecimal(right)
-	if left == right {
+	l := utils.ParseFloat(left)
+	r := utils.ParseFloat(right)
+	if l == r {
 		return 0
 	}
-	if left < right {
+	if l < r {
 		return -1
 	}
 	return 1
-}
-
-func normalizeDecimal(value string) string {
-	parts := strings.SplitN(strings.TrimSpace(value), ".", 2)
-	whole := parts[0]
-	frac := ""
-	if len(parts) == 2 {
-		frac = parts[1]
-	}
-	whole = strings.TrimLeft(whole, "0")
-	if whole == "" {
-		whole = "0"
-	}
-	for len(whole) < 20 {
-		whole = "0" + whole
-	}
-	for len(frac) < 10 {
-		frac += "0"
-	}
-	if len(frac) > 10 {
-		frac = frac[:10]
-	}
-	return whole + "." + frac
 }

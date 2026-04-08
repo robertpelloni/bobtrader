@@ -54,6 +54,7 @@ The project now has a policy-aware paper trading loop, in-memory runtime state, 
 | Paper market data feed | Implemented | BBGO | PowerTrader practical bootstrap needs | Deterministic local feed supports strategy development |
 | Paper tick subscription | Implemented | BBGO stream model | daemon/runtime evolution path | `SubscribeTicks()` exists for paper market data |
 | Strategy runtime | Implemented | BBGO | WolfBot signal/event chaining | Signal aggregation runtime exists |
+| Core Indicator Library | Implemented | BBGO | WolfBot | Added fundamental technical indicators (SMA, EMA, RSI) to support complex strategy logic. |
 | Market-data-aware strategy | Implemented | BBGO | WolfBot, PowerTrader | Strategy consumes feed data |
 | Strategy scheduler | Implemented | WolfBot event flow | BBGO runtime thinking | Converts signals into execution requests |
 | Recurring scheduler service | Implemented | WolfBot event loop direction | BBGO daemon trajectory | Repeated execution behavior is test-covered |

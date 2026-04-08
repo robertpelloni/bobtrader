@@ -2,8 +2,8 @@ package demo
 
 import (
 	"context"
-	"strings"
 
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
@@ -40,7 +40,7 @@ func (s *TickMomentumBurst) OnMarketTick(_ context.Context, tick marketdata.Tick
 	if tick.Symbol != s.symbol {
 		return nil, nil
 	}
-	price := parseDecimal(tick.Price)
+	price := utils.ParseFloat(tick.Price)
 	if price <= 0 {
 		return nil, nil
 	}
@@ -83,31 +83,4 @@ func (s *TickMomentumBurst) OnMarketTick(_ context.Context, tick marketdata.Tick
 		}}, nil
 	}
 	return nil, nil
-}
-
-func parseDecimal(value string) float64 {
-	value = strings.TrimSpace(value)
-	var whole, frac float64
-	fracDiv := 1.0
-	seenDot := false
-	for _, ch := range value {
-		switch {
-		case ch == '.':
-			if seenDot {
-				return 0
-			}
-			seenDot = true
-		case ch >= '0' && ch <= '9':
-			digit := float64(ch - '0')
-			if !seenDot {
-				whole = whole*10 + digit
-			} else {
-				fracDiv *= 10
-				frac += digit / fracDiv
-			}
-		default:
-			return 0
-		}
-	}
-	return whole + frac
 }

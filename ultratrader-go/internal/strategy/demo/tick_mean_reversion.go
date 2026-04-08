@@ -3,6 +3,7 @@ package demo
 import (
 	"context"
 
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
@@ -32,14 +33,14 @@ func NewTickMeanReversion(accountID, symbol, quantity string, lookbackTicks int,
 	}
 }
 
-func (s *TickMeanReversion) Name() string { return "demo-tick-mean-reversion" }
+func (s *TickMeanReversion) Name() string                                        { return "demo-tick-mean-reversion" }
 func (s *TickMeanReversion) OnTick(_ context.Context) ([]strategy.Signal, error) { return nil, nil }
 
 func (s *TickMeanReversion) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]strategy.Signal, error) {
 	if tick.Symbol != s.symbol {
 		return nil, nil
 	}
-	price := parseDecimal(tick.Price)
+	price := utils.ParseFloat(tick.Price)
 	if price <= 0 {
 		return nil, nil
 	}

@@ -116,7 +116,10 @@ func New(cfg config.Config) (*App, error) {
 			strategydemo.NewTickMeanReversion("paper-main", "BTCUSDT", "0.01", 3, 0.1, 0.1),
 		)
 	} else {
-		strategyRuntime = strategy.NewRuntime(strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed))
+		strategyRuntime = strategy.NewRuntime(
+			strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed),
+			strategydemo.NewEMACrossover("paper-main", "ETHUSDT", "0.1", 5, 10, marketDataFeed),
+		)
 	}
 	scheduler := strategyscheduler.New(strategyRuntime, executionService)
 	reportProvider := func(ctx context.Context) []reports.Report {

@@ -27,7 +27,7 @@
 - [x] Add execution summary history over time
 
 ### Trading engine expansion
-- [ ] Add richer strategy library
+- [x] Add richer strategy library
 - [ ] Add backtesting subsystem
 - [ ] Add optimization subsystem
 - [ ] Add real exchange adapters beyond paper mode
