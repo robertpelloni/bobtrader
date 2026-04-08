@@ -35,6 +35,8 @@
 - [x] Add live candle streaming to scheduler (candle-stream mode)
 - [x] Add MACD, Bollinger Bands, ATR indicators
 - [x] Add real exchange adapters beyond paper mode (Binance REST adapter)
+- [x] Add Binance market data feed implementing StreamFeed
+- [x] Add walk-forward optimization for out-of-sample parameter validation
 - [ ] Add Binance WebSocket adapter for real-time streaming
 - [ ] Add reconciliation/fill state improvements
 

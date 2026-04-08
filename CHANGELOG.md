@@ -5,6 +5,24 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.43] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-41 Walk-Forward Optimization**
+  - Created `internal/backtest/optimizer/walkforward.go` with rolling-window walk-forward analysis.
+  - `WalkForwardCandles()` splits candle history into overlapping training/validation windows, runs grid search on each training window, and validates best parameters out-of-sample.
+  - `WalkForwardConfig` with configurable window size, step size, minimum trades, and worker pool settings.
+  - `WalkForwardResult` aggregating all step results with average validation score and best step index.
+  - `AnalyzeOverfitting()` computing overfit metrics (train score - validation score) across all windows.
+  - `generateWindows()` creating properly bounded rolling window pairs.
+  - `sliceCandleHistory` helper for in-memory candle provider.
+  - Comprehensive test suite: `TestWalkForwardCandles` (200 candles, 7 windows), `TestWalkForwardOverfitting` (overfit analysis), `TestWalkForwardInsufficientData` (error handling), `TestGenerateWindows` (window generation).
+  - Documented in `docs/ai/implementation/go-phase-41-walk-forward-optimization.md`.
+
+### Verified
+- `go test ./internal/backtest/optimizer/...` — all tests pass.
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.42] - 2026-04-08
 
 ### Added
