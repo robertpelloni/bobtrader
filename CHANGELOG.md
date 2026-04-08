@@ -5,6 +5,25 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.44] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-42 Rate Limiting**
+  - Created `internal/exchange/ratelimit/limiter.go` with token bucket rate limiter.
+  - `Limiter` with configurable max tokens, refill rate, `Wait()` (blocking), `TryAcquire()` (non-blocking), `Remaining()`.
+  - `BinanceSpotLimiter()` — 1000 tokens with 60ms refill for Binance spot API compliance.
+  - `BinanceOrderLimiter()` — 50 tokens with 200ms refill for Binance order endpoints (50 orders/10s).
+  - Thread-safe implementation with `sync.Mutex`.
+  - Context-aware `Wait()` supporting cancellation.
+  - Integrated into Binance adapter: `doRequest()` uses spot limiter, `PlaceOrder()` uses both spot + order limiters.
+  - Comprehensive test suite: capacity, refill, blocking wait, context cancellation, concurrent safety, preset configs.
+  - Documented in `docs/ai/implementation/go-phase-42-rate-limiting.md`.
+
+### Verified
+- `go test ./internal/exchange/ratelimit/...` — all tests pass.
+- `go test ./internal/exchange/binance/...` — all tests pass (rate limiter integrated).
+- `go build ./cmd/ultratrader` — compiles cleanly.
+
 ## [2.0.43] - 2026-04-08
 
 ### Added

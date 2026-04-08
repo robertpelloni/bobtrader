@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/ratelimit"
 )
 
 const defaultBaseURL = "https://api.binance.com"
@@ -30,6 +31,8 @@ type Adapter struct {
 	config     Config
 	httpClient *http.Client
 	baseURL    string
+	limiter    *ratelimit.Limiter
+	orderLimit *ratelimit.Limiter
 }
 
 func New(cfg Config) *Adapter {
@@ -45,6 +48,8 @@ func New(cfg Config) *Adapter {
 		config:     cfg,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 		baseURL:    baseURL,
+		limiter:    ratelimit.BinanceSpotLimiter(),
+		orderLimit: ratelimit.BinanceOrderLimiter(),
 	}
 }
 
@@ -126,10 +131,15 @@ func (a *Adapter) Balances(ctx context.Context) ([]exchange.Balance, error) {
 	return balances, nil
 }
 
-// PlaceOrder places a new order on Binance.
+// PlaceOrder places a new order on Binance with rate limiting.
 func (a *Adapter) PlaceOrder(ctx context.Context, request exchange.OrderRequest) (exchange.Order, error) {
 	if a.config.APIKey == "" {
 		return exchange.Order{}, fmt.Errorf("api key required for orders")
+	}
+
+	// Order-specific rate limiting
+	if err := a.orderLimit.Wait(ctx); err != nil {
+		return exchange.Order{}, fmt.Errorf("order rate limit wait cancelled: %w", err)
 	}
 
 	params := url.Values{}
@@ -245,6 +255,10 @@ func (a *Adapter) signedPost(ctx context.Context, path string, params url.Values
 }
 
 func (a *Adapter) doRequest(ctx context.Context, method, path string, params url.Values, signed bool, result interface{}) error {
+	// Rate limiting: wait for an available token
+	if err := a.limiter.Wait(ctx); err != nil {
+		return fmt.Errorf("rate limit wait cancelled: %w", err)
+	}
 	if params == nil {
 		params = url.Values{}
 	}
