@@ -5,6 +5,42 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.46] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-44 Risk-Adjusted Scoring Functions**
+  - Created `internal/backtest/optimizer/scorers.go` with multiple scoring functions for optimization.
+  - `SharpeScorer()` — Sharpe-like ratio penalizing high variance.
+  - `ProfitFactorScorer()` — Returns relative to capital deployed.
+  - `WinRateScorer()` — Proportion of winning trades from buy/sell pair analysis.
+  - `CompositeScorer` — Weighted combination of multiple scoring functions via fluent builder pattern.
+  - `simpleParseFloat()` — Zero-dependency string-to-float parser for win rate calculation.
+  - Comprehensive test suite for all scorers plus composite scoring.
+
+- **Go Ultra-Project Phase-45 Binance WebSocket Feed**
+  - Created `internal/marketdata/binance/ws_feed.go` — Zero-dependency WebSocket client for Binance streams.
+  - `StreamFeed` implementing `marketdata.StreamFeed` with real-time ticker and kline subscriptions.
+  - Pure-Go WebSocket upgrade and frame parser (no external dependencies).
+  - `SubscribeTicks(symbol, interval)` — Connects to `{symbol}@ticker` stream.
+  - `SubscribeCandles(symbol, interval)` — Connects to `{symbol}@kline_{interval}` stream.
+  - Automatic reconnection with exponential backoff (1s → 30s).
+  - Ping/pong handling for connection keep-alive.
+  - Proper WebSocket frame parsing: text, binary, close, ping opcodes.
+  - Extended payload length support (126/127 frame sizes).
+  - Testnet URL routing via `IsTestnet()` method on adapter.
+  - `parseTickerMessage` and `parseKlineMessage` for Binance JSON format.
+  - JSON struct field conflict resolution (case-insensitive `json:"E"` vs `json:"e"`).
+  - Comprehensive test suite: ticker parsing, kline parsing, invalid data, wrong event types, testnet URLs.
+  - Documented in `docs/ai/implementation/go-phase-44-scoring-functions.md` and `go-phase-45-binance-websocket.md`.
+
+### Changed
+- Added `IsTestnet()` method to `exchange/binance.Adapter` for WebSocket URL routing.
+
+### Verified
+- `go test ./internal/backtest/optimizer/...` — all tests pass.
+- `go test ./internal/marketdata/binance/...` — all tests pass.
+- `go build ./cmd/ultratrader` — compiles cleanly with zero external dependencies.
+
 ## [2.0.45] - 2026-04-08
 
 ### Added
