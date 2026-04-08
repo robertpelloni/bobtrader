@@ -25,6 +25,11 @@ type TickStrategy interface {
 	OnMarketTick(ctx context.Context, tick marketdata.Tick) ([]Signal, error)
 }
 
+type CandleStrategy interface {
+	Strategy
+	OnMarketCandle(ctx context.Context, candle marketdata.Candle) ([]Signal, error)
+}
+
 type Runtime struct {
 	strategies []Strategy
 }
@@ -53,6 +58,22 @@ func (r *Runtime) TickEvent(ctx context.Context, tick marketdata.Tick) ([]Signal
 			continue
 		}
 		signals, err := strategy.OnMarketTick(ctx, tick)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, signals...)
+	}
+	return out, nil
+}
+
+func (r *Runtime) CandleEvent(ctx context.Context, candle marketdata.Candle) ([]Signal, error) {
+	var out []Signal
+	for _, candidate := range r.strategies {
+		strategy, ok := candidate.(CandleStrategy)
+		if !ok {
+			continue
+		}
+		signals, err := strategy.OnMarketCandle(ctx, candle)
 		if err != nil {
 			return nil, err
 		}

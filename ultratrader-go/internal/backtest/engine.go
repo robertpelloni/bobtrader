@@ -16,6 +16,11 @@ type HistoryProvider interface {
 	Ticks() []marketdata.Tick
 }
 
+// CandleHistoryProvider provides a sequence of historical market data candles.
+type CandleHistoryProvider interface {
+	Candles() []marketdata.Candle
+}
+
 // Result holds the final statistics of a backtest run.
 type Result struct {
 	TotalTrades         int
@@ -29,14 +34,13 @@ type Result struct {
 
 // Engine orchestrates the historical simulation.
 type Engine struct {
-	strategy strategy.TickStrategy
-	history  HistoryProvider
+	strategy strategy.Strategy
 	tracker  *portfolio.Tracker
 	orders   []exchange.Order
 }
 
 // NewEngine creates a new backtesting engine.
-func NewEngine(s strategy.TickStrategy, h HistoryProvider, initialCapital float64) *Engine {
+func NewEngine(s strategy.Strategy, initialCapital float64) *Engine {
 	// Initialize a simulated portfolio tracker.
 	tracker := portfolio.NewTracker()
 	// Optionally, we could pre-fund the tracker with initialCapital if it tracked cash.
@@ -44,7 +48,6 @@ func NewEngine(s strategy.TickStrategy, h HistoryProvider, initialCapital float6
 
 	return &Engine{
 		strategy: s,
-		history:  h,
 		tracker:  tracker,
 		orders:   make([]exchange.Order, 0),
 	}
@@ -62,11 +65,16 @@ func (f *simpleFeed) LatestCandle(_ context.Context, symbol, interval string) (m
 	return marketdata.Candle{}, fmt.Errorf("not implemented in backtest")
 }
 
-// Run executes the simulation over the provided history.
-func (e *Engine) Run(ctx context.Context) (Result, error) {
-	ticks := e.history.Ticks()
+// RunTicks executes the simulation over the provided tick history.
+func (e *Engine) RunTicks(ctx context.Context, h HistoryProvider) (Result, error) {
+	tickStrat, ok := e.strategy.(strategy.TickStrategy)
+	if !ok {
+		return Result{}, fmt.Errorf("strategy does not implement TickStrategy")
+	}
+
+	ticks := h.Ticks()
 	if len(ticks) == 0 {
-		return Result{}, fmt.Errorf("no historical data provided")
+		return Result{}, fmt.Errorf("no historical tick data provided")
 	}
 
 	var lastPrice string
@@ -77,53 +85,83 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		lastPrice = tick.Price
 
 		// Pass the tick to the strategy.
-		signals, err := e.strategy.OnMarketTick(ctx, tick)
+		signals, err := tickStrat.OnMarketTick(ctx, tick)
 		if err != nil {
 			return Result{}, fmt.Errorf("strategy error on tick %v: %w", tick, err)
 		}
 
-		// Process generated signals into simulated orders.
-		for _, sig := range signals {
-			var side exchange.OrderSide
-			if sig.Action == "buy" {
-				side = exchange.Buy
-			} else if sig.Action == "sell" {
-				side = exchange.Sell
-			} else {
-				continue // Ignore unsupported actions
-			}
-
-			// Simulate order execution at the current tick price.
-			// In a more advanced backtester, slippage, fees, and spread would be modeled here.
-			order := exchange.Order{
-				ID:       fmt.Sprintf("bt-ord-%d", len(e.orders)+1),
-				Symbol:   sig.Symbol,
-				Side:     side,
-				Type:     exchange.MarketOrder,
-				Status:   "filled",
-				Quantity: sig.Quantity,
-				Price:    tick.Price,
-			}
-			e.orders = append(e.orders, order)
-
-			// Update the simulated portfolio.
-			e.tracker.Apply(order)
-		}
+		e.processSignals(signals, tick.Price)
 	}
 
-	// Final valuation using the last seen price.
+	return e.buildResult(ctx, lastPrice, startTime, endTime), nil
+}
+
+// RunCandles executes the simulation over the provided candle history.
+func (e *Engine) RunCandles(ctx context.Context, h CandleHistoryProvider) (Result, error) {
+	candleStrat, ok := e.strategy.(strategy.CandleStrategy)
+	if !ok {
+		return Result{}, fmt.Errorf("strategy does not implement CandleStrategy")
+	}
+
+	candles := h.Candles()
+	if len(candles) == 0 {
+		return Result{}, fmt.Errorf("no historical candle data provided")
+	}
+
+	var lastPrice string
+	var startTime time.Time = candles[0].Timestamp
+	var endTime time.Time = candles[len(candles)-1].Timestamp
+
+	for _, candle := range candles {
+		lastPrice = candle.Close
+
+		// Pass the candle to the strategy.
+		signals, err := candleStrat.OnMarketCandle(ctx, candle)
+		if err != nil {
+			return Result{}, fmt.Errorf("strategy error on candle %v: %w", candle, err)
+		}
+
+		e.processSignals(signals, candle.Close)
+	}
+
+	return e.buildResult(ctx, lastPrice, startTime, endTime), nil
+}
+
+func (e *Engine) processSignals(signals []strategy.Signal, price string) {
+	// Process generated signals into simulated orders.
+	for _, sig := range signals {
+		var side exchange.OrderSide
+		if sig.Action == "buy" {
+			side = exchange.Buy
+		} else if sig.Action == "sell" {
+			side = exchange.Sell
+		} else {
+			continue // Ignore unsupported actions
+		}
+
+		// Simulate order execution at the current price.
+		// In a more advanced backtester, slippage, fees, and spread would be modeled here.
+		order := exchange.Order{
+			ID:       fmt.Sprintf("bt-ord-%d", len(e.orders)+1),
+			Symbol:   sig.Symbol,
+			Side:     side,
+			Type:     exchange.MarketOrder,
+			Status:   "filled",
+			Quantity: sig.Quantity,
+			Price:    price,
+		}
+		e.orders = append(e.orders, order)
+
+		// Update the simulated portfolio.
+		e.tracker.Apply(order)
+	}
+}
+
+func (e *Engine) buildResult(ctx context.Context, lastPrice string, startTime, endTime time.Time) Result {
 	feed := &simpleFeed{currentPrice: lastPrice}
 	totalValue := e.tracker.TotalMarketValue(ctx, feed)
 	realized := e.tracker.TotalRealizedPnL()
 	unrealized := e.tracker.TotalUnrealizedPnL(ctx, feed)
-
-	// Since we aren't tracking a base cash balance initially, the portfolio value
-	// is just the value of held assets. A full system would add initialCapital + realized.
-
-	// Assuming initialCapital was held entirely in cash, and we bought assets using it:
-	// Final cash = initialCapital - cost_of_assets_bought + revenue_from_assets_sold (which is represented in realized PnL and current asset values)
-	// Simplified: Final value = Total Asset Value + (Cash). We need a way to track Cash.
-	// For this phase, we'll return the aggregate metrics from the tracker.
 
 	return Result{
 		TotalTrades:         len(e.orders),
@@ -133,7 +171,7 @@ func (e *Engine) Run(ctx context.Context) (Result, error) {
 		StartTime:           startTime,
 		EndTime:             endTime,
 		Orders:              e.orders,
-	}, nil
+	}
 }
 
 // MemoryHistory is a simple history provider backed by an in-memory slice.
@@ -146,5 +184,18 @@ func NewMemoryHistory(data []marketdata.Tick) *MemoryHistory {
 }
 
 func (h *MemoryHistory) Ticks() []marketdata.Tick {
+	return h.data
+}
+
+// MemoryCandleHistory is a simple history provider backed by an in-memory slice of candles.
+type MemoryCandleHistory struct {
+	data []marketdata.Candle
+}
+
+func NewMemoryCandleHistory(data []marketdata.Candle) *MemoryCandleHistory {
+	return &MemoryCandleHistory{data: data}
+}
+
+func (h *MemoryCandleHistory) Candles() []marketdata.Candle {
 	return h.data
 }

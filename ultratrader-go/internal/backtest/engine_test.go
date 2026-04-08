@@ -10,12 +10,11 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
 
-// mockStrategy buys on every tick below 100, sells above 100.
-type mockStrategy struct{}
+type mockTickStrategy struct{}
 
-func (mockStrategy) Name() string                                        { return "mock" }
-func (mockStrategy) OnTick(_ context.Context) ([]strategy.Signal, error) { return nil, nil }
-func (mockStrategy) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]strategy.Signal, error) {
+func (mockTickStrategy) Name() string                                        { return "mock" }
+func (mockTickStrategy) OnTick(_ context.Context) ([]strategy.Signal, error) { return nil, nil }
+func (mockTickStrategy) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]strategy.Signal, error) {
 	if tick.Price == "90.00" {
 		return []strategy.Signal{{AccountID: "test", Symbol: "BTCUSDT", Action: "buy", Quantity: "1.0"}}, nil
 	} else if tick.Price == "110.00" {
@@ -24,19 +23,32 @@ func (mockStrategy) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]str
 	return nil, nil
 }
 
-func TestEngineRun(t *testing.T) {
+type mockCandleStrategy struct{}
+
+func (mockCandleStrategy) Name() string                                        { return "mock-candle" }
+func (mockCandleStrategy) OnTick(_ context.Context) ([]strategy.Signal, error) { return nil, nil }
+func (mockCandleStrategy) OnMarketCandle(_ context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
+	if candle.Close == "90.00" {
+		return []strategy.Signal{{AccountID: "test", Symbol: "BTCUSDT", Action: "buy", Quantity: "1.0"}}, nil
+	} else if candle.Close == "110.00" {
+		return []strategy.Signal{{AccountID: "test", Symbol: "BTCUSDT", Action: "sell", Quantity: "1.0"}}, nil
+	}
+	return nil, nil
+}
+
+func TestEngineRunTicks(t *testing.T) {
 	now := time.Now()
 	history := NewMemoryHistory([]marketdata.Tick{
 		{Symbol: "BTCUSDT", Price: "90.00", Timestamp: now},
 		{Symbol: "BTCUSDT", Price: "110.00", Timestamp: now.Add(time.Second)},
 	})
 
-	strat := mockStrategy{}
-	engine := NewEngine(strat, history, 1000.0)
+	strat := mockTickStrategy{}
+	engine := NewEngine(strat, 1000.0)
 
-	result, err := engine.Run(context.Background())
+	result, err := engine.RunTicks(context.Background(), history)
 	if err != nil {
-		t.Fatalf("Run returned error: %v", err)
+		t.Fatalf("RunTicks returned error: %v", err)
 	}
 
 	if result.TotalTrades != 2 {
@@ -52,5 +64,29 @@ func TestEngineRun(t *testing.T) {
 	}
 	if result.Orders[0].Side != "buy" || result.Orders[1].Side != "sell" {
 		t.Fatalf("Unexpected order sides: %v, %v", result.Orders[0].Side, result.Orders[1].Side)
+	}
+}
+
+func TestEngineRunCandles(t *testing.T) {
+	now := time.Now()
+	history := NewMemoryCandleHistory([]marketdata.Candle{
+		{Symbol: "BTCUSDT", Close: "90.00", Timestamp: now},
+		{Symbol: "BTCUSDT", Close: "110.00", Timestamp: now.Add(time.Hour)},
+	})
+
+	strat := mockCandleStrategy{}
+	engine := NewEngine(strat, 1000.0)
+
+	result, err := engine.RunCandles(context.Background(), history)
+	if err != nil {
+		t.Fatalf("RunCandles returned error: %v", err)
+	}
+
+	if result.TotalTrades != 2 {
+		t.Fatalf("Expected 2 trades, got %d", result.TotalTrades)
+	}
+
+	if math.Abs(result.RealizedPnL-20.0) > 0.001 {
+		t.Fatalf("Expected $20 realized PnL, got %f", result.RealizedPnL)
 	}
 }

@@ -5,6 +5,25 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.34] - 2026-04-06
+
+### Added
+- **Go Ultra-Project Phase-32 Candle-Driven Backtesting & Strategy Enhancements**
+  - Upgraded the strategy `Runtime` to support `CandleStrategy` interfaces alongside the existing `TickStrategy`.
+  - Added `CandleHistoryProvider` interface and `MemoryCandleHistory` to the `internal/backtest` engine.
+  - Implemented `Engine.RunCandles()` to allow the backtester to iterate over multi-timeframe candle datasets, executing historical simulations based on candle Close prices.
+  - Added a new `CandleSMACross` demo strategy to demonstrate moving average crossovers running specifically on interval-based candles rather than raw market ticks.
+  - Added comprehensive test suites validating the correct flow of Candle-based signals through both the strategy runtime and the backtesting simulation.
+  - Detailed the phase in `docs/ai/implementation/go-phase-32-candle-backtesting-and-strategies.md`.
+
+### Changed
+- Updated `TODO.md` to reflect the completion of candle/multi-timeframe strategy support.
+- Re-categorized `TODO.md` items under "Backtesting and Simulation" for clarity.
+
+### Verified
+- Executed `go test ./internal/strategy/... ./internal/backtest/...` passing successfully.
+- Validated crossover mathematics and deterministic backtesting states within memory arrays.
+
 ## [2.0.33] - 2026-04-06
 
 ### Added

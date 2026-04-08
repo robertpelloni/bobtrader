@@ -23,6 +23,14 @@ func (tickOnlyStrategy) OnMarketTick(_ context.Context, tick marketdata.Tick) ([
 	return []Signal{{AccountID: "paper-main", Symbol: tick.Symbol, Action: "buy", Reason: "tick"}}, nil
 }
 
+type candleOnlyStrategy struct{}
+
+func (candleOnlyStrategy) Name() string                               { return "candle" }
+func (candleOnlyStrategy) OnTick(_ context.Context) ([]Signal, error) { return nil, nil }
+func (candleOnlyStrategy) OnMarketCandle(_ context.Context, candle marketdata.Candle) ([]Signal, error) {
+	return []Signal{{AccountID: "paper-main", Symbol: candle.Symbol, Action: "buy", Reason: "candle"}}, nil
+}
+
 func TestRuntimeTickAggregatesSignals(t *testing.T) {
 	runtime := NewRuntime(testStrategy{})
 	signals, err := runtime.Tick(context.Background())
@@ -42,5 +50,16 @@ func TestRuntimeTickEventAggregatesTickStrategies(t *testing.T) {
 	}
 	if len(signals) != 1 || signals[0].Reason != "tick" {
 		t.Fatalf("unexpected tick signals: %+v", signals)
+	}
+}
+
+func TestRuntimeCandleEventAggregatesCandleStrategies(t *testing.T) {
+	runtime := NewRuntime(testStrategy{}, candleOnlyStrategy{})
+	signals, err := runtime.CandleEvent(context.Background(), marketdata.Candle{Symbol: "BTCUSDT", Timestamp: time.Now()})
+	if err != nil {
+		t.Fatalf("CandleEvent returned error: %v", err)
+	}
+	if len(signals) != 1 || signals[0].Reason != "candle" {
+		t.Fatalf("unexpected candle signals: %+v", signals)
 	}
 }

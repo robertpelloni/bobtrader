@@ -26,10 +26,11 @@
 - [x] Add runtime analytics/reporting modules on top of report storage
 - [x] Add execution summary history over time
 
-### Trading engine expansion
-- [x] Add richer strategy library
+### Backtesting and Simulation
 - [x] Add backtesting subsystem
+- [x] Add candle/multi-timeframe strategy support
 - [ ] Add optimization subsystem
+- [ ] Add advanced market emulation (fees, slippage, maker/taker)
 - [ ] Add real exchange adapters beyond paper mode
 - [ ] Add reconciliation/fill state improvements
 
