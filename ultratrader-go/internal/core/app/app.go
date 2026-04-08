@@ -11,6 +11,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	marketdatapaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/paper"
@@ -90,6 +91,11 @@ func New(cfg config.Config) (*App, error) {
 	registry := exchange.NewRegistry()
 	if err := registry.Register("paper", func() exchange.Adapter { return exchangepaper.New() }); err != nil {
 		return nil, fmt.Errorf("register paper exchange: %w", err)
+	}
+	if err := registry.Register("binance", func() exchange.Adapter {
+		return binance.New(binance.Config{Testnet: true}) // safe default
+	}); err != nil {
+		return nil, fmt.Errorf("register binance exchange: %w", err)
 	}
 
 	marketDataFeed := marketdatapaper.New()

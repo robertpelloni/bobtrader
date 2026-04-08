@@ -66,6 +66,9 @@ type AccountConfig struct {
 	Enabled      bool     `json:"enabled"`
 	Exchange     string   `json:"exchange"`
 	Capabilities []string `json:"capabilities"`
+	APIKey       string   `json:"api_key"`
+	SecretKey    string   `json:"secret_key"`
+	Testnet      bool     `json:"testnet"`
 }
 
 func Default() Config {

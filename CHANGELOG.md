@@ -5,6 +5,27 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.41] - 2026-04-08
+
+### Added
+- **Go Ultra-Project Phase-39 Binance REST Adapter**
+  - Created `internal/exchange/binance/adapter.go` implementing the `exchange.Adapter` interface.
+  - **Public endpoints**: `GetTickerPrice(symbol)` for live prices, `GetKlines(symbol, interval, limit)` for historical candle data, `ListMarkets()` filtering by TRADING status.
+  - **Authenticated endpoints**: `Balances()` for spot account balances, `PlaceOrder()` for market/limit orders with HMAC-SHA256 request signing.
+  - **Security**: HMAC-SHA256 signature generation, X-MBX-APIKEY header, timestamp + recvWindow enforcement.
+  - **Testnet support**: Configurable base URL with automatic testnet routing via `Config.Testnet`.
+  - **Error handling**: Structured Binance API error parsing with code/message extraction.
+  - **HTTP mocking**: Full test suite using `httptest.Server` validating ticker price, kline parsing, market filtering, signature generation, and API key enforcement.
+  - Registered `binance` factory in `core/app` with testnet-safe defaults.
+  - Added `APIKey`, `SecretKey`, `Testnet` fields to `AccountConfig`.
+  - Documented in `docs/ai/implementation/go-phase-39-binance-rest-adapter.md`.
+
+### Verified
+- `go test ./internal/exchange/binance/...` — all tests pass with mocked HTTP server.
+- `go test ./internal/exchange/...` — all exchange packages pass.
+- `go build ./cmd/ultratrader` — compiles cleanly.
+- Binary runs with both `paper` and `binance` adapters registered.
+
 ## [2.0.40] - 2026-04-08
 
 ### Added

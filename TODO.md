@@ -34,7 +34,8 @@
 - [x] Add optimization subsystem (Parallel execution)
 - [x] Add live candle streaming to scheduler (candle-stream mode)
 - [x] Add MACD, Bollinger Bands, ATR indicators
-- [ ] Add real exchange adapters beyond paper mode
+- [x] Add real exchange adapters beyond paper mode (Binance REST adapter)
+- [ ] Add Binance WebSocket adapter for real-time streaming
 - [ ] Add reconciliation/fill state improvements
 
 ### Operator surfaces
