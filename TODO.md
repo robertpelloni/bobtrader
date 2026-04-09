@@ -37,10 +37,23 @@
 - [x] Add real exchange adapters beyond paper mode (Binance REST adapter)
 - [x] Add Binance market data feed implementing StreamFeed
 - [x] Add walk-forward optimization for out-of-sample parameter validation
-- [ ] Add Binance WebSocket adapter for real-time streaming
+- [x] Add Binance WebSocket adapter for real-time streaming
 - [x] Add reconciliation/fill state improvements (Order Reconciliation)
-- [ ] Add periodic reconciliation service (background auto-sync)
-- [ ] Add trade history sync from exchange
+- [x] Add periodic reconciliation service (background auto-sync)
+- [x] Add trade history sync from exchange
+- [x] Add notification system (Email/Discord/Telegram)
+- [x] Add position sizing library
+- [x] Add circuit breaker for API resilience
+- [x] Add correlation analysis engine
+- [x] Add trade journal and performance analytics
+- [x] Add market regime detection
+- [x] Add volume indicators (VWAP, OBV, MFI, CMF)
+- [x] Add advanced order types (Stop/Limit/Trailing/Bracket/OCO)
+- [x] Add strategy composition and signal voting
+- [ ] Add portfolio rebalancer
+- [ ] Add multi-exchange price aggregation
+- [ ] Add sentiment analysis integration
+- [ ] Add NLP strategy parsing
 
 ### Operator surfaces
 - [x] Add richer operator-facing diagnostics APIs

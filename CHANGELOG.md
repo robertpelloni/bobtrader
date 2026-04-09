@@ -5,6 +5,89 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.47] - 2026-04-09
+
+### Added
+- **Go Ultra-Project Phase 46 Notification System** (`internal/notification/`)
+  - `Manager` coordinating multiple notification channels.
+  - `EmailNotifier` via SMTP with configurable host/port/from/to.
+  - `DiscordNotifier` via webhook with embed colors by severity.
+  - `TelegramNotifier` via Bot API with MarkdownV2 formatting.
+  - Severity levels: INFO, WARNING, ERROR, CRITICAL with per-channel minimum level filtering.
+  - `NotifyTrade()` convenience method with automatic loss detection (WARNING level).
+  - 15 comprehensive tests.
+
+- **Go Ultra-Project Phase 47 Position Sizing Library** (`internal/strategy/sizing/`)
+  - `FixedSizer` — Constant lot size regardless of portfolio.
+  - `PercentRiskSizer` — Risk fixed % of portfolio per trade using ATR for stop distance.
+  - `KellySizer` — Kelly Criterion optimal sizing with fractional Kelly and 25% cap.
+  - `VolatilityTargetSizer` — Target constant portfolio volatility using ATR normalization.
+  - `EqualWeightSizer` — Equal portfolio division across N positions.
+  - 14 comprehensive tests.
+
+- **Go Ultra-Project Phase 48 Circuit Breaker** (`internal/risk/circuitbreaker/`)
+  - Full circuit breaker pattern: CLOSED → OPEN → HALF_OPEN → CLOSED lifecycle.
+  - Configurable failure thresholds, half-open test limits, and open timeout.
+  - `Execute(ctx, fn)` wrapper for automatic state management.
+  - State change callbacks for monitoring.
+  - `Stats()` for observability (failures, successes, rejections).
+  - `Reset()` for manual recovery.
+  - 12 comprehensive tests.
+
+- **Go Ultra-Project Phase 49 Correlation Analysis** (`internal/analytics/correlation/`)
+  - `CorrelationMatrix` with rolling window Pearson correlation between symbol pairs.
+  - `DiversificationScore()` from 0 (correlated) to 1 (diversified).
+  - `HeatmapData()` for dashboard visualization.
+  - Automatic window trimming and return-series calculation.
+  - 13 comprehensive tests.
+
+- **Go Ultra-Project Phase 50 Trade Journal** (`internal/analytics/journal/`)
+  - `Journal` with automatic trade group resolution (buy/sell matching).
+  - `PerformanceStats`: total trades, win rate, avg win/loss, profit factor, max drawdown, Sharpe ratio.
+  - `StatsByStrategy()` and `StatsSince()` for segmented analysis.
+  - `MaxDrawdown()` from PnL series.
+  - 10 comprehensive tests.
+
+- **Go Ultra-Project Phase 51 Market Regime Detection** (`internal/strategy/regime/`)
+  - `VolatilityDetector` — ATR/price ratio for volatile/trending/quiet classification.
+  - `TrendDetector` — ADX-like directional movement for trend strength.
+  - `BollingerBandwidthDetector` — Band width for volatility regime.
+  - `CompositeDetector` — Majority voting across multiple detectors.
+  - Regime enum: TRENDING, RANGING, VOLATILE, QUIET.
+  - 13 comprehensive tests.
+
+- **Go Ultra-Project Phase 52 Volume Indicators** (`internal/indicator/volume.go`)
+  - `VWAP` — Volume-weighted average price with session reset.
+  - `OBV` — On Balance Volume for buying/selling pressure.
+  - `VolumeSMA` — Volume moving average.
+  - `VolumeRatio` — Current volume vs average (above/below normal detection).
+  - `MFI` — Money Flow Index (volume-weighted RSI, 0–100 range).
+  - `ChaikinMoneyFlow` — Accumulation/distribution indicator.
+  - 15 volume indicator tests (26 total indicator tests).
+
+- **Go Ultra-Project Phase 53 Advanced Order Types** (`internal/trading/orders/`)
+  - `ConditionalOrder` with stop-loss, take-profit, trailing-stop, stop-limit types.
+  - `Manager` with price-based conditional order evaluation.
+  - `PlaceBracketOrder()` for stop-loss + take-profit pairs.
+  - `PlaceTrailingStop()` for percentage-based trailing stops.
+  - OCO (One-Cancels-Other) group support — automatic cancellation on trigger.
+  - 15 comprehensive tests.
+
+- **Go Ultra-Project Phase 54 Strategy Composition** (`internal/strategy/composite/`)
+  - `CompositeStrategy` combining multiple sub-strategies via voting.
+  - 4 resolution modes: Unanimous, Majority, Any, Weighted.
+  - `SignalResult` with confidence levels and source tracking.
+  - Error resilience — partial evaluator failures don't block composite evaluation.
+  - 14 comprehensive tests.
+
+### Fixed
+- Rate limiter concurrent safety test tolerance for refill race condition.
+
+### Verified
+- `go build ./...` — compiles cleanly, zero external dependencies.
+- 35 packages pass, 3 packages have no test files (expected).
+- 122 new tests added across 9 new packages.
+
 ## [2.0.46] - 2026-04-08
 
 ### Added
