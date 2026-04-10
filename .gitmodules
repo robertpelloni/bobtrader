@@ -58,9 +58,6 @@
 [submodule "submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot"]
 	path = submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot
 	url = https://github.com/PolyStrategy/Polymarket-Crypto-Market-Bot.git
-[submodule "submodules/page-04/hello2all__gamma-ray"]
-	path = submodules/page-04/hello2all__gamma-ray
-	url = https://github.com/hello2all/gamma-ray.git
 [submodule "submodules/page-04/ccxt__ccxt"]
 	path = submodules/page-04/ccxt__ccxt
 	url = https://github.com/ccxt/ccxt.git
@@ -103,9 +100,6 @@
 [submodule "submodules/page-05/JPStrydom__Crypto-Trading-Bot"]
 	path = submodules/page-05/JPStrydom__Crypto-Trading-Bot
 	url = https://github.com/JPStrydom/Crypto-Trading-Bot.git
-[submodule "submodules/page-05/fluidex__dingir-exchange"]
-	path = submodules/page-05/fluidex__dingir-exchange
-	url = https://github.com/fluidex/dingir-exchange.git
 [submodule "submodules/page-05/6551Team__opennews-mcp"]
 	path = submodules/page-05/6551Team__opennews-mcp
 	url = https://github.com/6551Team/opennews-mcp.git
