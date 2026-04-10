@@ -31,21 +31,12 @@
 [submodule "submodules/page-03/kelvinau__crypto-arbitrage"]
 	path = submodules/page-03/kelvinau__crypto-arbitrage
 	url = https://github.com/kelvinau/crypto-arbitrage.git
-[submodule "submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot"]
-	path = submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot
-	url = https://github.com/Krypto-Hashers-Community/polymarket-crypto-sports-arbitrage-trading-bot.git
 [submodule "submodules/page-03/saniales__golang-crypto-trading-bot"]
 	path = submodules/page-03/saniales__golang-crypto-trading-bot
 	url = https://github.com/saniales/golang-crypto-trading-bot.git
-[submodule "submodules/page-03/ericjang__cryptocurrency_arbitrage"]
-	path = submodules/page-03/ericjang__cryptocurrency_arbitrage
-	url = https://github.com/ericjang/cryptocurrency_arbitrage.git
 [submodule "submodules/page-03/Ekliptor__WolfBot"]
 	path = submodules/page-03/Ekliptor__WolfBot
 	url = https://github.com/Ekliptor/WolfBot.git
-[submodule "submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot"]
-	path = submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot
-	url = https://github.com/RobertMarcellos/polymarket-copy-trading-bot.git
 [submodule "submodules/page-03/markusaksli__TradeBot"]
 	path = submodules/page-03/markusaksli__TradeBot
 	url = https://github.com/markusaksli/TradeBot.git
@@ -127,9 +118,6 @@
 [submodule "submodules/page-06/MohammedRashad__Crypto-Copy-Trader"]
 	path = submodules/page-06/MohammedRashad__Crypto-Copy-Trader
 	url = https://github.com/MohammedRashad/Crypto-Copy-Trader.git
-[submodule "submodules/page-06/SFCQuantX__polymarket-trading-agent"]
-	path = submodules/page-06/SFCQuantX__polymarket-trading-agent
-	url = https://github.com/SFCQuantX/polymarket-trading-agent.git
 [submodule "submodules/page-06/fabston__TradingView-Webhook-Bot"]
 	path = submodules/page-06/fabston__TradingView-Webhook-Bot
 	url = https://github.com/fabston/TradingView-Webhook-Bot.git
