@@ -50,10 +50,10 @@
 - [x] Add volume indicators (VWAP, OBV, MFI, CMF)
 - [x] Add advanced order types (Stop/Limit/Trailing/Bracket/OCO)
 - [x] Add strategy composition and signal voting
-- [ ] Add portfolio rebalancer
-- [ ] Add multi-exchange price aggregation
-- [ ] Add sentiment analysis integration
-- [ ] Add NLP strategy parsing
+- [x] Add portfolio rebalancer
+- [x] Add multi-exchange price aggregation
+- [x] Add sentiment analysis integration
+- [x] Add NLP strategy parsing
 
 ### Operator surfaces
 - [x] Add richer operator-facing diagnostics APIs
