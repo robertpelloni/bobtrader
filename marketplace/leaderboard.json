@@ -1,62 +1,14 @@
 [
   {
-    "strategy_name": "dca_accumulator",
-    "author": "PowerTrader",
-    "total_return_pct": 28.5,
-    "win_rate": 0.71,
-    "max_drawdown": 5.2,
-    "sharpe_ratio": 2.5,
-    "total_trades": 365,
-    "period": "2024-01 to 2024-12",
+    "strategy_name": "s1",
+    "author": "anonymous",
+    "total_return_pct": 30,
+    "win_rate": 0.6,
+    "max_drawdown": 10,
+    "sharpe_ratio": 2.0,
+    "total_trades": 100,
+    "period": "",
     "rank": 1,
-    "score": 44.22
-  },
-  {
-    "strategy_name": "momentum_breakout",
-    "author": "PowerTrader",
-    "total_return_pct": 45.2,
-    "win_rate": 0.58,
-    "max_drawdown": 12.5,
-    "sharpe_ratio": 1.8,
-    "total_trades": 340,
-    "period": "2024-01 to 2024-12",
-    "rank": 2,
-    "score": 43.785
-  },
-  {
-    "strategy_name": "mean_reversion_rsi",
-    "author": "PowerTrader",
-    "total_return_pct": 32.1,
-    "win_rate": 0.62,
-    "max_drawdown": 8.3,
-    "sharpe_ratio": 2.1,
-    "total_trades": 210,
-    "period": "2024-01 to 2024-12",
-    "rank": 3,
-    "score": 42.035000000000004
-  },
-  {
-    "strategy_name": "trend_follower_macd",
-    "author": "community",
-    "total_return_pct": 38.4,
-    "win_rate": 0.52,
-    "max_drawdown": 15.1,
-    "sharpe_ratio": 1.6,
-    "total_trades": 180,
-    "period": "2024-01 to 2024-12",
-    "rank": 4,
-    "score": 39.655
-  },
-  {
-    "strategy_name": "grid_trader",
-    "author": "community",
-    "total_return_pct": 18.7,
-    "win_rate": 0.74,
-    "max_drawdown": 6.8,
-    "sharpe_ratio": 1.5,
-    "total_trades": 820,
-    "period": "2024-06 to 2024-12",
-    "rank": 5,
-    "score": 39.14
+    "score": 40.5
   }
 ]

@@ -1,19 +1,11 @@
 [
   {
-    "episodes": 300,
-    "final_pnl": -7.2708727023551205,
-    "trades": 20,
-    "avg_reward_last_50": 36.237203772564044,
-    "q_table_size": 307,
+    "episodes": 10,
+    "final_pnl": 8.325219705221073,
+    "trades": 19,
+    "avg_reward_last_50": 2.065026097162575,
+    "q_table_size": 160,
     "method": "qlearning",
-    "timestamp": "2026-03-07T15:02:26.081104"
-  },
-  {
-    "episodes": 300,
-    "final_pnl": -10.794407818649248,
-    "trades": 243,
-    "avg_reward_last_50": 120.66496547012021,
-    "method": "policy_gradient",
-    "timestamp": "2026-03-07T15:02:30.426843"
+    "timestamp": "2026-04-05T13:49:29.834693"
   }
 ]

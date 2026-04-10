@@ -8,5 +8,15 @@
     "sharpe": 1.8,
     "max_drawdown": 8,
     "timestamp": "2026-03-07T15:02:45.890010"
+  },
+  "test": {
+    "config": {
+      "timeframe": "1hour"
+    },
+    "return_pct": 0,
+    "win_rate": 0,
+    "sharpe": 2.0,
+    "max_drawdown": 0,
+    "timestamp": "2026-04-05T13:49:29.740705"
   }
 }

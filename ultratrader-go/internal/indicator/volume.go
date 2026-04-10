@@ -114,6 +114,17 @@ func (v *VolumeSMA) Update(volume float64) float64 {
 	return sum / float64(v.period)
 }
 
+func (v *VolumeSMA) Last() float64 {
+	if len(v.volumes) < v.period {
+		return 0
+	}
+	var sum float64
+	for _, vol := range v.volumes {
+		sum += vol
+	}
+	return sum / float64(len(v.volumes))
+}
+
 // VolumeRatio computes the ratio of current volume to average volume.
 // Values > 1 indicate above-average volume, < 1 indicate below-average.
 type VolumeRatio struct {

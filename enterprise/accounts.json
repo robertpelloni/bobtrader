@@ -20,5 +20,16 @@
     "owner_id": "80381322",
     "created_at": "2026-03-07T15:02:51.352511",
     "is_active": true
+  },
+  "acct_059b0167": {
+    "account_id": "acct_059b0167",
+    "name": "Test Fund",
+    "capital": 50000,
+    "available": 50000,
+    "positions": [],
+    "pnl": 0.0,
+    "owner_id": "",
+    "created_at": "2026-04-05T13:49:29.682600",
+    "is_active": true
   }
 }

@@ -5,5 +5,19 @@
     "rating": 5,
     "comment": "Excellent strategy!",
     "timestamp": "2026-03-07T15:02:54.715892"
+  },
+  {
+    "strategy_name": "test_strat",
+    "reviewer": "user1",
+    "rating": 4,
+    "comment": "Good",
+    "timestamp": "2026-04-05T13:49:29.696400"
+  },
+  {
+    "strategy_name": "test_strat",
+    "reviewer": "user2",
+    "rating": 5,
+    "comment": "Great",
+    "timestamp": "2026-04-05T13:49:29.697998"
   }
 ]

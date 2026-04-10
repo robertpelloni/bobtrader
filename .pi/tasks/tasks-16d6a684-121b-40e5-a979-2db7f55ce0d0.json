@@ -1,0 +1,65 @@
+{
+  "nextId": 15,
+  "tasks": [
+    {
+      "id": "10",
+      "subject": "Phase 55: Portfolio Rebalancer",
+      "description": "Port pt_rebalancer.py to Go. Create internal/trading/rebalancer package with:\n- Rebalancer with target allocation percentages\n- drift detection (current vs target weights)\n- rebalance order generation (sells overweight, buys underweight)\n- configurable drift threshold\n- periodic rebalance scheduling",
+      "status": "completed",
+      "activeForm": "Building rebalancer",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1775749639597,
+      "updatedAt": 1775750015011
+    },
+    {
+      "id": "11",
+      "subject": "Phase 56: Feature Engine for Analytics/ML",
+      "description": "Port pt_feature_engine.py to Go. Create internal/analytics/features package with:\n- FeatureExtractor interface\n- Price-based features (returns, volatility, momentum)\n- Volume-based features (volume ratio, OBV trend)\n- Technical indicator features (RSI level, MACD signal, BB position)\n- Feature matrix generation for ML/research use",
+      "status": "completed",
+      "activeForm": "Building feature engine",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1775749786778,
+      "updatedAt": 1775750203602
+    },
+    {
+      "id": "12",
+      "subject": "Phase 57: Multi-Exchange Price Aggregation",
+      "description": "Port pt_multi_exchange.py and pt_exchanges.py aggregation to Go. Create internal/exchange/aggregator package with:\n- Multi-exchange price aggregation (median, VWAP, best bid/ask)\n- Arbitrage opportunity detection (spread monitoring)\n- Exchange failover and health tracking\n- Unified market data across multiple exchanges",
+      "status": "in_progress",
+      "activeForm": "Building multi-exchange aggregator",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1775749797373,
+      "updatedAt": 1775750213773
+    },
+    {
+      "id": "13",
+      "subject": "Phase 58: Advanced Drawdown Analytics",
+      "description": "Port advanced analytics from pt_advanced_analytics.py. Create internal/analytics/drawdown package with:\n- Rolling max drawdown calculation\n- Drawdown duration tracking\n- Recovery time analysis\n- Underwater curve generation\n- Calmar ratio (return / max drawdown)",
+      "status": "pending",
+      "activeForm": "Building drawdown analytics",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1775749858915,
+      "updatedAt": 1775749858915
+    },
+    {
+      "id": "14",
+      "subject": "Phase 59: Backtest Reporting Engine",
+      "description": "Create internal/backtest/reporting package with:\n- Full backtest report generation\n- Equity curve output\n- Trade log with entry/exit/PnL\n- Performance summary (Sharpe, Sortino, max DD, win rate, profit factor)\n- Monthly returns breakdown\n- HTML/JSON report output",
+      "status": "pending",
+      "activeForm": "Building backtest reporting",
+      "metadata": {},
+      "blocks": [],
+      "blockedBy": [],
+      "createdAt": 1775749872778,
+      "updatedAt": 1775749872778
+    }
+  ]
+}
