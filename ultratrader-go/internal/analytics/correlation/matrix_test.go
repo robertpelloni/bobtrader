@@ -101,7 +101,7 @@ func TestCorrelationMatrix_PerfectCorrelation_LowDiversification(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		price := float64(100 + i)
 		cm.AddPrice("A", price)
-		cm.AddPrice("B", price * 2) // Perfect correlation
+		cm.AddPrice("B", price*2) // Perfect correlation
 	}
 
 	score := cm.DiversificationScore()

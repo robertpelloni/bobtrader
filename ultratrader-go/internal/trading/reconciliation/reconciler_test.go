@@ -12,10 +12,10 @@ type mockQuerier struct {
 	orders map[string]OrderStatus
 }
 
-func (m *mockQuerier) Name() string                                          { return "mock" }
-func (m *mockQuerier) Capabilities() []exchange.Capability                   { return nil }
+func (m *mockQuerier) Name() string                                               { return "mock" }
+func (m *mockQuerier) Capabilities() []exchange.Capability                        { return nil }
 func (m *mockQuerier) ListMarkets(ctx context.Context) ([]exchange.Market, error) { return nil, nil }
-func (m *mockQuerier) Balances(ctx context.Context) ([]exchange.Balance, error) { return nil, nil }
+func (m *mockQuerier) Balances(ctx context.Context) ([]exchange.Balance, error)   { return nil, nil }
 func (m *mockQuerier) PlaceOrder(ctx context.Context, r exchange.OrderRequest) (exchange.Order, error) {
 	return exchange.Order{}, nil
 }
@@ -84,10 +84,10 @@ func TestReconcileOrders_Discrepancy(t *testing.T) {
 // stubAdapter implements exchange.Adapter but NOT OrderQuerier.
 type stubAdapter struct{}
 
-func (s *stubAdapter) Name() string                                            { return "stub" }
-func (s *stubAdapter) Capabilities() []exchange.Capability                     { return nil }
+func (s *stubAdapter) Name() string                                               { return "stub" }
+func (s *stubAdapter) Capabilities() []exchange.Capability                        { return nil }
 func (s *stubAdapter) ListMarkets(ctx context.Context) ([]exchange.Market, error) { return nil, nil }
-func (s *stubAdapter) Balances(ctx context.Context) ([]exchange.Balance, error) { return nil, nil }
+func (s *stubAdapter) Balances(ctx context.Context) ([]exchange.Balance, error)   { return nil, nil }
 func (s *stubAdapter) PlaceOrder(ctx context.Context, r exchange.OrderRequest) (exchange.Order, error) {
 	return exchange.Order{}, nil
 }
@@ -114,10 +114,10 @@ func TestReconcileOrders_NoQuerier(t *testing.T) {
 
 func TestReconcileResult_Summary(t *testing.T) {
 	result := &ReconcileResult{
-		TotalChecked: 10,
-		Matched:      8,
-		Filled:       7,
-		Canceled:     1,
+		TotalChecked:  10,
+		Matched:       8,
+		Filled:        7,
+		Canceled:      1,
 		Discrepancies: []Discrepancy{{OrderID: "99"}},
 	}
 	summary := result.Summary()

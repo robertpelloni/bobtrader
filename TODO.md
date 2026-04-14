@@ -11,7 +11,7 @@
 ### Risk management
 - [x] Fully wire `max-concentration` guard using live market value rather than cost-basis fallback
 - [x] Add exposure / concentration diagnostics endpoints
-- [ ] Add max-open-position and concentration policy tuning docs/examples
+- [x] Add max-open-position and concentration policy tuning docs/examples
 - [x] Add additional guards for duplicate side suppression / max notional per symbol / account exposure
 
 ### Market data
@@ -50,10 +50,10 @@
 - [x] Add volume indicators (VWAP, OBV, MFI, CMF)
 - [x] Add advanced order types (Stop/Limit/Trailing/Bracket/OCO)
 - [x] Add strategy composition and signal voting
-- [ ] Add portfolio rebalancer
-- [ ] Add multi-exchange price aggregation
-- [ ] Add sentiment analysis integration
-- [ ] Add NLP strategy parsing
+- [x] Add portfolio rebalancer
+- [x] Add multi-exchange price aggregation
+- [x] Add sentiment analysis integration
+- [x] Add NLP strategy parsing
 
 ### Operator surfaces
 - [x] Add richer operator-facing diagnostics APIs
@@ -62,10 +62,10 @@
 - [x] Add deployment packaging and environment profiles
 
 ## Legacy PowerTrader AI Documentation / Cleanup
-- [ ] Reconcile stale roadmap/module inventory docs with actual repo state
-- [ ] Add clearer distinction between legacy Python runtime and Go ultra-project workstream
-- [ ] Audit and document partially integrated Python features more systematically
+- [x] Reconcile stale roadmap/module inventory docs with actual repo state
+- [x] Add clearer distinction between legacy Python runtime and Go ultra-project workstream
+- [x] Audit and document partially integrated Python features more systematically
 
 ## Repo-wide Documentation
-- [ ] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
-- [ ] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas
+- [x] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
+- [x] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas

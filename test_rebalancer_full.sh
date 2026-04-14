@@ -1,0 +1,3 @@
+#!/bin/bash
+cd ultratrader-go
+go test -v ./internal/trading/portfolio/...

@@ -10,7 +10,7 @@ import (
 type Signal int
 
 const (
-	SignalNone   Signal = iota
+	SignalNone Signal = iota
 	SignalBuy
 	SignalSell
 )
@@ -35,15 +35,15 @@ const (
 	ConfidenceLow      Confidence = 0.25
 	ConfidenceMedium   Confidence = 0.50
 	ConfidenceHigh     Confidence = 0.75
-	ConfidenceAbsolute  Confidence = 1.00
+	ConfidenceAbsolute Confidence = 1.00
 )
 
 // SignalResult is the output of a signal evaluation.
 type SignalResult struct {
-	Signal      Signal
-	Confidence  Confidence
-	Source      string // Strategy name
-	Reason      string // Human-readable explanation
+	Signal     Signal
+	Confidence Confidence
+	Source     string // Strategy name
+	Reason     string // Human-readable explanation
 }
 
 // SignalEvaluator is the interface for strategies that produce signals.
@@ -68,10 +68,10 @@ const (
 
 // CompositeStrategy combines multiple sub-strategies using voting.
 type CompositeStrategy struct {
-	mu        sync.RWMutex
-	name      string
+	mu         sync.RWMutex
+	name       string
 	evaluators []weightedEvaluator
-	mode      ResolutionMode
+	mode       ResolutionMode
 }
 
 type weightedEvaluator struct {

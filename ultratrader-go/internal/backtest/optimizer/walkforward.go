@@ -4,216 +4,142 @@ import (
 	"context"
 	"fmt"
 	"sort"
-
-	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/backtest"
-	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
+	"time"
 )
 
-// WalkForwardConfig controls walk-forward optimization behavior.
-type WalkForwardConfig struct {
-	WindowCandles  int // Number of candles per training window
-	StepCandles    int // How many candles to advance per step (validation period)
-	MinTrades      int // Minimum number of trades required for a result to be valid
-	OptimizationConfig
+// ParameterSet represents a configuration of strategy parameters
+type ParameterSet map[string]float64
+
+// Result contains the outcome of an optimization run
+type Result struct {
+	Parameters  ParameterSet
+	InSample    float64 // e.g. Sharpe Ratio or Total Return during training
+	OutOfSample float64 // performance during testing window
 }
 
-// DefaultWalkForwardConfig provides sensible defaults.
-func DefaultWalkForwardConfig() WalkForwardConfig {
-	return WalkForwardConfig{
-		WindowCandles:      100,
-		StepCandles:        20,
-		MinTrades:          1,
-		OptimizationConfig: DefaultOptimizationConfig(),
+// Window represents a single walk-forward iteration slice
+type Window struct {
+	TrainStart time.Time
+	TrainEnd   time.Time
+	TestStart  time.Time
+	TestEnd    time.Time
+}
+
+// Evaluator is an interface for evaluating a set of parameters on a specific time window
+type Evaluator interface {
+	// Evaluate returns a fitness score for the given parameters over the specified time window
+	Evaluate(ctx context.Context, params ParameterSet, start, end time.Time) (float64, error)
+}
+
+// WalkForwardOptimizer manages the windowed evaluation
+type WalkForwardOptimizer struct {
+	evaluator    Evaluator
+	paramGrid    []ParameterSet
+	trainWindows int // Duration in some arbitrary units, or we compute based on total timeframe
+	testWindows  int
+}
+
+// NewWalkForwardOptimizer creates a new WFO instance
+func NewWalkForwardOptimizer(evaluator Evaluator, grid []ParameterSet) *WalkForwardOptimizer {
+	return &WalkForwardOptimizer{
+		evaluator: evaluator,
+		paramGrid: grid,
 	}
 }
 
-// WalkForwardWindow represents a single training + validation pair.
-type WalkForwardWindow struct {
-	TrainStart int // Start index in the candle array for training
-	TrainEnd   int // End index for training (exclusive)
-	ValidStart int // Start index for validation
-	ValidEnd   int // End index for validation (exclusive)
-}
+// GenerateWindows slices a total timeframe into overlapping train/test windows.
+func GenerateWindows(start, end time.Time, trainDuration, testDuration time.Duration) []Window {
+	var windows []Window
 
-// WalkForwardStepResult holds the results of a single walk-forward step.
-type WalkForwardStepResult struct {
-	Window          WalkForwardWindow
-	BestParams      ParameterMap
-	TrainScore      float64
-	TrainResult     backtest.Result
-	ValidationScore float64
-	ValidationResult backtest.Result
-}
-
-// WalkForwardResult aggregates all walk-forward step results.
-type WalkForwardResult struct {
-	Steps       []WalkForwardStepResult
-	AvgValScore float64
-	BestStep    int // Index of the step with highest validation score
-	TotalSteps  int
-}
-
-// WalkForwardCandles performs rolling-window walk-forward optimization.
-// It splits the candle history into overlapping windows, runs grid search
-// on each training window, and validates the best parameters on the next window.
-func WalkForwardCandles(
-	ctx context.Context,
-	builder StrategyBuilder,
-	candles []marketdata.Candle,
-	initialCapital float64,
-	opts backtest.EmulatorOptions,
-	paramGrid map[string][]interface{},
-	scorer ScoringFunction,
-	wfConfig WalkForwardConfig,
-) (*WalkForwardResult, error) {
-	if len(candles) < wfConfig.WindowCandles+wfConfig.StepCandles {
-		return nil, fmt.Errorf("insufficient candles (%d) for window=%d step=%d",
-			len(candles), wfConfig.WindowCandles, wfConfig.StepCandles)
-	}
-
-	if scorer == nil {
-		scorer = DefaultScorer
-	}
-
-	// Generate rolling windows
-	windows := generateWindows(len(candles), wfConfig.WindowCandles, wfConfig.StepCandles)
-
-	result := &WalkForwardResult{
-		Steps:      make([]WalkForwardStepResult, 0, len(windows)),
-		TotalSteps: len(windows),
-	}
-
-	var totalValScore float64
-	bestValScore := -1e18
-	bestStepIdx := 0
-
-	for _, window := range windows {
-		select {
-		case <-ctx.Done():
-			return result, ctx.Err()
-		default:
-		}
-
-		// Extract training candles
-		trainCandles := candles[window.TrainStart:window.TrainEnd]
-		trainHistory := &sliceCandleHistory{candles: trainCandles}
-
-		// Run grid search on training window
-		trainResults, err := GridSearchCandles(
-			ctx, builder, trainHistory, initialCapital, opts,
-			paramGrid, scorer, wfConfig.OptimizationConfig,
-		)
-		if err != nil {
-			continue
-		}
-
-		// Filter results with minimum trades
-		var validResults []RunResult
-		for _, r := range trainResults {
-			if r.Result.TotalTrades >= wfConfig.MinTrades {
-				validResults = append(validResults, r)
-			}
-		}
-		if len(validResults) == 0 {
-			continue
-		}
-
-		bestTrainResult := validResults[0] // Already sorted by score descending
-
-		// Validate best params on out-of-sample window
-		validCandles := candles[window.ValidStart:window.ValidEnd]
-		validHistory := &sliceCandleHistory{candles: validCandles}
-
-		bestStrat, err := builder(bestTrainResult.Params)
-		if err != nil {
-			continue
-		}
-
-		eng := backtest.NewEngineWithOptions(bestStrat, initialCapital, opts)
-		validRes, err := eng.RunCandles(ctx, validHistory)
-		if err != nil {
-			continue
-		}
-
-		valScore := scorer(validRes)
-
-		stepResult := WalkForwardStepResult{
-			Window:           window,
-			BestParams:       bestTrainResult.Params,
-			TrainScore:       bestTrainResult.Score,
-			TrainResult:      bestTrainResult.Result,
-			ValidationScore:  valScore,
-			ValidationResult: validRes,
-		}
-
-		result.Steps = append(result.Steps, stepResult)
-		totalValScore += valScore
-
-		if valScore > bestValScore {
-			bestValScore = valScore
-			bestStepIdx = len(result.Steps) - 1
-		}
-	}
-
-	if len(result.Steps) > 0 {
-		result.AvgValScore = totalValScore / float64(len(result.Steps))
-		result.BestStep = bestStepIdx
-	}
-
-	return result, nil
-}
-
-// generateWindows creates rolling training + validation window pairs.
-func generateWindows(totalCandles, windowSize, stepSize int) []WalkForwardWindow {
-	var windows []WalkForwardWindow
-	trainStart := 0
+	currentTrainStart := start
 	for {
-		trainEnd := trainStart + windowSize
-		validEnd := trainEnd + stepSize
-		if validEnd > totalCandles {
+		trainEnd := currentTrainStart.Add(trainDuration)
+		testStart := trainEnd
+		testEnd := testStart.Add(testDuration)
+
+		if testEnd.After(end) {
 			break
 		}
-		windows = append(windows, WalkForwardWindow{
-			TrainStart: trainStart,
+
+		windows = append(windows, Window{
+			TrainStart: currentTrainStart,
 			TrainEnd:   trainEnd,
-			ValidStart: trainEnd,
-			ValidEnd:   validEnd,
+			TestStart:  testStart,
+			TestEnd:    testEnd,
 		})
-		trainStart += stepSize
+
+		// Step forward by the test duration
+		currentTrainStart = currentTrainStart.Add(testDuration)
 	}
+
 	return windows
 }
 
-// sliceCandleHistory is a simple CandleHistoryProvider backed by a slice.
-type sliceCandleHistory struct {
-	candles []marketdata.Candle
-}
+// Run executes the walk-forward optimization across all generated windows.
+// For each window, it finds the best parameter set in the Train window and records its performance in the Test window.
+func (o *WalkForwardOptimizer) Run(ctx context.Context, windows []Window) ([]Result, error) {
+	if len(windows) == 0 {
+		return nil, fmt.Errorf("no windows provided")
+	}
+	if len(o.paramGrid) == 0 {
+		return nil, fmt.Errorf("parameter grid is empty")
+	}
 
-func (s *sliceCandleHistory) Candles() []marketdata.Candle {
-	return s.candles
-}
+	var results []Result
 
-// WindowSplitResult holds the result of a single walk-forward split.
-type WindowSplitResult struct {
-	WindowIndex int
-	TrainScore  float64
-	ValidScore  float64
-	Overfit     float64 // TrainScore - ValidScore (positive means overfitting)
-}
+	for i, w := range windows {
+		_ = i
+		var bestParams ParameterSet
+		var bestInSampleScore float64 = -999999.0
 
-// AnalyzeOverfitting computes overfitting metrics across all walk-forward steps.
-func AnalyzeOverfitting(wfResult *WalkForwardResult) []WindowSplitResult {
-	var analysis []WindowSplitResult
-	for i, step := range wfResult.Steps {
-		analysis = append(analysis, WindowSplitResult{
-			WindowIndex: i,
-			TrainScore:  step.TrainScore,
-			ValidScore:  step.ValidationScore,
-			Overfit:     step.TrainScore - step.ValidationScore,
+		// 1. In-Sample Optimization
+		for _, params := range o.paramGrid {
+			score, err := o.evaluator.Evaluate(ctx, params, w.TrainStart, w.TrainEnd)
+			if err != nil {
+				continue
+			}
+			if score > bestInSampleScore {
+				bestInSampleScore = score
+				bestParams = params
+			}
+		}
+
+		if bestParams == nil {
+			// If all failed, skip this window
+			continue
+		}
+
+		// 2. Out-Of-Sample Validation
+		outOfSampleScore, err := o.evaluator.Evaluate(ctx, bestParams, w.TestStart, w.TestEnd)
+		if err != nil {
+			outOfSampleScore = 0 // Penalty or default
+		}
+
+		results = append(results, Result{
+			Parameters:  bestParams,
+			InSample:    bestInSampleScore,
+			OutOfSample: outOfSampleScore,
 		})
 	}
-	sort.SliceStable(analysis, func(i, j int) bool {
-		return analysis[i].Overfit < analysis[j].Overfit // Least overfit first
+
+	return results, nil
+}
+
+// Aggregate computes the overall average out-of-sample performance across all windows.
+func Aggregate(results []Result) float64 {
+	if len(results) == 0 {
+		return 0
+	}
+	var sum float64
+	for _, r := range results {
+		sum += r.OutOfSample
+	}
+	return sum / float64(len(results))
+}
+
+// SortByOutOfSample sorts a slice of results descending by out-of-sample performance
+func SortByOutOfSample(results []Result) {
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].OutOfSample > results[j].OutOfSample
 	})
-	return analysis
 }

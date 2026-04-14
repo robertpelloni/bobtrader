@@ -235,6 +235,7 @@ type OrderStatus struct {
 	Price           string
 	TransactionTime time.Time
 }
+
 func (a *Adapter) GetTickerPrice(ctx context.Context, symbol string) (string, error) {
 	params := url.Values{}
 	params.Set("symbol", symbol)

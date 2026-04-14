@@ -3,7 +3,7 @@
 All notable changes to PowerTrader AI will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
 ## [2.0.47] - 2026-04-09
 
@@ -956,7 +956,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Established Stage-1 recommendation to use `c9s/bbgo` as the Go kernel reference and `TraderAlice/OpenAlice` as the architectural reference for the future unified Go ultra-project
 - Documented licensing constraints across imported repos and formalized a clean-room reimplementation strategy instead of direct multi-project code transplantation
 
-## [2.0.0] - 2026-01-18
+## [3.0.0] - 2026-01-18
 
 ### Added
 - **Version Management System**
@@ -964,7 +964,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CHANGELOG.md for detailed change tracking
   - ROADMAP.md for feature planning
   - MODULE_INDEX.md for complete module inventory
-  - pt_hub.py updated to display version number in window title (v2.0.0)
+  - pt_hub.py updated to display version number in window title (v3.0.0)
 
 - **Comprehensive Documentation**
   - UNIVERSAL_LLM_INSTRUCTIONS.md - Universal AI agent instructions

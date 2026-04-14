@@ -1,56 +1,22 @@
 # UltraTrader Go
 
-Phase-1 and Phase-2 scaffold for the planned unified Go trading platform.
+This directory contains the modernized Go port of the PowerTrader AI / BobTrader project.
+The ultimate vision is a consolidated, performant, autonomous trading system merging features
+from the legacy Python modules and best-in-class open source crypto bots.
 
-## Current scope
-This scaffold now establishes the first stable foundation for the future system:
-- application runtime
-- config loading
-- append-only event log
-- unified trading account model
-- exchange capability interfaces
-- exchange registry
-- paper exchange adapter
-- guard pipeline contracts
-- execution service
-- account snapshot store
-- health/readiness HTTP handlers
-- strategy runtime skeleton
+## Architecture
 
-## Planned role in the repo
-`ultratrader-go/` is the clean-room destination for the long-term Go ultra-project documented in:
-- `docs/ai/requirements/go-ultra-project-requirements.md`
-- `docs/ai/design/go-ultra-project-architecture.md`
-- `docs/ai/planning/go-ultra-project-program-plan.md`
+The Go architecture is highly modular:
+- **`internal/core`**: Application lifecycle, config, logging, eventlog.
+- **`internal/marketdata`**: Abstractions for market data (Binance, Paper), and feed aggregation.
+- **`internal/trading`**: Portfolio tracking (Tracker, Rebalancer), risk guard pipelines, account management, and execution routing.
+- **`internal/strategy`**: Composition, regime detection, position sizing, scheduling, and NLP strategy parsing.
+- **`internal/backtest`**: High-performance historical simulation (Walk-Forward Optimization, Grid Search, Monte Carlo, Multi-Symbol Sync).
+- **`internal/analytics`**: Sentiment engines, correlation, journaling.
+- **`internal/risk`**: Pluggable guard pipelines to validate order intent before execution.
 
-## Run
-```bash
-go run ./cmd/ultratrader
-```
+## Legacy System vs Go Ultra-Project
 
-With a config profile:
-```bash
-go run ./cmd/ultratrader --config config/development-timer.json
-```
-
-## Test
-```bash
-go test ./...
-```
-
-## Config Profiles
-- `config/development-timer.json`
-- `config/development-stream.json`
-- `config/paper-service.json`
-
-## Container
-Build and run:
-```bash
-docker build -t ultratrader-go .
-docker run --rm -p 8080:8080 ultratrader-go
-```
-
-Or with Compose:
-```bash
-docker compose up --build
-```
+The original Python modules (`pt_*.py`) in the root directory remain as reference architectures.
+The goal is to methodically port every feature (analytics, marketplace, multi-exchange integration)
+into this strictly typed Go tree.
