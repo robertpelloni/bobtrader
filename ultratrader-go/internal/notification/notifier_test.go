@@ -306,8 +306,8 @@ type mockNotifier struct {
 	sendFn   func(Message) error
 }
 
-func (m *mockNotifier) Name() string     { return m.name }
-func (m *mockNotifier) MinLevel() Level   { return m.minLevel }
+func (m *mockNotifier) Name() string    { return m.name }
+func (m *mockNotifier) MinLevel() Level { return m.minLevel }
 func (m *mockNotifier) Send(_ context.Context, msg Message) error {
 	if m.sendFn != nil {
 		return m.sendFn(msg)

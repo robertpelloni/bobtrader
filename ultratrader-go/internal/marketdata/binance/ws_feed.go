@@ -289,8 +289,8 @@ type tickerMessage struct {
 }
 
 type klineMessage struct {
-	EventType string `json:"e"`
-	Symbol    string `json:"s"`
+	EventType string      `json:"e"`
+	Symbol    string      `json:"s"`
 	EventTime json.Number `json:"E"`
 	Kline     struct {
 		StartTime int64  `json:"t"`

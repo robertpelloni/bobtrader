@@ -67,7 +67,7 @@ func TestLimiter_WaitBlocks(t *testing.T) {
 
 func TestLimiter_WaitContextCancellation(t *testing.T) {
 	limiter := New(1, 10*time.Second) // Very slow refill
-	limiter.TryAcquire()             // Consume the only token
+	limiter.TryAcquire()              // Consume the only token
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()

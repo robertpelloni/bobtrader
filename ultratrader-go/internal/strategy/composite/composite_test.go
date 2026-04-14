@@ -8,10 +8,10 @@ import (
 
 // mockEvaluator for testing
 type mockEvaluator struct {
-	name    string
-	signal  Signal
-	conf    Confidence
-	err     error
+	name   string
+	signal Signal
+	conf   Confidence
+	err    error
 }
 
 func (m *mockEvaluator) Name() string { return m.name }
