@@ -178,14 +178,14 @@ func (b *Breaker) transitionTo(newState State) {
 
 // Stats returns current circuit breaker statistics.
 type Stats struct {
-	State            State      `json:"state"`
-	ConsecutiveFail  int        `json:"consecutive_failures"`
-	ConsecutiveOK    int        `json:"consecutive_successes"`
-	TotalFailures    int64      `json:"total_failures"`
-	TotalSuccesses   int64      `json:"total_successes"`
-	TotalRejected    int64      `json:"total_rejected"`
-	LastFailure      *time.Time `json:"last_failure,omitempty"`
-	LastStateChange  time.Time  `json:"last_state_change"`
+	State           State      `json:"state"`
+	ConsecutiveFail int        `json:"consecutive_failures"`
+	ConsecutiveOK   int        `json:"consecutive_successes"`
+	TotalFailures   int64      `json:"total_failures"`
+	TotalSuccesses  int64      `json:"total_successes"`
+	TotalRejected   int64      `json:"total_rejected"`
+	LastFailure     *time.Time `json:"last_failure,omitempty"`
+	LastStateChange time.Time  `json:"last_state_change"`
 }
 
 // Stats returns a snapshot of circuit breaker statistics.

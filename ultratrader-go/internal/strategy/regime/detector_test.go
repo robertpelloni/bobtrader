@@ -208,5 +208,5 @@ type mockDetector struct {
 	regime Regime
 }
 
-func (m *mockDetector) Name() string           { return "mock" }
+func (m *mockDetector) Name() string                 { return "mock" }
 func (m *mockDetector) Detect(_ []CandleData) Regime { return m.regime }

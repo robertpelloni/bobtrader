@@ -64,7 +64,7 @@ func TestMACD(t *testing.T) {
 	// Histogram should equal MACD - Signal
 	if math.Abs(result.Histogram-(result.MACD-result.Signal)) > 0.0001 {
 		t.Errorf("histogram should equal MACD - Signal, got histogram=%v macd=%v signal=%v",
-				result.Histogram, result.MACD, result.Signal)
+			result.Histogram, result.MACD, result.Signal)
 	}
 }
 
@@ -133,7 +133,7 @@ func TestBollingerBandsInsufficientData(t *testing.T) {
 	result := bb.Update(100) // only 1 data point, period is 5
 	if result.Upper != 0 || result.Middle != 0 || result.Lower != 0 {
 		t.Errorf("expected zero result with insufficient data, got upper=%v middle=%v lower=%v",
-				result.Upper, result.Middle, result.Lower)
+			result.Upper, result.Middle, result.Lower)
 	}
 }
 
@@ -170,4 +170,3 @@ func TestATRInsufficientData(t *testing.T) {
 		t.Errorf("expected partial ATR > 0, got %v", val)
 	}
 }
-

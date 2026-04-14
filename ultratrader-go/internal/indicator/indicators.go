@@ -141,9 +141,9 @@ type MACD struct {
 }
 
 type MACDResult struct {
-	MACD        float64
-	Signal      float64
-	Histogram   float64
+	MACD      float64
+	Signal    float64
+	Histogram float64
 }
 
 func NewMACD(fastPeriod, slowPeriod, signalPeriod int) *MACD {
@@ -185,9 +185,9 @@ type BollingerBands struct {
 }
 
 type BollingerBandsResult struct {
-	Upper   float64
-	Middle  float64
-	Lower   float64
+	Upper     float64
+	Middle    float64
+	Lower     float64
 	Bandwidth float64 // (Upper - Lower) / Middle
 }
 
@@ -273,11 +273,11 @@ func (b *BollingerBands) Last() BollingerBandsResult {
 // of: current high - current low, |current high - previous close|,
 // |current low - previous close|.
 type ATR struct {
-	period  int
-	prev    float64
-	atr     float64
-	count   int
-	init    bool
+	period int
+	prev   float64
+	atr    float64
+	count  int
+	init   bool
 }
 
 func NewATR(period int) *ATR {

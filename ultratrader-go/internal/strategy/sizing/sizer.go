@@ -10,7 +10,7 @@ type SizingInput struct {
 	Price          float64 // Current asset price
 	RiskPercent    float64 // Risk as percentage of portfolio (0.01 = 1%)
 	ATR            float64 // Average True Range (for volatility-based sizing)
-	StopDistance    float64 // Stop loss distance from entry price (0 = use ATR)
+	StopDistance   float64 // Stop loss distance from entry price (0 = use ATR)
 }
 
 // PositionSizer calculates the number of units to trade.
@@ -72,9 +72,9 @@ func (p *PercentRiskSizer) Size(input SizingInput) float64 {
 // kelly_fraction = win_rate - (loss_rate / avg_win_loss_ratio)
 // position_size = kelly_fraction * portfolio_value / price
 type KellySizer struct {
-	WinRate       float64 // Historical win rate (0.0 to 1.0)
+	WinRate         float64 // Historical win rate (0.0 to 1.0)
 	AvgWinLossRatio float64 // Average win / average loss
-	Fraction     float64 // Kelly fraction (0.5 = half Kelly for safety)
+	Fraction        float64 // Kelly fraction (0.5 = half Kelly for safety)
 }
 
 func NewKellySizer(winRate, avgWinLossRatio, fraction float64) *KellySizer {

@@ -137,8 +137,8 @@ func (td *TrendDetector) Detect(candles []CandleData) Regime {
 // BollingerBandwidthDetector uses Bollinger Band width to classify regime.
 // Narrow bands = ranging/quiet, Wide bands = volatile/trending.
 type BollingerBandwidthDetector struct {
-	Period       int
-	StdDev       float64
+	Period          int
+	StdDev          float64
 	LowBWThreshold  float64 // Bandwidth below this = ranging/quiet
 	HighBWThreshold float64 // Bandwidth above this = volatile
 }

@@ -161,7 +161,7 @@ func (e *Engine) processSignals(signals []strategy.Signal, rawPrice string) {
 		}
 
 		priceVal := utils.ParseFloat(rawPrice)
-		
+
 		// Apply simulated slippage and fees. All demo strategy orders are treated as Market orders.
 		// A more complex emulator would check if sig.OrderType is "limit" and apply MakerFeeRate.
 		if side == exchange.Buy {
@@ -169,7 +169,7 @@ func (e *Engine) processSignals(signals []strategy.Signal, rawPrice string) {
 		} else {
 			priceVal = priceVal * (1.0 - e.opts.SlippageRate) * (1.0 - e.opts.TakerFeeRate)
 		}
-		
+
 		simulatedPriceStr := fmt.Sprintf("%f", priceVal)
 
 		order := exchange.Order{

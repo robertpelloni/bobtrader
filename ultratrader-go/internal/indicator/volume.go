@@ -52,9 +52,9 @@ func (v *VWAP) Reset() {
 // OBV (On Balance Volume) tracks cumulative volume flow.
 // Rising OBV = buying pressure, falling OBV = selling pressure.
 type OBV struct {
-	obv     float64
+	obv       float64
 	lastClose float64
-	started bool
+	started   bool
 }
 
 // NewOBV creates a new OBV calculator.
@@ -137,11 +137,11 @@ func (vr *VolumeRatio) Update(volume float64) float64 {
 // MFI (Money Flow Index) is a volume-weighted RSI.
 // Range: 0 to 100. Above 80 = overbought, below 20 = oversold.
 type MFI struct {
-	period    int
-	posMF     []float64
-	negMF     []float64
-	lastTP    float64
-	started   bool
+	period  int
+	posMF   []float64
+	negMF   []float64
+	lastTP  float64
+	started bool
 }
 
 // NewMFI creates a Money Flow Index calculator.
@@ -221,9 +221,9 @@ func (m *MFI) Last() float64 {
 // ChaikinMoneyFlow measures accumulation/distribution over a period.
 // Positive CMF = buying pressure, negative = selling pressure.
 type ChaikinMoneyFlow struct {
-	period   int
-	mfvs     []float64 // Money Flow Volume = MF Multiplier * Volume
-	volumes  []float64
+	period  int
+	mfvs    []float64 // Money Flow Volume = MF Multiplier * Volume
+	volumes []float64
 }
 
 // NewChaikinMoneyFlow creates a CMF calculator.

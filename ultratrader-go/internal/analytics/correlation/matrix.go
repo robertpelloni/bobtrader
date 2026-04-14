@@ -128,8 +128,8 @@ func returns(prices []float64) []float64 {
 
 // HeatmapData generates data suitable for a correlation heatmap visualization.
 type HeatmapCell struct {
-	Symbol1 string  `json:"symbol1"`
-	Symbol2 string  `json:"symbol2"`
+	Symbol1     string  `json:"symbol1"`
+	Symbol2     string  `json:"symbol2"`
 	Correlation float64 `json:"correlation"`
 }
 

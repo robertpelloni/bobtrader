@@ -13,13 +13,13 @@ import (
 // MACD line crosses above the signal line (bullish crossover) and sell signals
 // when the MACD line crosses below the signal line (bearish crossover).
 type MACDCrossover struct {
-	accountID string
-	symbol    string
-	quantity  string
-	macd      *indicator.MACD
-	prevHist  float64
-	prevMACD  float64
-	prevSig   float64
+	accountID   string
+	symbol      string
+	quantity    string
+	macd        *indicator.MACD
+	prevHist    float64
+	prevMACD    float64
+	prevSig     float64
 	initialized bool
 }
 

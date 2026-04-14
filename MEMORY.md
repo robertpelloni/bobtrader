@@ -91,3 +91,12 @@ Every meaningful build/session should increment the version and mention the bump
 - Runtime summary persistence is now useful as a bridge between raw journals and future analytics/reporting layers.
 - Report readback (`Latest`, `LatestByType`) is the next key step after simple persistence because it turns durable artifacts into something the runtime and operator APIs can actually consume.
 - Live-valued exposure views are preferable to cost-basis-only exposure estimates when preparing concentration controls.
+
+## Go Port Architecture (ultratrader-go)
+The Go implementation is highly modular, focusing on interfaces, dependency injection, and concurrency-safe state. Key modules include:
+- **Market Data:** Feed aggregation (`marketdata.Aggregator`) for high availability.
+- **Trading:** Portfolio tracking with wash-sale prevention (`portfolio.Rebalancer`).
+- **Backtesting:** Advanced simulation suite including `MultiSymbolFeed` for chronological alignment, `WalkForwardOptimizer` for out-of-sample validation, `GridSearchOptimizer` for parameter tuning, and `RunMonteCarlo` for ruin probability calculation.
+- **Analytics:** Sentiment aggregation engine (`sentiment.Engine`) and NLP strategy parsing using regex (`nlp.Parser`).
+
+Design patterns emphasize Go routines for parallel evaluation and TDD with comprehensive mocking.

@@ -61,7 +61,7 @@ func TestWinRateScorer(t *testing.T) {
 			{Side: "buy", Price: "100"},
 			{Side: "sell", Price: "110"}, // win
 			{Side: "buy", Price: "100"},
-			{Side: "sell", Price: "95"},  // loss
+			{Side: "sell", Price: "95"}, // loss
 		},
 	}
 

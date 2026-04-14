@@ -100,7 +100,7 @@ type frictionMock struct{}
 func TestEngineRunFriction(t *testing.T) {
 	now := time.Now()
 	history := NewMemoryHistory([]marketdata.Tick{
-		{Symbol: "BTCUSDT", Price: "100.00", Timestamp: now}, // Force buy at 100
+		{Symbol: "BTCUSDT", Price: "100.00", Timestamp: now},                  // Force buy at 100
 		{Symbol: "BTCUSDT", Price: "200.00", Timestamp: now.Add(time.Second)}, // Force sell at 200
 	})
 
