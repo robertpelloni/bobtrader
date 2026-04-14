@@ -31,17 +31,17 @@ type Entry struct {
 
 // TradeGroup represents a completed trade (entry + exit).
 type TradeGroup struct {
-	GroupID   string    `json:"group_id"`
-	Symbol    string    `json:"symbol"`
-	EntrySide Side      `json:"entry_side"`
-	EntryPrice float64  `json:"entry_price"`
-	ExitPrice  float64  `json:"exit_price"`
-	Quantity   float64  `json:"quantity"`
-	PnL        float64  `json:"pnl"`
-	EntryTime  time.Time `json:"entry_time"`
-	ExitTime   time.Time `json:"exit_time"`
+	GroupID    string        `json:"group_id"`
+	Symbol     string        `json:"symbol"`
+	EntrySide  Side          `json:"entry_side"`
+	EntryPrice float64       `json:"entry_price"`
+	ExitPrice  float64       `json:"exit_price"`
+	Quantity   float64       `json:"quantity"`
+	PnL        float64       `json:"pnl"`
+	EntryTime  time.Time     `json:"entry_time"`
+	ExitTime   time.Time     `json:"exit_time"`
 	Duration   time.Duration `json:"duration"`
-	Strategy   string   `json:"strategy,omitempty"`
+	Strategy   string        `json:"strategy,omitempty"`
 }
 
 // PerformanceStats contains computed performance metrics.

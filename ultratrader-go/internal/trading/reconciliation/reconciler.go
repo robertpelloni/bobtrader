@@ -10,14 +10,14 @@ import (
 
 // OrderStatus represents the current state of an order on the exchange.
 type OrderStatus struct {
-	ID             string
-	Symbol         string
-	Side           exchange.OrderSide
-	Type           exchange.OrderType
-	Status         string // NEW, PARTIALLY_FILLED, FILLED, CANCELED, REJECTED, EXPIRED
-	Quantity       string
-	ExecutedQty    string
-	Price          string
+	ID              string
+	Symbol          string
+	Side            exchange.OrderSide
+	Type            exchange.OrderType
+	Status          string // NEW, PARTIALLY_FILLED, FILLED, CANCELED, REJECTED, EXPIRED
+	Quantity        string
+	ExecutedQty     string
+	Price           string
 	TransactionTime time.Time
 }
 
@@ -33,23 +33,23 @@ func NewReconciler(adapter exchange.Adapter) *Reconciler {
 
 // ReconcileResult holds the outcome of a reconciliation pass.
 type ReconcileResult struct {
-	TotalChecked   int
-	Matched        int
-	Filled         int
+	TotalChecked    int
+	Matched         int
+	Filled          int
 	PartiallyFilled int
-	Canceled       int
-	Rejected       int
-	Expired        int
-	Unknown        int
-	Discrepancies  []Discrepancy
+	Canceled        int
+	Rejected        int
+	Expired         int
+	Unknown         int
+	Discrepancies   []Discrepancy
 }
 
 // Discrepancy represents a mismatch between internal and exchange state.
 type Discrepancy struct {
-	OrderID       string
+	OrderID        string
 	InternalStatus string
 	ExchangeStatus string
-	Description   string
+	Description    string
 }
 
 // OrderQuerier is an optional interface that adapters can implement to query

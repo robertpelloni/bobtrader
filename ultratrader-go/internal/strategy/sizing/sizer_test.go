@@ -31,7 +31,7 @@ func TestPercentRiskSizer_Basic(t *testing.T) {
 		PortfolioValue: 100000,
 		Price:          50000,
 		RiskPercent:    0.01,
-		StopDistance:    1000,
+		StopDistance:   1000,
 	})
 	if math.Abs(result-1.0) > eps {
 		t.Errorf("expected 1.0, got %f", result)
@@ -72,7 +72,7 @@ func TestPercentRiskSizer_DefaultRisk(t *testing.T) {
 	result := s.Size(SizingInput{
 		PortfolioValue: 100000,
 		Price:          50000,
-		StopDistance:    1000,
+		StopDistance:   1000,
 	})
 	// $100k * 2% = $2000 / $1000 = 2 units
 	if math.Abs(result-2.0) > eps {

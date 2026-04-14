@@ -12,30 +12,30 @@ import (
 type OrderTypeExtended string
 
 const (
-	StopLoss       OrderTypeExtended = "stop_loss"
-	TakeProfit     OrderTypeExtended = "take_profit"
-	TrailingStop   OrderTypeExtended = "trailing_stop"
-	StopLimit      OrderTypeExtended = "stop_limit"
+	StopLoss     OrderTypeExtended = "stop_loss"
+	TakeProfit   OrderTypeExtended = "take_profit"
+	TrailingStop OrderTypeExtended = "trailing_stop"
+	StopLimit    OrderTypeExtended = "stop_limit"
 )
 
 // ConditionalOrder represents an order that triggers based on price conditions.
 type ConditionalOrder struct {
-	ID            string                `json:"id"`
-	Symbol        string                `json:"symbol"`
-	Side          exchange.OrderSide    `json:"side"`
-	Type          OrderTypeExtended     `json:"type"`
-	Quantity      string                `json:"quantity"`
-	TriggerPrice  float64               `json:"trigger_price"`  // Price that activates the order
-	LimitPrice    float64               `json:"limit_price"`    // Limit price for stop-limit orders
-	TrailPercent  float64               `json:"trail_percent"`  // Trail percentage for trailing stops
-	HighestPrice  float64               `json:"highest_price"`  // Track highest seen price (trailing stop)
-	LowestPrice   float64               `json:"lowest_price"`   // Track lowest seen price
-	ParentID      string                `json:"parent_id"`      // Parent order for OCO groups
-	GroupID       string                `json:"group_id"`       // OCO group identifier
-	Active        bool                  `json:"active"`
-	Triggered     bool                  `json:"triggered"`
-	CreatedAt     time.Time             `json:"created_at"`
-	TriggeredAt   *time.Time            `json:"triggered_at,omitempty"`
+	ID           string             `json:"id"`
+	Symbol       string             `json:"symbol"`
+	Side         exchange.OrderSide `json:"side"`
+	Type         OrderTypeExtended  `json:"type"`
+	Quantity     string             `json:"quantity"`
+	TriggerPrice float64            `json:"trigger_price"` // Price that activates the order
+	LimitPrice   float64            `json:"limit_price"`   // Limit price for stop-limit orders
+	TrailPercent float64            `json:"trail_percent"` // Trail percentage for trailing stops
+	HighestPrice float64            `json:"highest_price"` // Track highest seen price (trailing stop)
+	LowestPrice  float64            `json:"lowest_price"`  // Track lowest seen price
+	ParentID     string             `json:"parent_id"`     // Parent order for OCO groups
+	GroupID      string             `json:"group_id"`      // OCO group identifier
+	Active       bool               `json:"active"`
+	Triggered    bool               `json:"triggered"`
+	CreatedAt    time.Time          `json:"created_at"`
+	TriggeredAt  *time.Time         `json:"triggered_at,omitempty"`
 }
 
 // ShouldTrigger checks if a price update should trigger this conditional order.
@@ -92,9 +92,9 @@ func (co *ConditionalOrder) Trigger() {
 
 // Manager manages conditional and advanced orders.
 type Manager struct {
-	mu     sync.RWMutex
-	orders map[string]*ConditionalOrder // ID -> order
-	ocoGroups map[string][]string        // groupID -> order IDs
+	mu        sync.RWMutex
+	orders    map[string]*ConditionalOrder // ID -> order
+	ocoGroups map[string][]string          // groupID -> order IDs
 }
 
 // NewManager creates a new order manager.

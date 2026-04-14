@@ -92,8 +92,8 @@ func NewEmailNotifier(cfg EmailConfig) *EmailNotifier {
 	return n
 }
 
-func (e *EmailNotifier) Name() string     { return "email" }
-func (e *EmailNotifier) MinLevel() Level   { return e.minLevel }
+func (e *EmailNotifier) Name() string    { return "email" }
+func (e *EmailNotifier) MinLevel() Level { return e.minLevel }
 func (e *EmailNotifier) Send(_ context.Context, msg Message) error {
 	if msg.Level < e.minLevel {
 		return nil
@@ -129,7 +129,7 @@ func NewDiscordNotifier(cfg DiscordConfig) *DiscordNotifier {
 	return n
 }
 
-func (d *DiscordNotifier) Name() string   { return "discord" }
+func (d *DiscordNotifier) Name() string    { return "discord" }
 func (d *DiscordNotifier) MinLevel() Level { return d.minLevel }
 
 func (d *DiscordNotifier) Send(ctx context.Context, msg Message) error {
@@ -139,10 +139,10 @@ func (d *DiscordNotifier) Send(ctx context.Context, msg Message) error {
 
 	// Discord embed color based on level
 	color := map[Level]int{
-		LevelInfo:     3447003,   // blue
-		LevelWarning:  16776960,  // yellow
-		LevelError:    15158332,  // red
-		LevelCritical: 10038562,  // dark red
+		LevelInfo:     3447003,  // blue
+		LevelWarning:  16776960, // yellow
+		LevelError:    15158332, // red
+		LevelCritical: 10038562, // dark red
 	}[msg.Level]
 
 	payload := fmt.Sprintf(`{"embeds":[{"title":"%s","description":"%s","color":%d,"timestamp":"%s"}]}`,
@@ -168,10 +168,10 @@ func (d *DiscordNotifier) Send(ctx context.Context, msg Message) error {
 
 // TelegramNotifier sends notifications via Telegram Bot API.
 type TelegramNotifier struct {
-	botToken  string
-	chatID    string
-	minLevel  Level
-	client    *http.Client
+	botToken string
+	chatID   string
+	minLevel Level
+	client   *http.Client
 }
 
 type TelegramConfig struct {
@@ -193,7 +193,7 @@ func NewTelegramNotifier(cfg TelegramConfig) *TelegramNotifier {
 	return n
 }
 
-func (t *TelegramNotifier) Name() string   { return "telegram" }
+func (t *TelegramNotifier) Name() string    { return "telegram" }
 func (t *TelegramNotifier) MinLevel() Level { return t.minLevel }
 
 func (t *TelegramNotifier) Send(ctx context.Context, msg Message) error {
