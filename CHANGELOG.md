@@ -1208,3 +1208,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
 **DO NOT TRUST THE POWERTRADER FORK FROM Drizztdowhateva!!!**
 
 This is my personal trading bot that I decided to make open source. This system is meant to be a foundation/framework for you to build your dream bot!
+
+## [2.0.48] - 2026-01-18
+### Added
+- Ported Portfolio Rebalancer logic to Go (`ultratrader-go/internal/trading/rebalancer`).
+- Ported Multi-Exchange Smart Routing, Arbitrage Execution, and Liquidity Aggregation to Go (`ultratrader-go/internal/trading/multiexchange`).
+- Ported Sentiment Analysis processing (Fear/Greed & Coin Sentiment) to Go (`ultratrader-go/internal/analytics/sentiment`).
+- Ported NLP Strategy Parser logic to Go (`ultratrader-go/internal/strategy/nlp`), supporting basic condition extraction from natural language.
