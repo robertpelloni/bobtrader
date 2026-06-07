@@ -5,6 +5,15 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.52] - 2026-06-07
+
+### Added
+- **Submodule Assimilation Program Phase 2**
+  - Analyzed and documented `Ekliptor/WolfBot` strategy architecture.
+  - Implemented `WolfBotBollingerStrategy` in `ultratrader-go/internal/trading/execution/wolfbot_bollinger.go` featuring breakout detection.
+  - Integrated the new strategy into `ExecutionManager`.
+  - Added comprehensive logic tests for breakout-aware Bollinger behavior.
+
 ## [2.0.51] - 2026-06-07
 
 ### Added

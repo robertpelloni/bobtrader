@@ -162,6 +162,7 @@ func New(cfg config.Config) (*App, error) {
 	executionManager := execution.NewManager()
 	paperAdapter := exchangepaper.New()
 	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
+	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
 	// ── Strategy Runtime ───────────────────────────────────────
 	strategyRuntime := buildAutonomousStrategyRuntime(

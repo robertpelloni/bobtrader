@@ -33,6 +33,7 @@ Recommended next work for the Go track:
 - coordinated shutdown tests
 - eventual backtesting/optimization/exchange-adapter expansion
 - [x] Submodule Assimilation (Phase 1: OpenAlice, bbgo)
+- [x] Submodule Assimilation (Phase 2: WolfBot)
 
 
 ## Version 3.0.0 (Current) - Released 2026-01-18

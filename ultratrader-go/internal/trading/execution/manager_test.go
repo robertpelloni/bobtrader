@@ -22,6 +22,24 @@ func TestExecutionManager(t *testing.T) {
 		assert.Contains(t, strategies, "market")
 	})
 
+	t.Run("WolfBotBollinger_Logic", func(t *testing.T) {
+		strategy := NewWolfBotBollingerStrategy(paperAdapter, 2)
+
+		// Initial state
+		assert.Equal(t, "none", strategy.UpdateState(0.5))
+
+		// Reach upper band - should suggest sell (reversion) initially
+		assert.Equal(t, "sell-reversion", strategy.UpdateState(1.0))
+		assert.Equal(t, "down", strategy.lastTrend)
+
+		// Reach upper band again - still sell-reversion as breakout limit (2) not hit
+		assert.Equal(t, "sell-reversion", strategy.UpdateState(1.0))
+
+		// Reach upper band 3rd time - now should be buy-breakout
+		assert.Equal(t, "buy-breakout", strategy.UpdateState(1.0))
+		assert.Equal(t, "up", strategy.lastTrend)
+	})
+
 	t.Run("ExecuteMarketOrder", func(t *testing.T) {
 		order := exchange.Order{
 			Symbol:   "BTCUSDT",
