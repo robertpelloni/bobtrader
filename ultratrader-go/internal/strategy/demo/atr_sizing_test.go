@@ -24,7 +24,7 @@ func TestATRSizing_Crossover(t *testing.T) {
 			High:   formatFloat(p.high),
 			Low:    formatFloat(p.low),
 		}
-		signals, err := s.CandleEvent(context.Background(), candle)
+		signals, err := s.OnMarketCandle(context.Background(), candle)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -52,12 +52,12 @@ func TestATRSizing_QuantityVaries(t *testing.T) {
 	}
 	for _, p := range warmup {
 		candle := marketdata.Candle{Symbol: "BTCUSDT", Close: formatFloat(p.close), High: formatFloat(p.high), Low: formatFloat(p.low)}
-		s.CandleEvent(context.Background(), candle)
+		s.OnMarketCandle(context.Background(), candle)
 	}
 
 	// Trigger a buy signal with high volatility
 	candle := marketdata.Candle{Symbol: "BTCUSDT", Close: "100", High: "110", Low: "90"}
-	signals, _ := s.CandleEvent(context.Background(), candle)
+	signals, _ := s.OnMarketCandle(context.Background(), candle)
 
 	if len(signals) > 0 && signals[0].Quantity == "" {
 		t.Errorf("expected non-empty quantity from ATR sizing")

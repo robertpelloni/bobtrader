@@ -14,6 +14,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
+	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
 	marketdatapaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
@@ -31,29 +32,31 @@ import (
 )
 
 type starter interface{ Start(context.Context) }
+
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
-	config           config.Config
-	logger           *logging.Logger
-	eventLog         *eventlog.Log
-	snapshotStore    *snapshot.Store
-	orderStore       *orders.Store
-	reportStore      *reports.Store
-	accountService   *account.Service
-	exchangeRegistry *exchange.Registry
-	marketDataFeed   marketdata.StreamFeed
-	metricsTracker   *metrics.Tracker
-	executionRepo    *execution.Repository
-	portfolioTracker *portfolio.Tracker
-	executionService *execution.Service
-	strategyRuntime  *strategy.Runtime
-	scheduler        *strategyscheduler.Scheduler
-	schedulerService starter
-	cycleRunner      cycleRunner
-	pipeline         *risk.Pipeline
-	httpHandler      http.Handler
-	httpRuntime      *httpapi.Runtime
+	config            config.Config
+	logger            *logging.Logger
+	eventLog          *eventlog.Log
+	snapshotStore     *snapshot.Store
+	orderStore        *orders.Store
+	reportStore       *reports.Store
+	accountService    *account.Service
+	exchangeRegistry  *exchange.Registry
+	marketDataFeed    marketdata.StreamFeed
+	metricsTracker    *metrics.Tracker
+	executionRepo     *execution.Repository
+	portfolioTracker  *portfolio.Tracker
+	executionService  *execution.Service
+	strategyRuntime   *strategy.Runtime
+	scheduler         *strategyscheduler.EnhancedScheduler
+	schedulerService  starter
+	cycleRunner       cycleRunner
+	pipeline          *risk.Pipeline
+	signalLog         *strategy.SignalLog
+	httpHandler       http.Handler
+	httpRuntime       *httpapi.Runtime
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -61,48 +64,71 @@ func New(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create logger: %w", err)
 	}
+
 	eventLog, err := eventlog.New(cfg.EventLog.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create event log: %w", err)
 	}
+
 	snapshotStore, err := snapshot.NewStore(cfg.Snapshots.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create snapshot store: %w", err)
 	}
+
 	orderStore, err := orders.NewStore(cfg.Orders.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create order store: %w", err)
 	}
+
 	reportStore, err := reports.NewStore(cfg.Reports.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create report store: %w", err)
 	}
+
 	buildReportTrends := func() reportinganalysis.RuntimeTrends {
 		metricHistory, _ := reportStore.ListByType("metrics-snapshot", 100)
 		valuationHistory, _ := reportStore.ListByType("portfolio-valuation", 100)
 		executionHistory, _ := reportStore.ListByType("execution-summary", 100)
 		return reportinganalysis.BuildRuntimeTrends(metricHistory, valuationHistory, executionHistory)
 	}
+
 	accountService, err := account.NewService(cfg.Accounts)
 	if err != nil {
 		return nil, fmt.Errorf("create account service: %w", err)
 	}
 
+	// ── Exchange Registry ──────────────────────────────────────
 	registry := exchange.NewRegistry()
-	if err := registry.Register("paper", func() exchange.Adapter { return exchangepaper.New() }); err != nil {
+	if err := registry.Register("paper", func() exchange.Adapter {
+		return exchangepaper.New()
+	}); err != nil {
 		return nil, fmt.Errorf("register paper exchange: %w", err)
 	}
 	if err := registry.Register("binance", func() exchange.Adapter {
-		return binance.New(binance.Config{Testnet: true}) // safe default
+		return binance.New(binance.Config{Testnet: true})
 	}); err != nil {
 		return nil, fmt.Errorf("register binance exchange: %w", err)
 	}
 
-	marketDataFeed := marketdatapaper.New()
+	// ── Market Data Feed ───────────────────────────────────────
+	// Use Binance real data if any account uses binance exchange, otherwise paper
+	marketDataFeed := buildMarketDataFeed(cfg, logger)
+
+	// ── Market-Aware Paper Adapter ─────────────────────────────
+	marketAwareAdapter := exchangepaper.NewMarketAwareAdapter(marketDataFeed, 10000)
+	if err := registry.Register("paper-market-aware", func() exchange.Adapter {
+		return marketAwareAdapter
+	}); err != nil {
+		return nil, fmt.Errorf("register market-aware paper exchange: %w", err)
+	}
+
+	// ── Core Services ──────────────────────────────────────────
 	metricsTracker := metrics.NewTracker()
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureView(portfolioTracker, marketDataFeed)
+
+	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
 		risk.NewMaxNotionalGuard(cfg.Risk.MaxNotional),
@@ -113,42 +139,74 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
-	executionService := execution.NewService(accountService, registry, pipeline, eventLog, orderStore, executionRepo, portfolioTracker, logger, metricsTracker)
-	var strategyRuntime *strategy.Runtime
-	if cfg.Scheduler.Mode == "stream" || cfg.Scheduler.Mode == "candle-stream" {
-		strategyRuntime = strategy.NewRuntime(
-			strategydemo.NewTickPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00"),
-			strategydemo.NewTickMomentumBurst("paper-main", "BTCUSDT", "0.01", 3, 0.05, 0.05),
-			strategydemo.NewTickMeanReversion("paper-main", "BTCUSDT", "0.01", 3, 0.1, 0.1),
-			strategydemo.NewCandleSMACross("paper-main", "BTCUSDT", "0.01", 5, 10),
-		)
-	} else {
-		strategyRuntime = strategy.NewRuntime(
-			strategydemo.NewPriceThreshold("paper-main", "BTCUSDT", "0.01", "70000.00", marketDataFeed),
-			strategydemo.NewEMACrossover("paper-main", "ETHUSDT", "0.1", 5, 10, marketDataFeed),
-		)
+
+	// Determine the primary account ID for strategy signals
+	primaryAccountID := "paper-main"
+	for _, acct := range cfg.Accounts {
+		if acct.Enabled {
+			primaryAccountID = acct.ID
+			break
+		}
 	}
-	scheduler := strategyscheduler.New(strategyRuntime, executionService)
+
+	// ── Strategy Signal Log ────────────────────────────────────
+	signalLog := strategy.NewSignalLog(10000)
+
+	// ── Execution Service ──────────────────────────────────────
+	executionService := execution.NewService(
+		accountService, registry, pipeline, eventLog, orderStore,
+		executionRepo, portfolioTracker, logger, metricsTracker,
+	)
+
+	// ── Strategy Runtime ───────────────────────────────────────
+	strategyRuntime := buildStrategyRuntime(cfg, primaryAccountID, marketDataFeed)
+
+	// ── Enhanced Scheduler (position-aware, signal-logged) ─────
+	scheduler := strategyscheduler.NewEnhanced(
+		strategyRuntime, executionService, portfolioTracker,
+		marketDataFeed, signalLog,
+	)
+
+	// ── Reporting ──────────────────────────────────────────────
 	reportProvider := func(ctx context.Context) []reports.Report {
 		return []reports.Report{
 			{Type: "metrics-snapshot", Payload: map[string]any{"metrics": metricsTracker.Snapshot()}},
-			{Type: "portfolio-valuation", Payload: map[string]any{"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed), "realized_pnl": portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed), "concentration": portfolioTracker.Concentration(ctx, marketDataFeed)}},
+			{Type: "portfolio-valuation", Payload: map[string]any{
+				"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed),
+				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
+				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
+				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
+			}},
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
+			{Type: "strategy-signals", Payload: map[string]any{
+				"signal_count":  signalLog.Count(),
+				"strategy_stats": signalLog.StatsByStrategy(),
+			}},
 		}
 	}
+
 	cycleRunner := reportingruntime.NewReportingRunner(scheduler, reportStore, reportProvider)
-	var schedulerService interface{ Start(context.Context) }
+
+	// ── Scheduler Service ──────────────────────────────────────
+	var schedulerService starter
 	if cfg.Scheduler.Mode == "stream" {
 		reportingStreamRunner := reportingruntime.NewReportingStreamRunner(scheduler, scheduler, reportStore, reportProvider)
-		schedulerService = strategyscheduler.NewStreamService(reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+		schedulerService = strategyscheduler.NewStreamService(
+			reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols,
+			time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond,
+		)
 	} else if cfg.Scheduler.Mode == "candle-stream" {
 		reportingStreamRunner := reportingruntime.NewReportingStreamRunner(scheduler, scheduler, reportStore, reportProvider)
-		// We use 1m interval for candle stream tests
-		schedulerService = strategyscheduler.NewCandleStreamService(reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols, "1m")
+		schedulerService = strategyscheduler.NewCandleStreamService(
+			reportingStreamRunner, marketDataFeed, cfg.Risk.AllowedSymbols, "1m",
+		)
 	} else {
-		schedulerService = strategyscheduler.NewService(cycleRunner, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond)
+		schedulerService = strategyscheduler.NewService(
+			cycleRunner, time.Duration(cfg.Scheduler.IntervalMS)*time.Millisecond,
+		)
 	}
 
+	// ── HTTP API ───────────────────────────────────────────────
 	currentConcentration := func() map[string]float64 {
 		return portfolioTracker.Concentration(context.Background(), marketDataFeed)
 	}
@@ -170,27 +228,58 @@ func New(cfg config.Config) (*App, error) {
 			return httpapi.Status{Name: "ultratrader-go", Ready: true, AccountCount: len(accountService.List())}
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
-			return httpapi.PortfolioSnapshot{Positions: portfolioTracker.ValuedPositions(context.Background(), marketDataFeed), Concentration: currentConcentration(), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSnapshot{
+				Positions:          portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
+				Concentration:      currentConcentration(),
+				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+			}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
-			return httpapi.PortfolioSummary{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: currentConcentration(), TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.PortfolioSummary{
+				OpenPositions:      portfolioTracker.OpenPositionCount(),
+				Concentration:      currentConcentration(),
+				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+			}
 		},
-		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
-		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
+		OrdersProvider: func() []exchange.Order {
+			return executionRepo.List()
+		},
+		ExecutionSummaryProvider: func() execution.Summary {
+			return executionRepo.Summary()
+		},
 		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
-			return httpapi.ExecutionDiagnostics{Summary: executionRepo.Summary(), Metrics: metricsTracker.Snapshot()}
+			return httpapi.ExecutionDiagnostics{
+				Summary: executionRepo.Summary(),
+				Metrics: metricsTracker.Snapshot(),
+			}
 		},
 		ExposureDiagnosticsProvider: func() httpapi.ExposureDiagnostics {
 			topSymbol, topPct := topConcentration()
-			return httpapi.ExposureDiagnostics{OpenPositions: portfolioTracker.OpenPositionCount(), Concentration: currentConcentration(), TopConcentration: topSymbol, TopConcentrationPct: topPct, TotalMarketValue: portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed), TotalRealizedPnL: portfolioTracker.TotalRealizedPnL(), TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed)}
+			return httpapi.ExposureDiagnostics{
+				OpenPositions:       portfolioTracker.OpenPositionCount(),
+				Concentration:       currentConcentration(),
+				TopConcentration:    topSymbol,
+				TopConcentrationPct: topPct,
+				TotalMarketValue:    portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:    portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL:  portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+			}
 		},
-		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
-		GuardNamesProvider: func() []string { return pipeline.Names() },
+		MetricsProvider: func() metrics.Snapshot {
+			return metricsTracker.Snapshot()
+		},
+		GuardNamesProvider: func() []string {
+			return pipeline.Names()
+		},
 		ConfigProvider: func() httpapi.RuntimeConfig {
 			return httpapi.RuntimeConfig{
 				Environment: cfg.Environment,
-				Scheduler: httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
-				Risk: httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
+				Scheduler:   httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
+				Risk:        httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
 			}
 		},
 		LatestReportsProvider: func() map[string]reports.Report {
@@ -207,14 +296,115 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return history
 		},
-		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends {
+			return buildReportTrends()
+		},
+		SignalLogProvider: func() []strategy.LoggedSignal {
+			return signalLog.Recent(200)
+		},
+		StrategyStatsProvider: func() map[string]strategy.StrategyStats {
+			return signalLog.StatsByStrategy()
+		},
 	})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
-	return &App{config: cfg, logger: logger, eventLog: eventLog, snapshotStore: snapshotStore, orderStore: orderStore, reportStore: reportStore, accountService: accountService, exchangeRegistry: registry, marketDataFeed: marketDataFeed, metricsTracker: metricsTracker, executionRepo: executionRepo, portfolioTracker: portfolioTracker, executionService: executionService, strategyRuntime: strategyRuntime, scheduler: scheduler, schedulerService: schedulerService, cycleRunner: cycleRunner, pipeline: pipeline, httpHandler: handler, httpRuntime: runtime}, nil
+
+	return &App{
+		config:           cfg,
+		logger:           logger,
+		eventLog:         eventLog,
+		snapshotStore:    snapshotStore,
+		orderStore:       orderStore,
+		reportStore:      reportStore,
+		accountService:   accountService,
+		exchangeRegistry: registry,
+		marketDataFeed:   marketDataFeed,
+		metricsTracker:   metricsTracker,
+		executionRepo:    executionRepo,
+		portfolioTracker: portfolioTracker,
+		executionService: executionService,
+		strategyRuntime:  strategyRuntime,
+		scheduler:        scheduler,
+		schedulerService: schedulerService,
+		cycleRunner:      cycleRunner,
+		pipeline:         pipeline,
+		signalLog:        signalLog,
+		httpHandler:      handler,
+		httpRuntime:      runtime,
+	}, nil
+}
+
+// buildMarketDataFeed creates the appropriate market data feed based on config.
+// If any account uses Binance, we use Binance REST feed for real market data.
+// Otherwise we fall back to the deterministic paper feed.
+func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.StreamFeed {
+	for _, acct := range cfg.Accounts {
+		if acct.Exchange == "binance" || acct.Exchange == "paper-market-aware" {
+			adapter := binance.New(binance.Config{Testnet: acct.Testnet})
+			feed := marketdatabinance.NewFeed(adapter)
+			logger.Info("using Binance real market data feed", map[string]any{"testnet": acct.Testnet})
+			return feed
+		}
+	}
+	logger.Info("using paper market data feed", nil)
+	return marketdatapaper.New()
+}
+
+// buildStrategyRuntime creates a multi-strategy runtime based on scheduler mode.
+func buildStrategyRuntime(cfg config.Config, accountID string, feed marketdata.Feed) *strategy.Runtime {
+	symbols := cfg.Risk.AllowedSymbols
+	if len(symbols) == 0 {
+		symbols = []string{"BTCUSDT", "ETHUSDT"}
+	}
+
+	var strategies []strategy.Strategy
+
+	switch cfg.Scheduler.Mode {
+	case "stream":
+		// Tick-based strategies for stream mode (driven by real-time ticks)
+		for _, symbol := range symbols {
+			// EMA Crossover (fast=9, slow=21) — classic trend following
+			strategies = append(strategies,
+				strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
+			// Tick Mean Reversion (20-tick lookback, 0.15% deviation threshold)
+			strategies = append(strategies,
+				strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.15, 0.15))
+			// Tick Momentum Burst (10-tick lookback, 0.1% change threshold)
+			strategies = append(strategies,
+				strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.1, 0.1))
+		}
+
+	case "candle-stream":
+		// Candle-based strategies for candle-stream mode
+		for _, symbol := range symbols {
+			// MACD Crossover (12, 26, 9) — standard MACD settings
+			strategies = append(strategies,
+				strategydemo.NewMACDCrossover(accountID, symbol, "0.001", 12, 26, 9))
+			// Bollinger Band Reversion (20-period, 2.0 std dev)
+			strategies = append(strategies,
+				strategydemo.NewBollingerReversion(accountID, symbol, "0.001", 20, 2.0))
+			// SMA Crossover (fast=5, slow=20)
+			strategies = append(strategies,
+				strategydemo.NewCandleSMACross(accountID, symbol, "0.001", 5, 20))
+			// ATR-Based Sizing with SMA crossover (7/25, 1% risk)
+			strategies = append(strategies,
+				strategydemo.NewATRSizing(accountID, symbol, "0.001", 0.01, 7, 25, 14))
+		}
+
+	default:
+		// Timer mode: poll-based strategies
+		for _, symbol := range symbols {
+			strategies = append(strategies,
+				strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
+			strategies = append(strategies,
+				strategydemo.NewPriceThreshold(accountID, symbol, "0.001", "70000.00", feed))
+		}
+	}
+
+	return strategy.NewRuntime(strategies...)
 }
 
 func (a *App) Close() error {
@@ -226,36 +416,59 @@ func (a *App) Close() error {
 
 func (a *App) Start(ctx context.Context) error {
 	a.logger.Info("app startup initiated", map[string]any{"environment": a.config.Environment})
+
 	if err := a.eventLog.Append(ctx, eventlog.Entry{Type: "app.started", Source: "ultratrader-go", Payload: map[string]any{"environment": a.config.Environment, "accounts": len(a.accountService.List())}}); err != nil {
 		return err
 	}
+
 	for _, acct := range a.accountService.List() {
 		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{AccountID: acct.ID, AccountName: acct.Name, Exchange: acct.ExchangeName, Metadata: map[string]any{"enabled": acct.Enabled}}); err != nil {
 			return fmt.Errorf("append bootstrap snapshot for %s: %w", acct.ID, err)
 		}
 	}
+
 	if a.httpRuntime != nil {
 		if err := a.httpRuntime.Start(ctx); err != nil {
 			return fmt.Errorf("start http runtime: %w", err)
 		}
 		a.logger.Info("http runtime started", map[string]any{"address": a.httpRuntime.Address()})
 	}
+
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
 		a.logger.Info("scheduler service started", map[string]any{"interval_ms": a.config.Scheduler.IntervalMS, "mode": a.config.Scheduler.Mode})
 	}
+
 	if err := a.cycleRunner.RunOnce(ctx); err != nil {
 		return fmt.Errorf("run strategy scheduler: %w", err)
 	}
-	reportPayload := map[string]any{"orders": len(a.executionRepo.List()), "portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed), "realized_pnl": a.portfolioTracker.TotalRealizedPnL(), "unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed), "metrics": a.metricsTracker.Snapshot(), "guards": a.pipeline.Names()}
+
+	reportPayload := map[string]any{
+		"orders":         len(a.executionRepo.List()),
+		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
+		"realized_pnl":   a.portfolioTracker.TotalRealizedPnL(),
+		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+		"metrics":        a.metricsTracker.Snapshot(),
+		"guards":         a.pipeline.Names(),
+		"signal_count":   a.signalLog.Count(),
+	}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
 	}
 	a.logger.Info("app startup completed", reportPayload)
+
 	return nil
 }
 
 func (a *App) Shutdown(ctx context.Context) error {
+	// Log final state before shutdown
+	a.logger.Info("app shutdown initiated", map[string]any{
+		"signal_count":  a.signalLog.Count(),
+		"strategy_stats": a.signalLog.StatsByStrategy(),
+		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
+		"realized_pnl":  a.portfolioTracker.TotalRealizedPnL(),
+		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+	})
 	if a.httpRuntime != nil {
 		if err := a.httpRuntime.Shutdown(ctx); err != nil {
 			return err
@@ -265,6 +478,7 @@ func (a *App) Shutdown(ctx context.Context) error {
 }
 
 func (a *App) Handler() http.Handler { return a.httpHandler }
+
 func (a *App) Address() string {
 	if a.httpRuntime != nil {
 		return a.httpRuntime.Address()

@@ -25,7 +25,7 @@ func TestMACDCrossover_BullishCross(t *testing.T) {
 	totalSell := 0
 	for _, p := range prices {
 		candle := marketdata.Candle{Symbol: "BTCUSDT", Close: formatFloat(p), High: formatFloat(p + 2), Low: formatFloat(p - 2)}
-		signals, err := s.CandleEvent(context.Background(), candle)
+		signals, err := s.OnMarketCandle(context.Background(), candle)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -57,7 +57,7 @@ func TestMACDCrossover_BearishCross(t *testing.T) {
 	totalSell := 0
 	for _, p := range prices {
 		candle := marketdata.Candle{Symbol: "BTCUSDT", Close: formatFloat(p), High: formatFloat(p + 2), Low: formatFloat(p - 2)}
-		signals, err := s.CandleEvent(context.Background(), candle)
+		signals, err := s.OnMarketCandle(context.Background(), candle)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

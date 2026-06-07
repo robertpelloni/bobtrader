@@ -33,7 +33,11 @@ func NewBollingerReversion(accountID, symbol, quantity string, period int, multi
 
 func (s *BollingerReversion) Name() string { return "BollingerReversion" }
 
-func (s *BollingerReversion) CandleEvent(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
+func (s *BollingerReversion) OnTick(_ context.Context) ([]strategy.Signal, error) {
+	return nil, nil // Candle-based strategy, not tick-driven
+}
+
+func (s *BollingerReversion) OnMarketCandle(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
 	closePrice := utils.ParseFloat(candle.Close)
 
 	s.warmup++

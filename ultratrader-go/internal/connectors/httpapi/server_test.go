@@ -11,6 +11,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -22,17 +23,17 @@ func makeTestDeps() Dependencies {
 		},
 		PortfolioProvider: func() PortfolioSnapshot {
 			return PortfolioSnapshot{
-				Positions:         []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}},
-				Concentration:     map[string]float64{"BTCUSDT": 1},
-				TotalMarketValue:  32500,
+				Positions:          []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}},
+				Concentration:      map[string]float64{"BTCUSDT": 1},
+				TotalMarketValue:   32500,
 				TotalUnrealizedPnL: 2500,
 			}
 		},
 		PortfolioSummaryProvider: func() PortfolioSummary {
 			return PortfolioSummary{
-				OpenPositions:     1,
-				Concentration:     map[string]float64{"BTCUSDT": 1},
-				TotalMarketValue:  32500,
+				OpenPositions:      1,
+				Concentration:      map[string]float64{"BTCUSDT": 1},
+				TotalMarketValue:   32500,
 				TotalUnrealizedPnL: 2500,
 			}
 		},
@@ -50,11 +51,11 @@ func makeTestDeps() Dependencies {
 		},
 		ExposureDiagnosticsProvider: func() ExposureDiagnostics {
 			return ExposureDiagnostics{
-				OpenPositions:      1,
-				Concentration:      map[string]float64{"BTCUSDT": 1},
-				TopConcentration:   "BTCUSDT",
+				OpenPositions:       1,
+				Concentration:       map[string]float64{"BTCUSDT": 1},
+				TopConcentration:    "BTCUSDT",
 				TopConcentrationPct: 1,
-				TotalMarketValue:   32500,
+				TotalMarketValue:    32500,
 			}
 		},
 		MetricsProvider: func() metrics.Snapshot {
@@ -71,7 +72,7 @@ func makeTestDeps() Dependencies {
 		ConfigProvider: func() RuntimeConfig {
 			return RuntimeConfig{
 				Environment: "development",
-				Scheduler:   SchedulerInfo{Mode: "timer", IntervalMS: 1000, Enabled: false},
+				Scheduler:   SchedulerInfo{Mode: "stream", IntervalMS: 1000, Enabled: false},
 				Risk:        RiskInfo{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}},
 			}
 		},
@@ -90,6 +91,18 @@ func makeTestDeps() Dependencies {
 			return reportinganalysis.RuntimeTrends{
 				MetricsSamples: 2,
 				PortfolioValue: reportinganalysis.NumericTrend{Latest: 32500, Previous: 30000, Delta: 2500},
+			}
+		},
+		SignalLogProvider: func() []strategy.LoggedSignal {
+			return []strategy.LoggedSignal{
+				{Strategy: "EMA crossover", Symbol: "BTCUSDT", Action: "buy", Outcome: strategy.OutcomeExecuted, FillPrice: "65000.00"},
+				{Strategy: "MACDCrossover", Symbol: "ETHUSDT", Action: "buy", Outcome: strategy.OutcomeBlocked, BlockedBy: "max-notional"},
+			}
+		},
+		StrategyStatsProvider: func() map[string]strategy.StrategyStats {
+			return map[string]strategy.StrategyStats{
+				"EMA crossover": {Name: "EMA crossover", SignalsTotal: 5, Executed: 3, Blocked: 1, Skipped: 1, SuccessRate: 0.6},
+				"MACDCrossover": {Name: "MACDCrossover", SignalsTotal: 3, Executed: 0, Blocked: 3, SuccessRate: 0},
 			}
 		},
 	}
@@ -131,6 +144,34 @@ func TestConfigEndpoint(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, "development") || !strings.Contains(body, "BTCUSDT") {
 		t.Fatalf("expected config content, got %q", body)
+	}
+}
+
+func TestSignalLogEndpoint(t *testing.T) {
+	h := NewHandler(makeTestDeps())
+
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/signals", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("signals expected 200, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "EMA crossover") || !strings.Contains(body, "65000.00") {
+		t.Fatalf("expected signal log content, got %q", body)
+	}
+}
+
+func TestStrategyStatsEndpoint(t *testing.T) {
+	h := NewHandler(makeTestDeps())
+
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/strategy-stats", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("strategy-stats expected 200, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "success_rate") || !strings.Contains(body, "0.6") {
+		t.Fatalf("expected strategy stats content, got %q", body)
 	}
 }
 

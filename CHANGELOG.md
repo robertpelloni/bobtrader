@@ -1209,6 +1209,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
 
 This is my personal trading bot that I decided to make open source. This system is meant to be a foundation/framework for you to build your dream bot!
 
+## [2.0.50] - 2026-06-07
+
+### Added
+- **Full signal-to-execution wiring** — strategies now generate signals that flow through position-aware dispatching, real notional calculation, risk guards, and paper execution with full signal logging.
+- **EnhancedScheduler** (`internal/strategy/scheduler/enhanced_scheduler.go`): Replaces basic Scheduler with position-aware, signal-logged execution. Skips buy-if-already-long, sell-if-flat. Logs every signal with outcome (executed/blocked/skipped).
+- **Signal Log** (`internal/strategy/signal_log.go`): Records every strategy signal with strategy name, symbol, action, price, outcome, blocked-by reason, fill price, and order ID. Bounded to 10,000 entries with automatic eviction.
+- **Smart Dispatcher** (`internal/strategy/scheduler/smart_dispatcher.go`): Shared signal dispatching logic with real market-price-based notional calculation (was hardcoded `Notional: 1`), position awareness, and signal logging.
+- **Market-Aware Paper Adapter** (`internal/exchange/paper/market_aware.go`): Paper trading adapter that fills orders at real market prices from a `marketdata.Feed`. Tracks USDT balance, positions, and simulates 0.1% taker fees.
+- **`/api/signals` endpoint**: Returns last 200 strategy signals with full outcome detail.
+- **`/api/strategy-stats` endpoint**: Returns per-strategy performance statistics (total signals, executed, blocked, skipped, success rate).
+- **Multi-strategy runtime**: App now wires 3+ strategies per symbol based on scheduler mode:
+  - Stream mode: EMA Crossover (9/21), Tick Mean Reversion (20-tick, 0.15%), Tick Momentum Burst (10-tick, 0.1%)
+  - Candle-stream mode: MACD Crossover (12/26/9), Bollinger Reversion (20-period, 2σ), SMA Crossover (5/20), ATR Sizing (7/25)
+  - Timer mode: EMA Crossover (9/21), Price Threshold
+- **Live-data-paper config** (`config/live-data-paper.json`): Production-style config for paper trading with real Binance market data.
+- **Strategy signal reporting**: Runtime reports now include signal count and per-strategy stats.
+- **OnTick stub methods**: Added to MACDCrossover, BollingerReversion, ATRSizing so all strategies implement the Strategy interface.
+- Candle-based strategy methods renamed from `CandleEvent` to `OnMarketCandle` for interface consistency.
+
+### Changed
+- App struct field `marketDataFeed` changed from `*binance.StreamFeed` to `marketdata.StreamFeed` interface.
+- `buildMarketDataFeed` automatically selects Binance real feed when any account uses `binance` or `paper-market-aware` exchange.
+- `buildStrategyRuntime` creates multi-strategy runtimes with proper parameters per scheduler mode.
+- Signal `Notional` now calculated from real market price × quantity (was hardcoded to 1).
+- App shutdown logs final signal count and strategy stats.
+- Server test file updated with `SignalLogProvider` and `StrategyStatsProvider` test cases.
+
 ## [2.0.49] - 2026-06-07
 
 ### Added

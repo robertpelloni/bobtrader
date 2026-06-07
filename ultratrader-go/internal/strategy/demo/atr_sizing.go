@@ -46,7 +46,11 @@ func NewATRSizing(accountID, symbol, baseQuantity string, riskPerTrade float64, 
 
 func (s *ATRSizing) Name() string { return "ATRSizing" }
 
-func (s *ATRSizing) CandleEvent(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
+func (s *ATRSizing) OnTick(_ context.Context) ([]strategy.Signal, error) {
+	return nil, nil // Candle-based strategy, not tick-driven
+}
+
+func (s *ATRSizing) OnMarketCandle(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
 	closePrice := utils.ParseFloat(candle.Close)
 	high := utils.ParseFloat(candle.High)
 	low := utils.ParseFloat(candle.Low)

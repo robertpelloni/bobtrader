@@ -9,6 +9,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
@@ -20,19 +21,19 @@ type Status struct {
 }
 
 type PortfolioSnapshot struct {
-	Positions         []portfolio.Position `json:"positions"`
-	Concentration     map[string]float64   `json:"concentration,omitempty"`
-	TotalMarketValue  float64              `json:"total_market_value"`
-	TotalRealizedPnL  float64              `json:"total_realized_pnl"`
-	TotalUnrealizedPnL float64             `json:"total_unrealized_pnl"`
+	Positions          []portfolio.Position `json:"positions"`
+	Concentration      map[string]float64   `json:"concentration,omitempty"`
+	TotalMarketValue   float64              `json:"total_market_value"`
+	TotalRealizedPnL   float64              `json:"total_realized_pnl"`
+	TotalUnrealizedPnL float64              `json:"total_unrealized_pnl"`
 }
 
 type PortfolioSummary struct {
-	OpenPositions     int                `json:"open_positions"`
-	Concentration     map[string]float64 `json:"concentration,omitempty"`
-	TotalMarketValue  float64            `json:"total_market_value"`
-	TotalRealizedPnL  float64            `json:"total_realized_pnl"`
-	TotalUnrealizedPnL float64           `json:"total_unrealized_pnl"`
+	OpenPositions      int                `json:"open_positions"`
+	Concentration      map[string]float64 `json:"concentration,omitempty"`
+	TotalMarketValue   float64            `json:"total_market_value"`
+	TotalRealizedPnL   float64            `json:"total_realized_pnl"`
+	TotalUnrealizedPnL float64            `json:"total_unrealized_pnl"`
 }
 
 type ExecutionDiagnostics struct {
@@ -46,13 +47,13 @@ type GuardDiagnostics struct {
 }
 
 type ExposureDiagnostics struct {
-	OpenPositions      int                `json:"open_positions"`
-	Concentration      map[string]float64 `json:"concentration,omitempty"`
-	TopConcentration   string             `json:"top_concentration,omitempty"`
-	TopConcentrationPct float64           `json:"top_concentration_pct,omitempty"`
-	TotalMarketValue   float64            `json:"total_market_value"`
-	TotalRealizedPnL   float64            `json:"total_realized_pnl"`
-	TotalUnrealizedPnL float64            `json:"total_unrealized_pnl"`
+	OpenPositions       int                `json:"open_positions"`
+	Concentration       map[string]float64 `json:"concentration,omitempty"`
+	TopConcentration    string             `json:"top_concentration,omitempty"`
+	TopConcentrationPct float64            `json:"top_concentration_pct,omitempty"`
+	TotalMarketValue    float64            `json:"total_market_value"`
+	TotalRealizedPnL    float64            `json:"total_realized_pnl"`
+	TotalUnrealizedPnL  float64            `json:"total_unrealized_pnl"`
 }
 
 type RuntimeConfig struct {
@@ -90,6 +91,8 @@ type Dependencies struct {
 	LatestReportsProvider        func() map[string]reports.Report
 	ReportHistoryProvider        func(reportType string, limit int) []reports.Report
 	ReportTrendsProvider         func() reportinganalysis.RuntimeTrends
+	SignalLogProvider            func() []strategy.LoggedSignal
+	StrategyStatsProvider        func() map[string]strategy.StrategyStats
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -199,6 +202,16 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/runtime-reports/trends", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.ReportTrendsProvider())
+	})
+
+	mux.HandleFunc("/api/signals", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.SignalLogProvider())
+	})
+
+	mux.HandleFunc("/api/strategy-stats", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.StrategyStatsProvider())
 	})
 
 	return mux

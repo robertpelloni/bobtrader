@@ -34,7 +34,11 @@ func NewMACDCrossover(accountID, symbol, quantity string, fastPeriod, slowPeriod
 
 func (s *MACDCrossover) Name() string { return "MACDCrossover" }
 
-func (s *MACDCrossover) CandleEvent(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
+func (s *MACDCrossover) OnTick(_ context.Context) ([]strategy.Signal, error) {
+	return nil, nil // Candle-based strategy, not tick-driven
+}
+
+func (s *MACDCrossover) OnMarketCandle(ctx context.Context, candle marketdata.Candle) ([]strategy.Signal, error) {
 	closePrice := utils.ParseFloat(candle.Close)
 
 	result := s.macd.Update(closePrice)

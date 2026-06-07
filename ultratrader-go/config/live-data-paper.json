@@ -1,0 +1,31 @@
+{
+  "environment": "live-data-paper-trading",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8200"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 2000
+  },
+  "risk": {
+    "max_notional": 100,
+    "max_notional_per_symbol": 75,
+    "allowed_symbols": ["BTCUSDT", "ETHUSDT"],
+    "cooldown_ms": 5000,
+    "duplicate_window_ms": 10000,
+    "duplicate_side_window_ms": 10000,
+    "max_open_positions": 3,
+    "max_concentration_pct": 80
+  },
+  "accounts": [
+    {
+      "id": "paper-main",
+      "name": "Paper Main (Live Data)",
+      "enabled": true,
+      "exchange": "paper",
+      "capabilities": ["spot", "paper", "candles", "balances", "orders"]
+    }
+  ]
+}
