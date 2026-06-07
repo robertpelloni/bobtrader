@@ -61,9 +61,6 @@
 [submodule "submodules/page-04/ccxt__ccxt"]
 	path = submodules/page-04/ccxt__ccxt
 	url = https://github.com/ccxt/ccxt.git
-[submodule "submodules/page-04/0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto"]
-	path = submodules/page-04/0xAxon7__polymarket-almanac-arbitrage-trading-bot-sports-crypto
-	url = https://github.com/0xAxon7/polymarket-almanac-arbitrage-trading-bot-sports-crypto.git
 [submodule "submodules/page-04/c9s__bbgo"]
 	path = submodules/page-04/c9s__bbgo
 	url = https://github.com/c9s/bbgo.git
@@ -79,9 +76,6 @@
 [submodule "submodules/page-05/nicolasbonnici__cryptobot"]
 	path = submodules/page-05/nicolasbonnici__cryptobot
 	url = https://github.com/nicolasbonnici/cryptobot.git
-[submodule "submodules/page-05/Brunofancy__polymarket-trading-agent"]
-	path = submodules/page-05/Brunofancy__polymarket-trading-agent
-	url = https://github.com/Brunofancy/polymarket-trading-agent.git
 [submodule "submodules/page-05/Mathieu2301__TradingView-API"]
 	path = submodules/page-05/Mathieu2301__TradingView-API
 	url = https://github.com/Mathieu2301/TradingView-API.git
