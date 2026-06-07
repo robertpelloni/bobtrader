@@ -7,12 +7,13 @@ import (
 )
 
 type Signal struct {
-	AccountID string
-	Symbol    string
-	Action    string
-	Reason    string
-	Quantity  string
-	OrderType string
+	AccountID    string
+	Symbol       string
+	Action       string
+	Reason       string
+	StrategyName string
+	Quantity     string
+	OrderType    string
 }
 
 type Strategy interface {
@@ -45,6 +46,11 @@ func (r *Runtime) Tick(ctx context.Context) ([]Signal, error) {
 		if err != nil {
 			return nil, err
 		}
+		for i := range signals {
+			if signals[i].StrategyName == "" {
+				signals[i].StrategyName = strategy.Name()
+			}
+		}
 		out = append(out, signals...)
 	}
 	return out, nil
@@ -61,6 +67,11 @@ func (r *Runtime) TickEvent(ctx context.Context, tick marketdata.Tick) ([]Signal
 		if err != nil {
 			return nil, err
 		}
+		for i := range signals {
+			if signals[i].StrategyName == "" {
+				signals[i].StrategyName = strategy.Name()
+			}
+		}
 		out = append(out, signals...)
 	}
 	return out, nil
@@ -76,6 +87,11 @@ func (r *Runtime) CandleEvent(ctx context.Context, candle marketdata.Candle) ([]
 		signals, err := strategy.OnMarketCandle(ctx, candle)
 		if err != nil {
 			return nil, err
+		}
+		for i := range signals {
+			if signals[i].StrategyName == "" {
+				signals[i].StrategyName = strategy.Name()
+			}
 		}
 		out = append(out, signals...)
 	}

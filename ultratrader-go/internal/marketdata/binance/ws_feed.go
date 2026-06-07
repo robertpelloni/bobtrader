@@ -27,7 +27,7 @@ type StreamFeed struct {
 
 // NewStreamFeed creates a WebSocket-based market data feed.
 func NewStreamFeed(adapter *binance.Adapter) *StreamFeed {
-	baseURL := "wss://stream.binance.com:9443/ws"
+	baseURL := "wss://stream.binance.us:9443/ws"
 	if adapter.IsTestnet() {
 		baseURL = "wss://testnet.binance.vision/ws"
 	}

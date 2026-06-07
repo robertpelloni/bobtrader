@@ -55,6 +55,7 @@ type App struct {
 	cycleRunner       cycleRunner
 	pipeline          *risk.Pipeline
 	signalLog         *strategy.SignalLog
+	marketAwarePaper  *exchangepaper.MarketAwareAdapter
 	httpHandler       http.Handler
 	httpRuntime       *httpapi.Runtime
 }
@@ -69,17 +70,14 @@ func New(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create event log: %w", err)
 	}
-
 	snapshotStore, err := snapshot.NewStore(cfg.Snapshots.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create snapshot store: %w", err)
 	}
-
 	orderStore, err := orders.NewStore(cfg.Orders.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create order store: %w", err)
 	}
-
 	reportStore, err := reports.NewStore(cfg.Reports.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create report store: %w", err)
@@ -111,13 +109,14 @@ func New(cfg config.Config) (*App, error) {
 	}
 
 	// ── Market Data Feed ───────────────────────────────────────
-	// Use Binance real data if any account uses binance exchange, otherwise paper
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
 
 	// ── Market-Aware Paper Adapter ─────────────────────────────
-	marketAwareAdapter := exchangepaper.NewMarketAwareAdapter(marketDataFeed, 10000)
+	// This adapter fills simulated orders at real market prices
+	initialBalance := 10000.0 // $10,000 starting USDT
+	marketAwarePaper := exchangepaper.NewMarketAwareAdapter(marketDataFeed, initialBalance)
 	if err := registry.Register("paper-market-aware", func() exchange.Adapter {
-		return marketAwareAdapter
+		return marketAwarePaper
 	}); err != nil {
 		return nil, fmt.Errorf("register market-aware paper exchange: %w", err)
 	}
@@ -159,12 +158,13 @@ func New(cfg config.Config) (*App, error) {
 	)
 
 	// ── Strategy Runtime ───────────────────────────────────────
-	strategyRuntime := buildStrategyRuntime(cfg, primaryAccountID, marketDataFeed)
+	strategyRuntime := buildAutonomousStrategyRuntime(
+		cfg, primaryAccountID, marketDataFeed, portfolioTracker, marketAwarePaper,
+	)
 
 	// ── Enhanced Scheduler (position-aware, signal-logged) ─────
 	scheduler := strategyscheduler.NewEnhanced(
-		strategyRuntime, executionService, portfolioTracker,
-		marketDataFeed, signalLog,
+		strategyRuntime, executionService, portfolioTracker, marketDataFeed, signalLog,
 	)
 
 	// ── Reporting ──────────────────────────────────────────────
@@ -176,15 +176,15 @@ func New(cfg config.Config) (*App, error) {
 				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
 				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
 				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
+				"usdt_balance":    marketAwarePaper.USDTBalance(),
 			}},
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 			{Type: "strategy-signals", Payload: map[string]any{
-				"signal_count":  signalLog.Count(),
+				"signal_count":   signalLog.Count(),
 				"strategy_stats": signalLog.StatsByStrategy(),
 			}},
 		}
 	}
-
 	cycleRunner := reportingruntime.NewReportingRunner(scheduler, reportStore, reportProvider)
 
 	// ── Scheduler Service ──────────────────────────────────────
@@ -229,19 +229,19 @@ func New(cfg config.Config) (*App, error) {
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
 			return httpapi.PortfolioSnapshot{
-				Positions:          portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
-				Concentration:      currentConcentration(),
-				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				Positions:         portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
+				Concentration:     currentConcentration(),
+				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
 			return httpapi.PortfolioSummary{
-				OpenPositions:      portfolioTracker.OpenPositionCount(),
-				Concentration:      currentConcentration(),
-				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				OpenPositions:     portfolioTracker.OpenPositionCount(),
+				Concentration:     currentConcentration(),
+				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
@@ -332,13 +332,14 @@ func New(cfg config.Config) (*App, error) {
 		cycleRunner:      cycleRunner,
 		pipeline:         pipeline,
 		signalLog:        signalLog,
+		marketAwarePaper: marketAwarePaper,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
 	}, nil
 }
 
 // buildMarketDataFeed creates the appropriate market data feed based on config.
-// If any account uses Binance, we use Binance REST feed for real market data.
+// If any account uses Binance or paper-market-aware, we use Binance real data.
 // Otherwise we fall back to the deterministic paper feed.
 func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.StreamFeed {
 	for _, acct := range cfg.Accounts {
@@ -353,54 +354,87 @@ func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.S
 	return marketdatapaper.New()
 }
 
-// buildStrategyRuntime creates a multi-strategy runtime based on scheduler mode.
-func buildStrategyRuntime(cfg config.Config, accountID string, feed marketdata.Feed) *strategy.Runtime {
+// buildAutonomousStrategyRuntime creates a multi-strategy runtime for
+// autonomous trading. Each symbol gets:
+//   - Entry strategies: EMA crossover, Bollinger band reversion, RSI reversion
+//   - Exit strategy: Trailing take-profit
+//   - Position sizing: Portfolio-aware sizing based on balance
+//
+// Entry strategies are wrapped with PortfolioSizer for dynamic sizing.
+// The trailing take-profit handles all exits.
+func buildAutonomousStrategyRuntime(
+	cfg config.Config,
+	accountID string,
+	feed marketdata.Feed,
+	portfolioTracker *portfolio.Tracker,
+	marketAwarePaper *exchangepaper.MarketAwareAdapter,
+) *strategy.Runtime {
 	symbols := cfg.Risk.AllowedSymbols
 	if len(symbols) == 0 {
 		symbols = []string{"BTCUSDT", "ETHUSDT"}
 	}
 
+	// Risk parameters from config
+	riskPct := 2.0          // 2% of balance per trade
+	maxNotional := 1000.0   // max $1000 per trade
+	if cfg.Risk.MaxNotional > 0 && cfg.Risk.MaxNotional < maxNotional {
+		maxNotional = cfg.Risk.MaxNotional
+	}
+
 	var strategies []strategy.Strategy
 
 	switch cfg.Scheduler.Mode {
-	case "stream":
-		// Tick-based strategies for stream mode (driven by real-time ticks)
+	case "stream", "": // Default to stream for autonomous trading
 		for _, symbol := range symbols {
-			// EMA Crossover (fast=9, slow=21) — classic trend following
-			strategies = append(strategies,
-				strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
-			// Tick Mean Reversion (20-tick lookback, 0.15% deviation threshold)
-			strategies = append(strategies,
-				strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.15, 0.15))
-			// Tick Momentum Burst (10-tick lookback, 0.1% change threshold)
-			strategies = append(strategies,
-				strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.1, 0.1))
+			// ── Entry Strategy 1: EMA Crossover (9/21) ──────────
+			// Trend-following: buys on golden cross, sells on death cross
+			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", 9, 21)
+			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			strategies = append(strategies, emaSized)
+
+			// ── Entry Strategy 2: Bollinger Band Reversion (20, 2.0) ─
+			// Mean-reversion: buys at lower band, sells at upper band
+			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", 20, 2.0)
+			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			strategies = append(strategies, bbSized)
+
+			// ── Entry Strategy 3: RSI Reversion (14, 30/70) ─────
+			// Mean-reversion: buys oversold, sells overbought
+			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", 14, 30, 70)
+			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			strategies = append(strategies, rsiSized)
+
+			// ── Exit Strategy: Trailing Take Profit ─────────────
+			// Activates at 2% profit, trails with 0.5% gap
+			// Sells entire position when price drops below trail
+			trailingTP := strategydemo.NewTrailingTakeProfit(
+				accountID, symbol, "0.001",
+				2.0,  // activate at 2% profit
+				0.5,  // trail 0.5% below high
+				portfolioTracker, feed,
+			)
+			strategies = append(strategies, trailingTP)
 		}
 
 	case "candle-stream":
-		// Candle-based strategies for candle-stream mode
 		for _, symbol := range symbols {
-			// MACD Crossover (12, 26, 9) — standard MACD settings
-			strategies = append(strategies,
-				strategydemo.NewMACDCrossover(accountID, symbol, "0.001", 12, 26, 9))
-			// Bollinger Band Reversion (20-period, 2.0 std dev)
-			strategies = append(strategies,
-				strategydemo.NewBollingerReversion(accountID, symbol, "0.001", 20, 2.0))
-			// SMA Crossover (fast=5, slow=20)
-			strategies = append(strategies,
-				strategydemo.NewCandleSMACross(accountID, symbol, "0.001", 5, 20))
-			// ATR-Based Sizing with SMA crossover (7/25, 1% risk)
-			strategies = append(strategies,
-				strategydemo.NewATRSizing(accountID, symbol, "0.001", 0.01, 7, 25, 14))
+			// Candle-based entry strategies
+			strategies = append(strategies, strategydemo.NewMACDCrossover(accountID, symbol, "0.001", 12, 26, 9))
+			strategies = append(strategies, strategydemo.NewBollingerReversion(accountID, symbol, "0.001", 20, 2.0))
+			strategies = append(strategies, strategydemo.NewCandleSMACross(accountID, symbol, "0.001", 5, 20))
+			strategies = append(strategies, strategydemo.NewATRSizing(accountID, symbol, "0.001", 0.01, 7, 25, 14))
+			// Trailing exit for candle mode too
+			trailingTP := strategydemo.NewTrailingTakeProfit(
+				accountID, symbol, "0.001",
+				2.0, 0.5, portfolioTracker, feed,
+			)
+			strategies = append(strategies, trailingTP)
 		}
 
-	default:
-		// Timer mode: poll-based strategies
+	default: // timer mode
 		for _, symbol := range symbols {
-			strategies = append(strategies,
-				strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
-			strategies = append(strategies,
-				strategydemo.NewPriceThreshold(accountID, symbol, "0.001", "70000.00", feed))
+			strategies = append(strategies, strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
+			strategies = append(strategies, strategydemo.NewPriceThreshold(accountID, symbol, "0.001", "70000.00", feed))
 		}
 	}
 
@@ -417,12 +451,18 @@ func (a *App) Close() error {
 func (a *App) Start(ctx context.Context) error {
 	a.logger.Info("app startup initiated", map[string]any{"environment": a.config.Environment})
 
-	if err := a.eventLog.Append(ctx, eventlog.Entry{Type: "app.started", Source: "ultratrader-go", Payload: map[string]any{"environment": a.config.Environment, "accounts": len(a.accountService.List())}}); err != nil {
+	if err := a.eventLog.Append(ctx, eventlog.Entry{
+		Type: "app.started", Source: "ultratrader-go",
+		Payload: map[string]any{"environment": a.config.Environment, "accounts": len(a.accountService.List())},
+	}); err != nil {
 		return err
 	}
 
 	for _, acct := range a.accountService.List() {
-		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{AccountID: acct.ID, AccountName: acct.Name, Exchange: acct.ExchangeName, Metadata: map[string]any{"enabled": acct.Enabled}}); err != nil {
+		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{
+			AccountID: acct.ID, AccountName: acct.Name, Exchange: acct.ExchangeName,
+			Metadata: map[string]any{"enabled": acct.Enabled},
+		}); err != nil {
 			return fmt.Errorf("append bootstrap snapshot for %s: %w", acct.ID, err)
 		}
 	}
@@ -436,7 +476,10 @@ func (a *App) Start(ctx context.Context) error {
 
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
-		a.logger.Info("scheduler service started", map[string]any{"interval_ms": a.config.Scheduler.IntervalMS, "mode": a.config.Scheduler.Mode})
+		a.logger.Info("scheduler service started", map[string]any{
+			"interval_ms": a.config.Scheduler.IntervalMS,
+			"mode":        a.config.Scheduler.Mode,
+		})
 	}
 
 	if err := a.cycleRunner.RunOnce(ctx); err != nil {
@@ -451,23 +494,24 @@ func (a *App) Start(ctx context.Context) error {
 		"metrics":        a.metricsTracker.Snapshot(),
 		"guards":         a.pipeline.Names(),
 		"signal_count":   a.signalLog.Count(),
+		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
 	}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
 	}
-	a.logger.Info("app startup completed", reportPayload)
 
+	a.logger.Info("app startup completed", reportPayload)
 	return nil
 }
 
 func (a *App) Shutdown(ctx context.Context) error {
-	// Log final state before shutdown
 	a.logger.Info("app shutdown initiated", map[string]any{
-		"signal_count":  a.signalLog.Count(),
+		"signal_count":   a.signalLog.Count(),
 		"strategy_stats": a.signalLog.StatsByStrategy(),
 		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
-		"realized_pnl":  a.portfolioTracker.TotalRealizedPnL(),
+		"realized_pnl":   a.portfolioTracker.TotalRealizedPnL(),
 		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
 	})
 	if a.httpRuntime != nil {
 		if err := a.httpRuntime.Shutdown(ctx); err != nil {
@@ -478,7 +522,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 }
 
 func (a *App) Handler() http.Handler { return a.httpHandler }
-
 func (a *App) Address() string {
 	if a.httpRuntime != nil {
 		return a.httpRuntime.Address()

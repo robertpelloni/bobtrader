@@ -1,0 +1,31 @@
+{
+  "environment": "autonomous-paper-trading",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8300"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 1500
+  },
+  "risk": {
+    "max_notional": 500,
+    "max_notional_per_symbol": 300,
+    "allowed_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "cooldown_ms": 30000,
+    "duplicate_window_ms": 60000,
+    "duplicate_side_window_ms": 30000,
+    "max_open_positions": 5,
+    "max_concentration_pct": 60
+  },
+  "accounts": [
+    {
+      "id": "paper-main",
+      "name": "Paper Trading (Live Binance Data)",
+      "enabled": true,
+      "exchange": "paper-market-aware",
+      "capabilities": ["spot", "paper", "candles", "balances", "orders"]
+    }
+  ]
+}

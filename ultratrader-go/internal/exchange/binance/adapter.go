@@ -18,7 +18,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/ratelimit"
 )
 
-const defaultBaseURL = "https://api.binance.com"
+const defaultBaseURL = "https://api.binance.us"
 
 type Config struct {
 	APIKey    string `json:"api_key"`

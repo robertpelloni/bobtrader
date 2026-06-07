@@ -179,7 +179,7 @@ func recordSignal(signal strategy.Signal, outcome strategy.SignalOutcome, blocke
 		}
 	}
 	signalLog.Record(strategy.LoggedSignal{
-		Strategy:  extractStrategyName(signal.Reason),
+		Strategy:  signal.StrategyName,
 		Symbol:    signal.Symbol,
 		Action:    signal.Action,
 		Quantity:  signal.Quantity,

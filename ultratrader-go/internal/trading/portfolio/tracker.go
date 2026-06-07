@@ -91,6 +91,16 @@ func (t *Tracker) HasOpenPosition(symbol string) bool {
 	return ok && st.quantity > 0
 }
 
+func (t *Tracker) PositionQuantity(symbol string) float64 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	st, ok := t.positions[strings.ToUpper(strings.TrimSpace(symbol))]
+	if !ok {
+		return 0
+	}
+	return st.quantity
+}
+
 func (t *Tracker) OpenPositionCount() int {
 	t.mu.Lock()
 	defer t.mu.Unlock()
