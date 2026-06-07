@@ -10,8 +10,16 @@ import (
 type OrderIntent struct {
 	AccountID string
 	Symbol    string
+	Side      OrderSide
 	Notional  float64
 }
+
+type OrderSide string
+
+const (
+	BuySide  OrderSide = "buy"
+	SellSide OrderSide = "sell"
+)
 
 type Guard interface {
 	Name() string

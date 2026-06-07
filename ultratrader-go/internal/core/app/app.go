@@ -125,7 +125,7 @@ func New(cfg config.Config) (*App, error) {
 	metricsTracker := metrics.NewTracker()
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
-	exposureView := portfolio.NewExposureView(portfolioTracker, marketDataFeed)
+	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(

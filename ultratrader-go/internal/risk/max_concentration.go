@@ -28,6 +28,10 @@ func (g MaxConcentrationGuard) Check(_ context.Context, _ account.Account, inten
 	if g.MaxPct <= 0 || g.Portfolio == nil {
 		return nil
 	}
+	// Sells reduce concentration, always allow
+	if intent.Side == SellSide {
+		return nil
+	}
 	total := g.Portfolio.TotalValue()
 	if total <= 0 {
 		return nil

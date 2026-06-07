@@ -78,6 +78,7 @@ func (s *BollingerTickReversion) OnMarketTick(_ context.Context, tick marketdata
 	}
 
 	// Sell when price rises to or above upper band
+	// (only if we're already in a position — the TrailingTakeProfit also handles exits)
 	if price >= result.Upper && s.lastSignal != "sell" {
 		s.lastSignal = "sell"
 		return []strategy.Signal{{

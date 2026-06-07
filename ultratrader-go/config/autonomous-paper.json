@@ -7,17 +7,17 @@
   "scheduler": {
     "enabled": true,
     "mode": "stream",
-    "interval_ms": 1500
+    "interval_ms": 2000
   },
   "risk": {
     "max_notional": 500,
-    "max_notional_per_symbol": 300,
+    "max_notional_per_symbol": 250,
     "allowed_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
-    "cooldown_ms": 30000,
-    "duplicate_window_ms": 60000,
-    "duplicate_side_window_ms": 30000,
+    "cooldown_ms": 15000,
+    "duplicate_window_ms": 30000,
+    "duplicate_side_window_ms": 15000,
     "max_open_positions": 5,
-    "max_concentration_pct": 60
+    "max_concentration_pct": 90
   },
   "accounts": [
     {

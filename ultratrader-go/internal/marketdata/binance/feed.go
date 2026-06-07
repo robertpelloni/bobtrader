@@ -22,6 +22,19 @@ func NewFeed(adapter *binance.Adapter) *Feed {
 }
 
 func (f *Feed) LatestTick(ctx context.Context, symbol string) (marketdata.Tick, error) {
+	// Try kline first — gives us price variation between candles
+	klines, err := f.adapter.GetKlines(ctx, symbol, "1m", 1)
+	if err == nil && len(klines) > 0 {
+		k := klines[0]
+		// Use close price from latest 1m kline
+		return marketdata.Tick{
+			Symbol:    symbol,
+			Price:     k.Close,
+			Source:    "binance-kline",
+			Timestamp: time.Now().UTC(),
+		}, nil
+	}
+	// Fallback to ticker price
 	price, err := f.adapter.GetTickerPrice(ctx, symbol)
 	if err != nil {
 		return marketdata.Tick{}, err

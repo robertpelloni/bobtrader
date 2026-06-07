@@ -10,19 +10,25 @@ import (
 )
 
 // TrailingTakeProfit watches held positions and generates sell signals
-// when price rises above a profit threshold, then trails upward.
-// It sells when price falls back below the trailing line.
-// This is the core exit strategy for autonomous trading.
+// when the price rises then falls back past a trailing stop.
+// This is the primary exit strategy for autonomous trading.
+//
+// Logic:
+// 1. Wait until price is at least activatePct% above the entry price
+// 2. Track the high water mark as price rises
+// 3. When price drops trailPct% below the high water mark, sell
 type TrailingTakeProfit struct {
-	accountID    string
-	symbol       string
-	quantity     string
-	activatePct  float64 // profit % to activate trailing
-	trailPct     float64 // trail gap % below peak
-	portfolio    PositionReader
-	feed         marketdata.Feed
-	activated    bool
+	accountID     string
+	symbol        string
+	quantity      string
+	activatePct   float64 // profit % above entry to activate
+	trailPct      float64 // trail gap % below peak
+	portfolio     PositionReader
+	feed          marketdata.Feed
+	entryPrice    float64 // recorded when position detected
+	activated     bool
 	highWaterMark float64
+	positionKnown bool
 }
 
 // PositionReader reads the current held quantity for a symbol.
@@ -44,13 +50,13 @@ func NewTrailingTakeProfit(
 		trailPct = 0.5
 	}
 	return &TrailingTakeProfit{
-		accountID:    accountID,
-		symbol:       symbol,
-		quantity:     quantity,
-		activatePct:  activatePct,
-		trailPct:     trailPct,
-		portfolio:    portfolio,
-		feed:         feed,
+		accountID:   accountID,
+		symbol:      symbol,
+		quantity:    quantity,
+		activatePct: activatePct,
+		trailPct:    trailPct,
+		portfolio:   portfolio,
+		feed:        feed,
 	}
 }
 
@@ -71,6 +77,8 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 	if s.portfolio == nil || !s.portfolio.HasOpenPosition(s.symbol) {
 		s.activated = false
 		s.highWaterMark = 0
+		s.entryPrice = 0
+		s.positionKnown = false
 		return nil, nil
 	}
 
@@ -79,50 +87,50 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		return nil, nil
 	}
 
+	// Record entry price when we first detect a position
+	if !s.positionKnown {
+		s.entryPrice = price
+		s.positionKnown = true
+		s.highWaterMark = price
+		return nil, nil // wait one tick before evaluating
+	}
+
 	// Update high water mark
 	if price > s.highWaterMark {
 		s.highWaterMark = price
 	}
 
-	// Calculate trailing stop price
-	trailStop := s.highWaterMark * (1 - s.trailPct/100)
-
-	// Check activation: price must be at least activatePct above our entry
-	// We approximate entry from portfolio (or just use trail logic)
+	// Check activation: price must be at least activatePct% above entry
 	if !s.activated {
-		// Simple activation: if price has moved up at all from recent low
-		// The actual entry price check happens implicitly — if we're in position
-		// and price trails up, we activate once it drops
-		if s.highWaterMark > 0 && price >= s.highWaterMark*(1-s.activatePct/100) {
-			// Not yet activated — wait for profit
-			return nil, nil
+		if s.entryPrice > 0 {
+			profitPct := ((price - s.entryPrice) / s.entryPrice) * 100
+			if profitPct >= s.activatePct {
+				s.activated = true
+			}
 		}
-		// We've already dipped from high — but let's require at least some rise
-		// Activation happens once the price is within trailing range of the high
-		if price <= trailStop && s.highWaterMark > price*(1+s.activatePct/100) {
-			// High water mark was significantly above current price
-			s.activated = true
+		if !s.activated {
+			return nil, nil // not yet profitable enough
 		}
-		return nil, nil
 	}
 
 	// After activation, sell if price drops below trailing stop
+	trailStop := s.highWaterMark * (1 - s.trailPct/100)
 	if price <= trailStop {
-		// Determine quantity to sell — sell entire position
-		qty := s.quantity
-		if s.portfolio != nil {
-			heldQty := s.portfolio.PositionQuantity(s.symbol)
-			if heldQty > 0 {
-				qty = formatQuantity(heldQty)
-			}
+		// Sell entire position
+		heldQty := s.portfolio.PositionQuantity(s.symbol)
+		qty := formatQuantity(heldQty)
+		if heldQty <= 0 {
+			qty = s.quantity // fallback
 		}
 		s.activated = false
 		s.highWaterMark = 0
+		s.entryPrice = 0
+		s.positionKnown = false
 		return []strategy.Signal{{
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
 			Action:    "sell",
-			Reason:    fmt.Sprintf("trailing TP hit: price %.2f <= trail %.2f (high %.2f, trail %.1f%%)", price, trailStop, s.highWaterMark, s.trailPct),
+			Reason:    fmt.Sprintf("trailing TP: price %.2f <= trail %.2f (entry %.2f, high %.2f)", price, trailStop, s.entryPrice, s.highWaterMark),
 			Quantity:  qty,
 			OrderType: "market",
 		}}, nil

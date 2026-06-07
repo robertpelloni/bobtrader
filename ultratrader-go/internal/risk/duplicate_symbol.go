@@ -28,6 +28,10 @@ func (g DuplicateSymbolGuard) Check(_ context.Context, _ account.Account, intent
 	if g.Repository == nil || g.Within <= 0 {
 		return nil
 	}
+	// Sells should not be blocked by duplicate-symbol guard
+	if intent.Side == SellSide {
+		return nil
+	}
 	symbol := strings.ToUpper(strings.TrimSpace(intent.Symbol))
 	if g.Repository.HasRecentSymbol(symbol, g.Within) {
 		return fmt.Errorf("recent order already exists for %s", symbol)

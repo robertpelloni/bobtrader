@@ -21,6 +21,9 @@ func (g MaxNotionalGuard) Check(_ context.Context, _ account.Account, intent Ord
 	if g.Limit <= 0 {
 		return nil
 	}
+	if intent.Side == SellSide {
+		return nil // sells reduce exposure
+	}
 	if intent.Notional > g.Limit {
 		return fmt.Errorf("notional %.4f exceeds limit %.4f", intent.Notional, g.Limit)
 	}

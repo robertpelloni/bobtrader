@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,9 +14,10 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 )
 
-// PositionChecker knows whether we hold a position in a symbol.
+// PositionChecker knows whether we hold a position in a symbol and its quantity.
 type PositionChecker interface {
 	HasOpenPosition(symbol string) bool
+	PositionQuantity(symbol string) float64
 }
 
 // SmartDispatcher wraps a base Scheduler and adds:
@@ -90,6 +92,7 @@ func smartToOrder(signal strategy.Signal, marketPrice float64) (exchange.OrderRe
 	intent := risk.OrderIntent{
 		AccountID: signal.AccountID,
 		Symbol:    signal.Symbol,
+		Side:      riskSide(signal.Action),
 		Notional:  notional,
 	}
 
@@ -109,6 +112,27 @@ func extractStrategyName(reason string) string {
 	return name
 }
 
+func formatDispQuantity(qty float64) string {
+	if qty >= 1 {
+		return fmt.Sprintf("%.4f", qty)
+	}
+	if qty >= 0.01 {
+		return fmt.Sprintf("%.6f", qty)
+	}
+	return fmt.Sprintf("%.8f", qty)
+}
+
+func riskSide(action string) risk.OrderSide {
+	switch strings.ToLower(action) {
+	case "buy":
+		return risk.BuySide
+	case "sell":
+		return risk.SellSide
+	default:
+		return risk.BuySide
+	}
+}
+
 // ExecuteSignals evaluates and dispatches signals with full position awareness
 // and signal logging. This replaces the scheduler's internal executeSignals.
 func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService *execution.Service, portfolio PositionChecker, feed marketdata.Feed, signalLog *strategy.SignalLog) {
@@ -123,6 +147,13 @@ func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService 
 			if strings.EqualFold(signal.Action, "sell") && !hasPosition {
 				recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", feed, signalLog)
 				continue
+			}
+			// For sell signals, override quantity with full position if needed
+			if strings.EqualFold(signal.Action, "sell") && portfolio != nil {
+				heldQty := portfolio.PositionQuantity(signal.Symbol)
+				if heldQty > 0 {
+					signal.Quantity = formatDispQuantity(heldQty)
+				}
 			}
 		}
 
@@ -145,20 +176,10 @@ func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService 
 		order, execErr := execService.Execute(ctx, signal.AccountID, request, intent)
 		if execErr != nil {
 			blockedBy := "unknown"
-			errMsg := execErr.Error()
-			if idx := strings.Index(errMsg, "guard "); idx >= 0 {
-				rest := errMsg[idx+6:]
-				if spaceIdx := strings.Index(rest, " "); spaceIdx > 0 {
-					blockedBy = rest[:spaceIdx]
-				} else if len(rest) > 0 {
-					blockedBy = rest
-				}
-			}
 			var guardErr risk.GuardError
-			if guardErr, ok := execErr.(risk.GuardError); ok {
+			if errors.As(execErr, &guardErr) {
 				blockedBy = guardErr.GuardName
 			}
-			_ = guardErr
 			recordSignal(signal, strategy.OutcomeBlocked, blockedBy, "", "", feed, signalLog)
 			continue
 		}

@@ -5,6 +5,40 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.51] - 2026-06-07
+
+### Added
+- **Autonomous paper trading mode** — the system now functions as a fully autonomous trader using real Binance.US market data with simulated order execution.
+- **New entry strategies** for tick-based streaming:
+  - `RSIReversion` — buys oversold (RSI<30), sells overbought (RSI>70) with warmup protection
+  - `BollingerTickReversion` — buys at lower Bollinger Band, sells at upper Band (tick-by-tick)
+  - `EMATickCrossover` — tick-driven EMA crossover (9/21) for trend following
+- **TrailingTakeProfit exit strategy** — activates at 2% profit, trails with 0.5% gap, sells entire position when price drops below trail line.
+- **PortfolioSizer** — wraps entry strategies to dynamically size buy quantities based on USDT balance × risk% (default 2% per trade, capped at max notional).
+- **`OrderSide` on `OrderIntent`** — risk guards now know buy vs sell, enabling sell-exempt guard logic.
+- **`StrategyName` field on `Signal`** — the runtime automatically tags signals with their originating strategy name.
+- **`config/autonomous-paper.json`** — production-ready config for autonomous trading with 3 symbols (BTC/ETH/SOL), $10K starting balance, and balanced risk limits.
+- **`PositionQuantity` method** on `portfolio.Tracker` — returns held quantity for a symbol.
+- **`USDTBalanceReader` interface** on `portfolio.ExposureView` — concentration calculations now include USDT cash balance.
+- **Binance.US default endpoint** — switched from `api.binance.com` (geo-restricted) to `api.binance.us`.
+- **Kline-based tick prices** — feed now fetches 1m kline close prices for better price variation than ticker endpoint.
+- **`RSI.Ready()` method** — prevents spurious signals during warmup.
+
+### Changed
+- **Risk guards now sell-aware**: `MaxNotionalGuard`, `MaxNotionalPerSymbolGuard`, `MaxConcentrationGuard`, and `DuplicateSymbolGuard` all skip sell orders (sells reduce exposure).
+- **CooldownGuard is side-aware**: buy cooldown (15s) vs sell cooldown (5s, 3x shorter) to allow timely exits.
+- **Smart dispatcher uses full position quantity** for sell signals instead of fixed `0.001`.
+- **Smart dispatcher uses `errors.As`** for guard error parsing (fixes "unknown" blocked-by reasons).
+- **ExposureView includes USDT balance** in `TotalValue()` via `NewExposureViewWithBalance`.
+- **App wires `marketAwarePaper`** as `BalanceReader` for position sizing and exposure calculation.
+- **Autonomous strategy runtime** creates 4 strategies per symbol: EMA crossover + Bollinger reversion + RSI reversion (all with PortfolioSizer) + TrailingTakeProfit.
+
+### Verified
+- Live autonomous trading test with Binance.US data: bought SOL @ $63.90 and BTC @ $61,292.65 using dynamically sized quantities.
+- 3 strategies generating signals simultaneously with proper guard enforcement.
+- Position-aware dispatching prevents double-buying and no-position sells.
+- Sell signals now pass through notional/concentration guards correctly.
+
 ## [2.0.47] - 2026-04-09
 
 ### Added
