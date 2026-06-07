@@ -47,7 +47,7 @@ type PriceAggregator struct {
 // NewPriceAggregator creates a new multi-exchange price aggregator.
 func NewPriceAggregator() *PriceAggregator {
 	return &PriceAggregator{
-		exchanges: make(map[string]exchange.Adapter),
+		exchanges: make(map[string]PriceProvider),
 		health:    make(map[string]bool),
 	}
 }
@@ -178,7 +178,7 @@ func (pa *PriceAggregator) fetchQuotes(ctx context.Context, symbol string) []Pri
 				Price:    price,
 				Time:     time.Now().UTC(),
 			}}
-		}(name, adapter)
+		}(name, provider)
 	}
 
 	var quotes []PriceQuote

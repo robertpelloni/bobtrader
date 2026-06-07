@@ -69,3 +69,7 @@
 ## Repo-wide Documentation
 - [x] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
 - [x] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas
+- [x] Assimilate `TraderAlice/OpenAlice` architectural patterns (ExecutionManager)
+- [x] Assimilate `c9s/bbgo` exchange abstractions (Binance Adapter)
+- [ ] Assimilate `Ekliptor/WolfBot` advanced features
+- [ ] Search and categorize next 48 candidates in `ASSIMILATION_CANDIDATES.md`

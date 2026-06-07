@@ -49,6 +49,7 @@ type App struct {
 	executionRepo     *execution.Repository
 	portfolioTracker  *portfolio.Tracker
 	executionService  *execution.Service
+	executionManager  *execution.Manager
 	strategyRuntime   *strategy.Runtime
 	scheduler         *strategyscheduler.EnhancedScheduler
 	schedulerService  starter
@@ -156,6 +157,11 @@ func New(cfg config.Config) (*App, error) {
 		accountService, registry, pipeline, eventLog, orderStore,
 		executionRepo, portfolioTracker, logger, metricsTracker,
 	)
+
+	// ── Execution Manager ──────────────────────────────────────
+	executionManager := execution.NewManager()
+	paperAdapter := exchangepaper.New()
+	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
 
 	// ── Strategy Runtime ───────────────────────────────────────
 	strategyRuntime := buildAutonomousStrategyRuntime(
@@ -326,6 +332,7 @@ func New(cfg config.Config) (*App, error) {
 		executionRepo:    executionRepo,
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
+		executionManager: executionManager,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,

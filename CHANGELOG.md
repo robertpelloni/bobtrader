@@ -5,7 +5,18 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
-## [2.0.47] - 2026-04-09
+## [2.0.51] - 2026-06-07
+
+### Added
+- **Submodule Assimilation Program Phase 1**
+  - Methodical assimilation of top-tier crypto trading bots initiated.
+  - Initial focus on `TraderAlice/OpenAlice` (architecture) and `c9s/bbgo` (Go kernel).
+  - Implemented `ExecutionManager` interface in `ultratrader-go/internal/trading/execution/manager.go` for coordinating modular execution strategies.
+  - Implemented robust Binance adapter in `ultratrader-go/internal/marketdata/binance/adapter.go` with enhanced error handling.
+  - Created `docs/ASSIMILATION_CANDIDATES.md` tracking top 50 GitHub crypto bots by stars.
+  - Added architectural documentation for OpenAlice and bbgo in `docs/analysis/`.
+
+## [2.0.50] - 2026-06-07
 
 ### Added
 - **Go Ultra-Project Phase 46 Notification System** (`internal/notification/`)

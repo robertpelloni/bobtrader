@@ -32,6 +32,7 @@ Recommended next work for the Go track:
 - deeper exposure/concentration enforcement
 - coordinated shutdown tests
 - eventual backtesting/optimization/exchange-adapter expansion
+- [x] Submodule Assimilation (Phase 1: OpenAlice, bbgo)
 
 
 ## Version 3.0.0 (Current) - Released 2026-01-18
