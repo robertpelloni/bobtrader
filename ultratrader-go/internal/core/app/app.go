@@ -186,6 +186,13 @@ func New(cfg config.Config) (*App, error) {
 		},
 		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
 		GuardNamesProvider: func() []string { return pipeline.Names() },
+		ConfigProvider: func() httpapi.RuntimeConfig {
+			return httpapi.RuntimeConfig{
+				Environment: cfg.Environment,
+				Scheduler: httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
+				Risk: httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
+			}
+		},
 		LatestReportsProvider: func() map[string]reports.Report {
 			latest, err := reportStore.LatestByType()
 			if err != nil {

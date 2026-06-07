@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/app"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
@@ -34,5 +35,19 @@ func main() {
 		log.Fatalf("start app: %v", err)
 	}
 
-	fmt.Printf("UltraTrader Go scaffold initialized. event_log=%s accounts=%d\n", cfg.EventLog.Path, len(cfg.Accounts))
+	addr := application.Address()
+	fmt.Printf("UltraTrader Go running. event_log=%s accounts=%d address=%s\n", cfg.EventLog.Path, len(cfg.Accounts), addr)
+	if addr != "" {
+		fmt.Printf("Dashboard: http://%s/\n", addr)
+	}
+
+	// Block until signal received
+	<-ctx.Done()
+	fmt.Println("\nShutting down...")
+
+	shutCtx, shutCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutCancel()
+	if err := application.Shutdown(shutCtx); err != nil {
+		fmt.Fprintf(os.Stderr, "shutdown error: %v\n", err)
+	}
 }

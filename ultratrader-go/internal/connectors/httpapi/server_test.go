@@ -15,26 +15,93 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 )
 
+func makeTestDeps() Dependencies {
+	return Dependencies{
+		StatusProvider: func() Status {
+			return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1}
+		},
+		PortfolioProvider: func() PortfolioSnapshot {
+			return PortfolioSnapshot{
+				Positions:         []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}},
+				Concentration:     map[string]float64{"BTCUSDT": 1},
+				TotalMarketValue:  32500,
+				TotalUnrealizedPnL: 2500,
+			}
+		},
+		PortfolioSummaryProvider: func() PortfolioSummary {
+			return PortfolioSummary{
+				OpenPositions:     1,
+				Concentration:     map[string]float64{"BTCUSDT": 1},
+				TotalMarketValue:  32500,
+				TotalUnrealizedPnL: 2500,
+			}
+		},
+		OrdersProvider: func() []exchange.Order {
+			return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}}
+		},
+		ExecutionSummaryProvider: func() execution.Summary {
+			return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"}
+		},
+		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics {
+			return ExecutionDiagnostics{
+				Summary: execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"},
+				Metrics: metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1},
+			}
+		},
+		ExposureDiagnosticsProvider: func() ExposureDiagnostics {
+			return ExposureDiagnostics{
+				OpenPositions:      1,
+				Concentration:      map[string]float64{"BTCUSDT": 1},
+				TopConcentration:   "BTCUSDT",
+				TopConcentrationPct: 1,
+				TotalMarketValue:   32500,
+			}
+		},
+		MetricsProvider: func() metrics.Snapshot {
+			return metrics.Snapshot{
+				ExecutionAttempts: 2,
+				ExecutionSuccess:  1,
+				ExecutionBlocked:  1,
+				BlockReasons:      map[string]int{"cooldown": 1},
+			}
+		},
+		GuardNamesProvider: func() []string {
+			return []string{"symbol-whitelist", "max-notional"}
+		},
+		ConfigProvider: func() RuntimeConfig {
+			return RuntimeConfig{
+				Environment: "development",
+				Scheduler:   SchedulerInfo{Mode: "timer", IntervalMS: 1000, Enabled: false},
+				Risk:        RiskInfo{MaxNotional: 1000, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}},
+			}
+		},
+		LatestReportsProvider: func() map[string]reports.Report {
+			return map[string]reports.Report{
+				"startup-summary": {Timestamp: time.Now(), Type: "startup-summary"},
+			}
+		},
+		ReportHistoryProvider: func(reportType string, limit int) []reports.Report {
+			return []reports.Report{
+				{Timestamp: time.Now(), Type: "startup-summary"},
+				{Timestamp: time.Now(), Type: "metrics-snapshot"},
+			}
+		},
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends {
+			return reportinganalysis.RuntimeTrends{
+				MetricsSamples: 2,
+				PortfolioValue: reportinganalysis.NumericTrend{Latest: 32500, Previous: 30000, Delta: 2500},
+			}
+		},
+	}
+}
+
 func TestNewHandlerHealthAndReady(t *testing.T) {
-	h := NewHandler(Dependencies{
-		StatusProvider:               func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
-		PortfolioProvider:            func() PortfolioSnapshot { return PortfolioSnapshot{} },
-		PortfolioSummaryProvider:     func() PortfolioSummary { return PortfolioSummary{} },
-		OrdersProvider:               func() []exchange.Order { return nil },
-		ExecutionSummaryProvider:     func() execution.Summary { return execution.Summary{} },
-		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics { return ExecutionDiagnostics{} },
-		ExposureDiagnosticsProvider:  func() ExposureDiagnostics { return ExposureDiagnostics{} },
-		MetricsProvider:              func() metrics.Snapshot { return metrics.Snapshot{} },
-		GuardNamesProvider:           func() []string { return nil },
-		LatestReportsProvider:        func() map[string]reports.Report { return nil },
-		ReportHistoryProvider:        func(reportType string, limit int) []reports.Report { return nil },
-		ReportTrendsProvider:         func() reportinganalysis.RuntimeTrends { return reportinganalysis.RuntimeTrends{} },
-	})
+	h := NewHandler(makeTestDeps())
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
-	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "UltraTrader Go Dashboard") {
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "UltraTrader Go") {
 		t.Fatalf("dashboard expected 200 and title, got status=%d body=%q", w.Code, w.Body.String())
 	}
 
@@ -53,37 +120,22 @@ func TestNewHandlerHealthAndReady(t *testing.T) {
 	}
 }
 
+func TestConfigEndpoint(t *testing.T) {
+	h := NewHandler(makeTestDeps())
+
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/config", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("config expected 200, got %d", w.Code)
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "development") || !strings.Contains(body, "BTCUSDT") {
+		t.Fatalf("expected config content, got %q", body)
+	}
+}
+
 func TestDiagnosticsEndpoints(t *testing.T) {
-	h := NewHandler(Dependencies{
-		StatusProvider: func() Status { return Status{Name: "ultratrader-go", Ready: true, AccountCount: 1} },
-		PortfolioProvider: func() PortfolioSnapshot {
-			return PortfolioSnapshot{Positions: []portfolio.Position{{Symbol: "BTCUSDT", Quantity: 0.5}}, Concentration: map[string]float64{"BTCUSDT": 1}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
-		},
-		PortfolioSummaryProvider: func() PortfolioSummary {
-			return PortfolioSummary{OpenPositions: 1, Concentration: map[string]float64{"BTCUSDT": 1}, TotalMarketValue: 32500, TotalUnrealizedPnL: 2500}
-		},
-		OrdersProvider:           func() []exchange.Order { return []exchange.Order{{ID: "ord-1", Symbol: "BTCUSDT"}} },
-		ExecutionSummaryProvider: func() execution.Summary { return execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"} },
-		ExecutionDiagnosticsProvider: func() ExecutionDiagnostics {
-			return ExecutionDiagnostics{Summary: execution.Summary{TotalOrders: 1, LastOrderID: "ord-1"}, Metrics: metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1}}
-		},
-		ExposureDiagnosticsProvider: func() ExposureDiagnostics {
-			return ExposureDiagnostics{OpenPositions: 1, Concentration: map[string]float64{"BTCUSDT": 1}, TopConcentration: "BTCUSDT", TopConcentrationPct: 1, TotalMarketValue: 32500}
-		},
-		MetricsProvider: func() metrics.Snapshot {
-			return metrics.Snapshot{ExecutionAttempts: 2, ExecutionSuccess: 1, ExecutionBlocked: 1, BlockReasons: map[string]int{"cooldown": 1}}
-		},
-		GuardNamesProvider: func() []string { return []string{"symbol-whitelist", "max-notional"} },
-		LatestReportsProvider: func() map[string]reports.Report {
-			return map[string]reports.Report{"startup-summary": {Timestamp: time.Now(), Type: "startup-summary"}}
-		},
-		ReportHistoryProvider: func(reportType string, limit int) []reports.Report {
-			return []reports.Report{{Timestamp: time.Now(), Type: "startup-summary"}, {Timestamp: time.Now(), Type: "metrics-snapshot"}}
-		},
-		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends {
-			return reportinganalysis.RuntimeTrends{MetricsSamples: 2, PortfolioValue: reportinganalysis.NumericTrend{Latest: 32500, Previous: 30000, Delta: 2500}}
-		},
-	})
+	h := NewHandler(makeTestDeps())
 
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/portfolio", nil))

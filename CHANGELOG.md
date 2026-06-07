@@ -1209,6 +1209,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
 
 This is my personal trading bot that I decided to make open source. This system is meant to be a foundation/framework for you to build your dream bot!
 
+## [2.0.49] - 2026-06-07
+
+### Added
+- **Professional Dashboard UI/UX overhaul** (`ultratrader-go/internal/connectors/httpapi/dashboard.go`):
+  - Sidebar navigation with 8 pages: Overview, Portfolio, Orders, Risk Guards, Charts, Reports, Configuration, Quick Start.
+  - Color-coded KPI cards with trend deltas (green/red) for key metrics.
+  - Interactive portfolio table with unrealized/realized PnL coloring.
+  - Visual guard status panel with pass/block indicators and dot lighting.
+  - Concentration distribution bars with color thresholds (cyan/orange/red).
+  - Responsive layout with mobile breakpoints.
+  - Live status indicator with pulsing dot.
+  - Auto-refresh with configurable interval (2s/5s/10s/30s).
+  - Quick Start guide with step-by-step instructions and API reference.
+  - Configuration viewer showing runtime settings without secrets.
+  - Better SVG charts with grid lines, axis labels, and unit annotations.
+  - Animated bar charts for block reasons and concentration.
+- **`/api/config` endpoint** (`ultratrader-go/internal/connectors/httpapi/server.go`):
+  - Returns runtime configuration (environment, scheduler, risk settings) without exposing secrets.
+  - New `RuntimeConfig`, `SchedulerInfo`, `RiskInfo` types.
+  - `ConfigProvider` dependency wired in `app.go`.
+- **Graceful shutdown with signal blocking** (`ultratrader-go/cmd/ultratrader/main.go`):
+  - Main now blocks on `<-ctx.Done()` instead of exiting immediately.
+  - Prints dashboard URL on startup.
+  - Clean 5-second shutdown on Ctrl+C.
+
+### Changed
+- Dashboard HTML expanded from ~12KB to ~46KB with full professional layout.
+- Server test refactored with `makeTestDeps()` helper to reduce duplication.
+- Added `TestConfigEndpoint` test case.
+
 ## [2.0.48] - 2026-01-18
 ### Added
 - Ported Portfolio Rebalancer logic to Go (`ultratrader-go/internal/trading/rebalancer`).
