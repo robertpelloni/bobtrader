@@ -21,20 +21,18 @@ import (
 // 4. If price drops stopLossPct% below entry, cut losses (stop-loss)
 // 5. If position is held longer than maxHoldDuration, sell (time-based exit)
 type TrailingTakeProfit struct {
-	accountID   string
-	symbol      string
-	quantity    string
-	activatePct float64       // profit % above entry to activate trailing
-	trailPct    float64       // trail gap % below peak
-	stopLossPct float64       // max loss % before cutting (0 = disabled)
-	maxHold     time.Duration // max time to hold a position (0 = disabled)
-
-	portfolio PositionReader
-	feed      marketdata.Feed
-
-	entryPrice    float64
+	accountID    string
+	symbol       string
+	quantity     string
+	activatePct  float64       // profit % above entry to activate trailing
+	trailPct     float64       // trail gap % below peak
+	stopLossPct  float64       // max loss % before cutting (0 = disabled)
+	maxHold      time.Duration // max time to hold a position (0 = disabled)
+	portfolio    PositionReader
+	feed         marketdata.Feed
+	entryPrice   float64
 	highWaterMark float64
-	activated     bool
+	activated    bool
 	positionKnown bool
 	positionStart time.Time // when we first detected the position
 }
@@ -46,11 +44,37 @@ type PositionReader interface {
 	AverageEntryPrice(symbol string) float64
 }
 
+// TrailingOption configures a TrailingTakeProfit strategy.
+type TrailingOption func(*TrailingTakeProfit)
+
+// WithStopLossPct sets the stop-loss percentage. Set to 0 to disable.
+func WithStopLossPct(pct float64) TrailingOption {
+	return func(s *TrailingTakeProfit) { s.stopLossPct = pct }
+}
+
+// WithMaxHoldMinutes sets the maximum hold duration in minutes. Set to 0 to disable.
+func WithMaxHoldMinutes(minutes int) TrailingOption {
+	return func(s *TrailingTakeProfit) {
+		if minutes > 0 {
+			s.maxHold = time.Duration(minutes) * time.Minute
+		}
+	}
+}
+
+// WithPortfolioEntry sets the portfolio reader for entry price lookup.
+func WithPortfolioEntry(portfolio PositionReader) TrailingOption {
+	return func(s *TrailingTakeProfit) { s.portfolio = portfolio }
+}
+
+// WithFeed sets the market data feed for price lookups.
+func WithFeed(feed marketdata.Feed) TrailingOption {
+	return func(s *TrailingTakeProfit) { s.feed = feed }
+}
+
 func NewTrailingTakeProfit(
 	accountID, symbol, quantity string,
 	activatePct, trailPct float64,
-	portfolio PositionReader,
-	feed marketdata.Feed,
+	opts ...TrailingOption,
 ) *TrailingTakeProfit {
 	if activatePct <= 0 {
 		activatePct = 1.0
@@ -58,28 +82,18 @@ func NewTrailingTakeProfit(
 	if trailPct <= 0 {
 		trailPct = 0.3
 	}
-	return &TrailingTakeProfit{
+	s := &TrailingTakeProfit{
 		accountID:   accountID,
 		symbol:      symbol,
 		quantity:    quantity,
 		activatePct: activatePct,
 		trailPct:    trailPct,
 		stopLossPct: 3.0,
-		maxHold:     5 * time.Minute, // default: force exit after 5 minutes
-		portfolio:   portfolio,
-		feed:        feed,
+		maxHold:     5 * time.Minute,
 	}
-}
-
-// WithStopLoss sets the stop-loss percentage. Set to 0 to disable.
-func (s *TrailingTakeProfit) WithStopLoss(pct float64) *TrailingTakeProfit {
-	s.stopLossPct = pct
-	return s
-}
-
-// WithMaxHold sets the maximum hold duration. Set to 0 to disable.
-func (s *TrailingTakeProfit) WithMaxHold(d time.Duration) *TrailingTakeProfit {
-	s.maxHold = d
+	for _, opt := range opts {
+		opt(s)
+	}
 	return s
 }
 
@@ -139,9 +153,11 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 			}
 			reason := "max-hold-exit"
 			if profitPct > 0 {
-				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (+%.2f%% from entry %.2f)", s.maxHold.Seconds(), price, profitPct, s.entryPrice)
+				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (+%.2f%% from entry %.2f)",
+					s.maxHold.Seconds(), price, profitPct, s.entryPrice)
 			} else {
-				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (%.2f%% from entry %.2f)", s.maxHold.Seconds(), price, profitPct, s.entryPrice)
+				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (%.2f%% from entry %.2f)",
+					s.maxHold.Seconds(), price, profitPct, s.entryPrice)
 			}
 			s.resetState()
 			return []strategy.Signal{{
@@ -202,7 +218,8 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
 			Action:    "sell",
-			Reason:    fmt.Sprintf("trailing TP: price %.2f <= trail %.2f (entry %.2f, high %.2f)", price, trailStop, s.entryPrice, s.highWaterMark),
+			Reason:    fmt.Sprintf("trailing TP: price %.2f <= trail %.2f (entry %.2f, high %.2f)",
+				price, trailStop, s.entryPrice, s.highWaterMark),
 			Quantity:  qty,
 			OrderType: "market",
 		}}, nil

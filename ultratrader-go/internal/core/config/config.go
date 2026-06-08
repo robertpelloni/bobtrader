@@ -17,18 +17,23 @@ type Config struct {
 	Server      ServerConfig    `json:"server"`
 	Scheduler   SchedulerConfig `json:"scheduler"`
 	Risk        RiskConfig      `json:"risk"`
+	Strategy    StrategyConfig  `json:"strategy"`
+	MarketData  MarketDataConfig `json:"market_data"`
 	Accounts    []AccountConfig `json:"accounts"`
 }
 
 type EventLogConfig struct {
 	Path string `json:"path"`
 }
+
 type SnapshotConfig struct {
 	Path string `json:"path"`
 }
+
 type OrderConfig struct {
 	Path string `json:"path"`
 }
+
 type ReportConfig struct {
 	Path string `json:"path"`
 }
@@ -50,14 +55,35 @@ type SchedulerConfig struct {
 }
 
 type RiskConfig struct {
-	MaxNotional           float64  `json:"max_notional"`
-	MaxNotionalPerSymbol  float64  `json:"max_notional_per_symbol"`
-	AllowedSymbols        []string `json:"allowed_symbols"`
-	CooldownMS            int      `json:"cooldown_ms"`
-	DuplicateWindowMS     int      `json:"duplicate_window_ms"`
-	DuplicateSideWindowMS int      `json:"duplicate_side_window_ms"`
-	MaxOpenPositions      int      `json:"max_open_positions"`
-	MaxConcentrationPct   float64  `json:"max_concentration_pct"`
+	MaxNotional            float64  `json:"max_notional"`
+	MaxNotionalPerSymbol   float64  `json:"max_notional_per_symbol"`
+	AllowedSymbols         []string `json:"allowed_symbols"`
+	CooldownMS             int      `json:"cooldown_ms"`
+	DuplicateWindowMS      int      `json:"duplicate_window_ms"`
+	DuplicateSideWindowMS  int      `json:"duplicate_side_window_ms"`
+	MaxOpenPositions       int      `json:"max_open_positions"`
+	MaxConcentrationPct    float64  `json:"max_concentration_pct"`
+}
+
+type StrategyConfig struct {
+	RiskPct                float64 `json:"risk_pct"`
+	MaxNotional            float64 `json:"max_notional"`
+	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
+	TrailingGapPct         float64 `json:"trailing_gap_pct"`
+	TrailingStopLossPct    float64 `json:"trailing_stop_loss_pct"`
+	TrailingMaxHoldMinutes int     `json:"trailing_max_hold_minutes"`
+	BollingerPeriod        int     `json:"bollinger_period"`
+	BollingerStdDev        float64 `json:"bollinger_std_dev"`
+	RSIPeriod              int     `json:"rsi_period"`
+	RSIOversold            float64 `json:"rsi_oversold"`
+	RSIOverbought          float64 `json:"rsi_overbought"`
+	EMAFast                int     `json:"ema_fast"`
+	EMASlow                int     `json:"ema_slow"`
+}
+
+type MarketDataConfig struct {
+	Source         string  `json:"source"` // "rest" or "websocket"
+	InitialBalance float64 `json:"initial_balance"`
 }
 
 type AccountConfig struct {
@@ -81,8 +107,42 @@ func Default() Config {
 		Logging:     LoggingConfig{Path: filepath.Join("data", "logs", "app.jsonl"), Stdout: true},
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
 		Scheduler:   SchedulerConfig{Enabled: false, Mode: "timer", IntervalMS: 1000},
-		Risk:        RiskConfig{MaxNotional: 1000, MaxNotionalPerSymbol: 0, AllowedSymbols: []string{"BTCUSDT", "ETHUSDT"}, CooldownMS: 0, DuplicateWindowMS: 0, DuplicateSideWindowMS: 0, MaxOpenPositions: 0, MaxConcentrationPct: 0},
-		Accounts:    []AccountConfig{{ID: "paper-main", Name: "Paper Main", Enabled: true, Exchange: "paper", Capabilities: []string{"spot", "paper", "candles", "balances", "orders"}}},
+		Risk: RiskConfig{
+			MaxNotional:          1000,
+			MaxNotionalPerSymbol: 0,
+			AllowedSymbols:       []string{"BTCUSDT", "ETHUSDT"},
+			CooldownMS:           0,
+			DuplicateWindowMS:    0,
+			DuplicateSideWindowMS: 0,
+			MaxOpenPositions:     0,
+			MaxConcentrationPct:  0,
+		},
+		Strategy: StrategyConfig{
+			RiskPct:                2.0,
+			MaxNotional:            1000,
+			TrailingActivatePct:    1.0,
+			TrailingGapPct:         0.3,
+			TrailingStopLossPct:    3.0,
+			TrailingMaxHoldMinutes: 5,
+			BollingerPeriod:        20,
+			BollingerStdDev:        2.0,
+			RSIPeriod:              14,
+			RSIOversold:            35,
+			RSIOverbought:          65,
+			EMAFast:                9,
+			EMASlow:                21,
+		},
+		MarketData: MarketDataConfig{
+			Source:         "rest",
+			InitialBalance: 10000,
+		},
+		Accounts: []AccountConfig{{
+			ID:           "paper-main",
+			Name:         "Paper Main",
+			Enabled:      true,
+			Exchange:     "paper",
+			Capabilities: []string{"spot", "paper", "candles", "balances", "orders"},
+		}},
 	}
 }
 
@@ -134,6 +194,53 @@ func Load(path string) (Config, error) {
 	}
 	if len(cfg.Accounts) == 0 {
 		cfg.Accounts = defaults.Accounts
+	}
+	// Strategy defaults
+	if cfg.Strategy.RiskPct == 0 {
+		cfg.Strategy.RiskPct = defaults.Strategy.RiskPct
+	}
+	if cfg.Strategy.MaxNotional == 0 {
+		cfg.Strategy.MaxNotional = defaults.Strategy.MaxNotional
+	}
+	if cfg.Strategy.TrailingActivatePct == 0 {
+		cfg.Strategy.TrailingActivatePct = defaults.Strategy.TrailingActivatePct
+	}
+	if cfg.Strategy.TrailingGapPct == 0 {
+		cfg.Strategy.TrailingGapPct = defaults.Strategy.TrailingGapPct
+	}
+	if cfg.Strategy.TrailingStopLossPct == 0 {
+		cfg.Strategy.TrailingStopLossPct = defaults.Strategy.TrailingStopLossPct
+	}
+	if cfg.Strategy.TrailingMaxHoldMinutes == 0 {
+		cfg.Strategy.TrailingMaxHoldMinutes = defaults.Strategy.TrailingMaxHoldMinutes
+	}
+	if cfg.Strategy.BollingerPeriod == 0 {
+		cfg.Strategy.BollingerPeriod = defaults.Strategy.BollingerPeriod
+	}
+	if cfg.Strategy.BollingerStdDev == 0 {
+		cfg.Strategy.BollingerStdDev = defaults.Strategy.BollingerStdDev
+	}
+	if cfg.Strategy.RSIPeriod == 0 {
+		cfg.Strategy.RSIPeriod = defaults.Strategy.RSIPeriod
+	}
+	if cfg.Strategy.RSIOversold == 0 {
+		cfg.Strategy.RSIOversold = defaults.Strategy.RSIOversold
+	}
+	if cfg.Strategy.RSIOverbought == 0 {
+		cfg.Strategy.RSIOverbought = defaults.Strategy.RSIOverbought
+	}
+	if cfg.Strategy.EMAFast == 0 {
+		cfg.Strategy.EMAFast = defaults.Strategy.EMAFast
+	}
+	if cfg.Strategy.EMASlow == 0 {
+		cfg.Strategy.EMASlow = defaults.Strategy.EMASlow
+	}
+	// MarketData defaults
+	if cfg.MarketData.Source == "" {
+		cfg.MarketData.Source = defaults.MarketData.Source
+	}
+	if cfg.MarketData.InitialBalance == 0 {
+		cfg.MarketData.InitialBalance = defaults.MarketData.InitialBalance
 	}
 	return cfg, nil
 }
