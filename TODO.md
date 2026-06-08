@@ -74,4 +74,5 @@
 - [x] Assimilate `Ekliptor/WolfBot` advanced features (WolfBotBollingerStrategy)
 - [x] Assimilate `ccxt/ccxt` exchange abstraction realism (TypedError mapping)
 - [x] Assimilate `ctubio/Krypto-trading-bot` market-making (initial MarketMaker)
-- [ ] Search and categorize next 45 candidates in `ASSIMILATION_CANDIDATES.md`
+- [x] Assimilate `whittlem/pycryptobot` risk management (DynamicTSL, ProfitBank)
+- [ ] Search and categorize next 44 candidates in `ASSIMILATION_CANDIDATES.md`
