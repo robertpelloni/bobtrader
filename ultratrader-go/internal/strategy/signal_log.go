@@ -1,6 +1,9 @@
 package strategy
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -17,38 +20,43 @@ const (
 
 // LoggedSignal records a strategy signal and its resolution.
 type LoggedSignal struct {
-	Strategy  string        `json:"strategy"`
-	Symbol    string        `json:"symbol"`
-	Action    string        `json:"action"`
-	Quantity  string        `json:"quantity"`
-	Price     string        `json:"price,omitempty"`
-	Reason    string        `json:"reason,omitempty"`
-	Outcome   SignalOutcome `json:"outcome"`
-	BlockedBy string        `json:"blocked_by,omitempty"`
-	FillPrice string        `json:"fill_price,omitempty"`
-	OrderID   string        `json:"order_id,omitempty"`
-	Timestamp time.Time     `json:"timestamp"`
+	Strategy   string        `json:"strategy"`
+	Symbol     string        `json:"symbol"`
+	Action     string        `json:"action"`
+	Quantity   string        `json:"quantity"`
+	Price      string        `json:"price,omitempty"`
+	Reason     string        `json:"reason,omitempty"`
+	Outcome    SignalOutcome `json:"outcome"`
+	BlockedBy  string        `json:"blocked_by,omitempty"`
+	FillPrice  string        `json:"fill_price,omitempty"`
+	OrderID    string        `json:"order_id,omitempty"`
+	PnL        float64       `json:"pnl,omitempty"`         // realized PnL for sell trades
+	EntryPrice float64       `json:"entry_price,omitempty"` // average entry price for sell trades
+	Timestamp  time.Time     `json:"timestamp"`
 }
 
 // StrategyStats tracks per-strategy performance.
 type StrategyStats struct {
-	Name         string  `json:"name"`
-	SignalsTotal int     `json:"signals_total"`
-	Executed     int     `json:"executed"`
-	Blocked      int     `json:"blocked"`
-	Skipped      int     `json:"skipped"`
-	WinTrades    int     `json:"win_trades"`
-	LossTrades   int     `json:"loss_trades"`
-	TotalPnL     float64 `json:"total_pnl"`
-	WinRate      float64 `json:"win_rate"`
-	SuccessRate  float64 `json:"success_rate"` // executed / total signals
+	Name        string  `json:"name"`
+	SignalsTotal int    `json:"signals_total"`
+	Executed    int     `json:"executed"`
+	Blocked     int     `json:"blocked"`
+	Skipped     int     `json:"skipped"`
+	WinTrades   int     `json:"win_trades"`
+	LossTrades  int     `json:"loss_trades"`
+	TotalPnL    float64 `json:"total_pnl"`
+	WinRate     float64 `json:"win_rate"`
+	SuccessRate float64 `json:"success_rate"` // executed / total signals
 }
 
 // SignalLog records all strategy signals and their outcomes.
 type SignalLog struct {
-	mu      sync.Mutex
-	signals []LoggedSignal
-	maxSize int
+	mu       sync.Mutex
+	signals  []LoggedSignal
+	maxSize  int
+	persistPath string
+	persistMu   sync.Mutex
+	lastPersist int // index of last persisted signal
 }
 
 // NewSignalLog creates a signal log with bounded history.
@@ -62,6 +70,90 @@ func NewSignalLog(maxSize int) *SignalLog {
 	}
 }
 
+// EnablePersistence enables JSONL file persistence for the signal log.
+// Signals are appended to the file on each Flush call.
+func (l *SignalLog) EnablePersistence(path string) error {
+	l.persistMu.Lock()
+	defer l.persistMu.Unlock()
+
+	// Create directory if needed
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	l.persistPath = path
+	l.lastPersist = 0
+
+	// Create or append to the file
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	f.Close()
+
+	return nil
+}
+
+// Flush writes all un-persisted signals to the JSONL file.
+func (l *SignalLog) Flush() error {
+	l.persistMu.Lock()
+	if l.persistPath == "" {
+		l.persistMu.Unlock()
+		return nil
+	}
+	path := l.persistPath
+	l.persistMu.Unlock()
+
+	l.mu.Lock()
+	start := l.lastPersist
+	if start < 0 {
+		start = 0
+	}
+	toFlush := make([]LoggedSignal, len(l.signals)-start)
+	copy(toFlush, l.signals[start:])
+	l.lastPersist = len(l.signals)
+	l.mu.Unlock()
+
+	if len(toFlush) == 0 {
+		return nil
+	}
+
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	for _, s := range toFlush {
+		if err := enc.Encode(s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// StartAutoFlush starts a goroutine that periodically flushes signals to disk.
+// Returns a stop function.
+func (l *SignalLog) StartAutoFlush(interval time.Duration) (stop func()) {
+	done := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				l.Flush()
+			case <-done:
+				l.Flush() // final flush on stop
+				return
+			}
+		}
+	}()
+	return func() { close(done) }
+}
+
 // Record adds a signal to the log.
 func (l *SignalLog) Record(s LoggedSignal) {
 	l.mu.Lock()
@@ -72,7 +164,14 @@ func (l *SignalLog) Record(s LoggedSignal) {
 	l.signals = append(l.signals, s)
 	// Evict oldest if over capacity
 	if len(l.signals) > l.maxSize {
-		l.signals = l.signals[len(l.signals)-l.maxSize:]
+		evicted := len(l.signals) - l.maxSize
+		l.signals = l.signals[evicted:]
+		l.persistMu.Lock()
+		l.lastPersist -= evicted
+		if l.lastPersist < 0 {
+			l.lastPersist = 0
+		}
+		l.persistMu.Unlock()
 	}
 }
 
@@ -92,7 +191,6 @@ func (l *SignalLog) Recent(n int) []LoggedSignal {
 func (l *SignalLog) StatsByStrategy() map[string]StrategyStats {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-
 	stats := make(map[string]StrategyStats)
 	for _, s := range l.signals {
 		st := stats[s.Strategy]
@@ -101,6 +199,14 @@ func (l *SignalLog) StatsByStrategy() map[string]StrategyStats {
 		switch s.Outcome {
 		case OutcomeExecuted:
 			st.Executed++
+			if s.Action == "sell" {
+				st.TotalPnL += s.PnL
+				if s.PnL >= 0 {
+					st.WinTrades++
+				} else {
+					st.LossTrades++
+				}
+			}
 		case OutcomeBlocked:
 			st.Blocked++
 		case OutcomeSkipped:
@@ -108,7 +214,6 @@ func (l *SignalLog) StatsByStrategy() map[string]StrategyStats {
 		}
 		stats[s.Strategy] = st
 	}
-
 	// Compute derived rates
 	for name, st := range stats {
 		if st.SignalsTotal > 0 {

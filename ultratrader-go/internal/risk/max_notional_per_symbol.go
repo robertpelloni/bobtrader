@@ -27,6 +27,10 @@ func (g MaxNotionalPerSymbolGuard) Check(_ context.Context, _ account.Account, i
 	if g.Limit <= 0 || g.Portfolio == nil {
 		return nil
 	}
+	// Sells reduce exposure, so skip notional checks
+	if intent.Side == SellSide {
+		return nil
+	}
 	symbol := strings.ToUpper(strings.TrimSpace(intent.Symbol))
 	next := g.Portfolio.CurrentValue(symbol) + intent.Notional
 	if next > g.Limit {

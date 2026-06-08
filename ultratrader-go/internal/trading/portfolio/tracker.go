@@ -101,6 +101,16 @@ func (t *Tracker) PositionQuantity(symbol string) float64 {
 	return st.quantity
 }
 
+func (t *Tracker) AverageEntryPrice(symbol string) float64 {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	st, ok := t.positions[strings.ToUpper(strings.TrimSpace(symbol))]
+	if !ok {
+		return 0
+	}
+	return st.avgEntry
+}
+
 func (t *Tracker) OpenPositionCount() int {
 	t.mu.Lock()
 	defer t.mu.Unlock()

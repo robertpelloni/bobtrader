@@ -1,13 +1,13 @@
 {
-  "environment": "autonomous-paper-trading",
+  "environment": "autonomous-paper-websocket",
   "server": {
     "enabled": true,
-    "address": "0.0.0.0:8300"
+    "address": "0.0.0.0:8301"
   },
   "scheduler": {
     "enabled": true,
     "mode": "stream",
-    "interval_ms": 5000
+    "interval_ms": 1000
   },
   "risk": {
     "max_notional": 500,
@@ -35,13 +35,13 @@
     "ema_slow": 21
   },
   "market_data": {
-    "source": "rest",
+    "source": "websocket",
     "initial_balance": 10000
   },
   "accounts": [
     {
       "id": "paper-main",
-      "name": "Paper Trading (Live Binance Data)",
+      "name": "Paper Trading (Live Binance WS Data)",
       "enabled": true,
       "exchange": "paper-market-aware",
       "capabilities": ["spot", "paper", "candles", "balances", "orders"]

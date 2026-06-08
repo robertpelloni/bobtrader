@@ -1083,7 +1083,7 @@ function renderConfig() {
 // ─── Main Data Fetch ──────────────────────────────────────────
 async function refreshDashboard() {
   try {
-    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist] = await Promise.all([
+    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config] = await Promise.all([
       fetchJson('/api/status'),
       fetchJson('/api/portfolio'),
       fetchJson('/api/portfolio-summary'),
@@ -1098,7 +1098,9 @@ async function refreshDashboard() {
       fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20')
     ]);
 
-    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist };
+    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist,
+ configRisk: config.risk, configScheduler: config.scheduler, configStrategy: config.strategy, configMarketData: config.market_data
+ };
 
     // Status indicator
     const tag = document.getElementById('status-tag');

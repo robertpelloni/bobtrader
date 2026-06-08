@@ -10,8 +10,17 @@ import (
 type OrderIntent struct {
 	AccountID string
 	Symbol    string
+	Side      OrderSide
 	Notional  float64
+	IsExit    bool // true for position-closing orders (exits bypass some guards)
 }
+
+type OrderSide string
+
+const (
+	BuySide  OrderSide = "buy"
+	SellSide OrderSide = "sell"
+)
 
 type Guard interface {
 	Name() string

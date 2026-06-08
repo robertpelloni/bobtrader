@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
@@ -32,7 +33,6 @@ import (
 )
 
 type starter interface{ Start(context.Context) }
-
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
@@ -56,6 +56,7 @@ type App struct {
 	cycleRunner       cycleRunner
 	pipeline          *risk.Pipeline
 	signalLog         *strategy.SignalLog
+	signalLogStop     func()
 	marketAwarePaper  *exchangepaper.MarketAwareAdapter
 	httpHandler       http.Handler
 	httpRuntime       *httpapi.Runtime
@@ -71,14 +72,17 @@ func New(cfg config.Config) (*App, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create event log: %w", err)
 	}
+
 	snapshotStore, err := snapshot.NewStore(cfg.Snapshots.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create snapshot store: %w", err)
 	}
+
 	orderStore, err := orders.NewStore(cfg.Orders.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create order store: %w", err)
 	}
+
 	reportStore, err := reports.NewStore(cfg.Reports.Path)
 	if err != nil {
 		return nil, fmt.Errorf("create report store: %w", err)
@@ -98,14 +102,10 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Exchange Registry ──────────────────────────────────────
 	registry := exchange.NewRegistry()
-	if err := registry.Register("paper", func() exchange.Adapter {
-		return exchangepaper.New()
-	}); err != nil {
+	if err := registry.Register("paper", func() exchange.Adapter { return exchangepaper.New() }); err != nil {
 		return nil, fmt.Errorf("register paper exchange: %w", err)
 	}
-	if err := registry.Register("binance", func() exchange.Adapter {
-		return binance.New(binance.Config{Testnet: true})
-	}); err != nil {
+	if err := registry.Register("binance", func() exchange.Adapter { return binance.New(binance.Config{Testnet: true}) }); err != nil {
 		return nil, fmt.Errorf("register binance exchange: %w", err)
 	}
 	if err := registry.RegisterAccountFactory("binance", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
@@ -122,12 +122,12 @@ func New(cfg config.Config) (*App, error) {
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
 
 	// ── Market-Aware Paper Adapter ─────────────────────────────
-	// This adapter fills simulated orders at real market prices
-	initialBalance := 10000.0 // $10,000 starting USDT
+	initialBalance := cfg.MarketData.InitialBalance
+	if initialBalance <= 0 {
+		initialBalance = 10000
+	}
 	marketAwarePaper := exchangepaper.NewMarketAwareAdapter(marketDataFeed, initialBalance)
-	if err := registry.Register("paper-market-aware", func() exchange.Adapter {
-		return marketAwarePaper
-	}); err != nil {
+	if err := registry.Register("paper-market-aware", func() exchange.Adapter { return marketAwarePaper }); err != nil {
 		return nil, fmt.Errorf("register market-aware paper exchange: %w", err)
 	}
 
@@ -135,7 +135,7 @@ func New(cfg config.Config) (*App, error) {
 	metricsTracker := metrics.NewTracker()
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
-	exposureView := portfolio.NewExposureView(portfolioTracker, marketDataFeed)
+	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
@@ -144,7 +144,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxNotionalPerSymbolGuard(cfg.Risk.MaxNotionalPerSymbol, exposureView),
 		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
 		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
-		risk.NewDuplicateSideGuard(executionRepo, exchange.Buy, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
+		risk.NewDuplicateSideGuard(executionRepo, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
@@ -160,11 +160,15 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Strategy Signal Log ────────────────────────────────────
 	signalLog := strategy.NewSignalLog(10000)
+	if err := signalLog.EnablePersistence(filepath.Join("data", "signals", "signals.jsonl")); err != nil {
+		logger.Info("signal log persistence disabled", map[string]any{"error": err.Error()})
+	}
+	signalLogStop := signalLog.StartAutoFlush(30 * time.Second)
 
 	// ── Execution Service ──────────────────────────────────────
 	executionService := execution.NewService(
-		accountService, registry, pipeline, eventLog, orderStore,
-		executionRepo, portfolioTracker, logger, metricsTracker,
+		accountService, registry, pipeline, eventLog,
+		orderStore, executionRepo, portfolioTracker, logger, metricsTracker,
 	)
 
 	// ── Execution Manager ──────────────────────────────────────
@@ -261,12 +265,8 @@ func New(cfg config.Config) (*App, error) {
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
-		OrdersProvider: func() []exchange.Order {
-			return executionRepo.List()
-		},
-		ExecutionSummaryProvider: func() execution.Summary {
-			return executionRepo.Summary()
-		},
+		OrdersProvider: func() []exchange.Order { return executionRepo.List() },
+		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
 			return httpapi.ExecutionDiagnostics{
 				Summary: executionRepo.Summary(),
@@ -276,26 +276,24 @@ func New(cfg config.Config) (*App, error) {
 		ExposureDiagnosticsProvider: func() httpapi.ExposureDiagnostics {
 			topSymbol, topPct := topConcentration()
 			return httpapi.ExposureDiagnostics{
-				OpenPositions:       portfolioTracker.OpenPositionCount(),
-				Concentration:       currentConcentration(),
-				TopConcentration:    topSymbol,
-				TopConcentrationPct: topPct,
-				TotalMarketValue:    portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:    portfolioTracker.TotalRealizedPnL(),
-				TotalUnrealizedPnL:  portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+				OpenPositions:        portfolioTracker.OpenPositionCount(),
+				Concentration:        currentConcentration(),
+				TopConcentration:     topSymbol,
+				TopConcentrationPct:  topPct,
+				TotalMarketValue:     portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:     portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL:   portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
-		MetricsProvider: func() metrics.Snapshot {
-			return metricsTracker.Snapshot()
-		},
-		GuardNamesProvider: func() []string {
-			return pipeline.Names()
-		},
+		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
+		GuardNamesProvider: func() []string { return pipeline.Names() },
 		ConfigProvider: func() httpapi.RuntimeConfig {
 			return httpapi.RuntimeConfig{
 				Environment: cfg.Environment,
 				Scheduler:   httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
 				Risk:        httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
+				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow},
+				MarketData:  httpapi.MarketDataInfo{Source: cfg.MarketData.Source, InitialBalance: cfg.MarketData.InitialBalance},
 			}
 		},
 		LatestReportsProvider: func() map[string]reports.Report {
@@ -312,15 +310,9 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return history
 		},
-		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends {
-			return buildReportTrends()
-		},
-		SignalLogProvider: func() []strategy.LoggedSignal {
-			return signalLog.Recent(200)
-		},
-		StrategyStatsProvider: func() map[string]strategy.StrategyStats {
-			return signalLog.StatsByStrategy()
-		},
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
+		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
+		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
 	})
 
 	var runtime *httpapi.Runtime
@@ -349,6 +341,7 @@ func New(cfg config.Config) (*App, error) {
 		cycleRunner:      cycleRunner,
 		pipeline:         pipeline,
 		signalLog:        signalLog,
+		signalLogStop:   signalLogStop,
 		marketAwarePaper: marketAwarePaper,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
@@ -356,15 +349,23 @@ func New(cfg config.Config) (*App, error) {
 }
 
 // buildMarketDataFeed creates the appropriate market data feed based on config.
-// If any account uses Binance or paper-market-aware, we use Binance real data.
-// Otherwise we fall back to the deterministic paper feed.
+// Supports "rest" (default) and "websocket" sources for real Binance data.
+// Falls back to the deterministic paper feed if no Binance accounts are configured.
 func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.StreamFeed {
 	for _, acct := range cfg.Accounts {
 		if acct.Exchange == "binance" || acct.Exchange == "paper-market-aware" {
 			adapter := binance.New(binance.Config{Testnet: acct.Testnet})
-			feed := marketdatabinance.NewFeed(adapter)
-			logger.Info("using Binance real market data feed", map[string]any{"testnet": acct.Testnet})
-			return feed
+
+			switch cfg.MarketData.Source {
+			case "websocket", "ws":
+				wsFeed := marketdatabinance.NewStreamFeed(adapter)
+				logger.Info("using Binance WebSocket market data feed", map[string]any{"testnet": acct.Testnet})
+				return wsFeed
+			default:
+				restFeed := marketdatabinance.NewFeed(adapter)
+				logger.Info("using Binance REST market data feed", map[string]any{"testnet": acct.Testnet})
+				return restFeed
+			}
 		}
 	}
 	logger.Info("using paper market data feed", nil)
@@ -374,11 +375,10 @@ func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.S
 // buildAutonomousStrategyRuntime creates a multi-strategy runtime for
 // autonomous trading. Each symbol gets:
 //   - Entry strategies: EMA crossover, Bollinger band reversion, RSI reversion
-//   - Exit strategy: Trailing take-profit
+//   - Exit strategy: Trailing take-profit (configurable activation, trail, stop-loss, max hold)
 //   - Position sizing: Portfolio-aware sizing based on balance
 //
-// Entry strategies are wrapped with PortfolioSizer for dynamic sizing.
-// The trailing take-profit handles all exits.
+// All strategy parameters are driven from cfg.Strategy (config file or defaults).
 func buildAutonomousStrategyRuntime(
 	cfg config.Config,
 	accountID string,
@@ -391,9 +391,8 @@ func buildAutonomousStrategyRuntime(
 		symbols = []string{"BTCUSDT", "ETHUSDT"}
 	}
 
-	// Risk parameters from config
-	riskPct := 2.0          // 2% of balance per trade
-	maxNotional := 1000.0   // max $1000 per trade
+	sc := cfg.Strategy
+	maxNotional := sc.MaxNotional
 	if cfg.Risk.MaxNotional > 0 && cfg.Risk.MaxNotional < maxNotional {
 		maxNotional = cfg.Risk.MaxNotional
 	}
@@ -401,56 +400,59 @@ func buildAutonomousStrategyRuntime(
 	var strategies []strategy.Strategy
 
 	switch cfg.Scheduler.Mode {
-	case "stream", "": // Default to stream for autonomous trading
+	case "stream", "":
+		// Default to stream for autonomous trading
 		for _, symbol := range symbols {
-			// ── Entry Strategy 1: EMA Crossover (9/21) ──────────
-			// Trend-following: buys on golden cross, sells on death cross
-			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", 9, 21)
-			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			// ── Entry Strategy 1: EMA Crossover ──────────
+			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
+			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, emaSized)
 
-			// ── Entry Strategy 2: Bollinger Band Reversion (20, 2.0) ─
-			// Mean-reversion: buys at lower band, sells at upper band
-			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", 20, 2.0)
-			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			// ── Entry Strategy 2: Bollinger Band Reversion ──
+			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
+			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, bbSized)
 
-			// ── Entry Strategy 3: RSI Reversion (14, 30/70) ─────
-			// Mean-reversion: buys oversold, sells overbought
-			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", 14, 30, 70)
-			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
+			// ── Entry Strategy 3: RSI Reversion ──────────
+			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
+			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, rsiSized)
 
-			// ── Exit Strategy: Trailing Take Profit ─────────────
-			// Activates at 2% profit, trails with 0.5% gap
-			// Sells entire position when price drops below trail
+			// ── Exit Strategy: Trailing Take Profit ──────
 			trailingTP := strategydemo.NewTrailingTakeProfit(
 				accountID, symbol, "0.001",
-				2.0,  // activate at 2% profit
-				0.5,  // trail 0.5% below high
-				portfolioTracker, feed,
+				sc.TrailingActivatePct,
+				sc.TrailingGapPct,
+				strategydemo.WithStopLossPct(sc.TrailingStopLossPct),
+				strategydemo.WithMaxHoldMinutes(sc.TrailingMaxHoldMinutes),
+				strategydemo.WithPortfolioEntry(portfolioTracker),
+				strategydemo.WithFeed(feed),
 			)
 			strategies = append(strategies, trailingTP)
 		}
 
 	case "candle-stream":
 		for _, symbol := range symbols {
-			// Candle-based entry strategies
 			strategies = append(strategies, strategydemo.NewMACDCrossover(accountID, symbol, "0.001", 12, 26, 9))
-			strategies = append(strategies, strategydemo.NewBollingerReversion(accountID, symbol, "0.001", 20, 2.0))
+			strategies = append(strategies, strategydemo.NewBollingerReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev))
 			strategies = append(strategies, strategydemo.NewCandleSMACross(accountID, symbol, "0.001", 5, 20))
 			strategies = append(strategies, strategydemo.NewATRSizing(accountID, symbol, "0.001", 0.01, 7, 25, 14))
-			// Trailing exit for candle mode too
+
 			trailingTP := strategydemo.NewTrailingTakeProfit(
 				accountID, symbol, "0.001",
-				2.0, 0.5, portfolioTracker, feed,
+				sc.TrailingActivatePct,
+				sc.TrailingGapPct,
+				strategydemo.WithStopLossPct(sc.TrailingStopLossPct),
+				strategydemo.WithMaxHoldMinutes(sc.TrailingMaxHoldMinutes),
+				strategydemo.WithPortfolioEntry(portfolioTracker),
+				strategydemo.WithFeed(feed),
 			)
 			strategies = append(strategies, trailingTP)
 		}
 
 	default: // timer mode
 		for _, symbol := range symbols {
-			strategies = append(strategies, strategydemo.NewEMACrossover(accountID, symbol, "0.001", 9, 21, feed))
+			strategies = append(strategies, strategydemo.NewEMACrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow, feed))
 			strategies = append(strategies, strategydemo.NewPriceThreshold(accountID, symbol, "0.001", "70000.00", feed))
 		}
 	}
@@ -469,16 +471,24 @@ func (a *App) Start(ctx context.Context) error {
 	a.logger.Info("app startup initiated", map[string]any{"environment": a.config.Environment})
 
 	if err := a.eventLog.Append(ctx, eventlog.Entry{
-		Type: "app.started", Source: "ultratrader-go",
-		Payload: map[string]any{"environment": a.config.Environment, "accounts": len(a.accountService.List())},
+		Type:   "app.started",
+		Source: "ultratrader-go",
+		Payload: map[string]any{
+			"environment":  a.config.Environment,
+			"accounts":     len(a.accountService.List()),
+			"market_data":  a.config.MarketData.Source,
+			"initial_usdt": a.config.MarketData.InitialBalance,
+		},
 	}); err != nil {
 		return err
 	}
 
 	for _, acct := range a.accountService.List() {
 		if err := a.snapshotStore.Append(ctx, snapshot.Snapshot{
-			AccountID: acct.ID, AccountName: acct.Name, Exchange: acct.ExchangeName,
-			Metadata: map[string]any{"enabled": acct.Enabled},
+			AccountID:   acct.ID,
+			AccountName: acct.Name,
+			Exchange:    acct.ExchangeName,
+			Metadata:    map[string]any{"enabled": acct.Enabled},
 		}); err != nil {
 			return fmt.Errorf("append bootstrap snapshot for %s: %w", acct.ID, err)
 		}
@@ -512,6 +522,8 @@ func (a *App) Start(ctx context.Context) error {
 		"guards":         a.pipeline.Names(),
 		"signal_count":   a.signalLog.Count(),
 		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
+		"market_data":    a.config.MarketData.Source,
+		"strategy":       a.config.Strategy,
 	}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
@@ -522,23 +534,30 @@ func (a *App) Start(ctx context.Context) error {
 }
 
 func (a *App) Shutdown(ctx context.Context) error {
+	// Flush signal log before shutdown
+	if a.signalLogStop != nil {
+		a.signalLogStop()
+	}
 	a.logger.Info("app shutdown initiated", map[string]any{
-		"signal_count":   a.signalLog.Count(),
-		"strategy_stats": a.signalLog.StatsByStrategy(),
+		"signal_count":    a.signalLog.Count(),
+		"strategy_stats":  a.signalLog.StatsByStrategy(),
 		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
-		"realized_pnl":   a.portfolioTracker.TotalRealizedPnL(),
-		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
-		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
+		"realized_pnl":    a.portfolioTracker.TotalRealizedPnL(),
+		"unrealized_pnl":  a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+		"usdt_balance":    a.marketAwarePaper.USDTBalance(),
 	})
+
 	if a.httpRuntime != nil {
 		if err := a.httpRuntime.Shutdown(ctx); err != nil {
 			return err
 		}
 	}
+
 	return a.Close()
 }
 
 func (a *App) Handler() http.Handler { return a.httpHandler }
+
 func (a *App) Address() string {
 	if a.httpRuntime != nil {
 		return a.httpRuntime.Address()

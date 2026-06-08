@@ -60,6 +60,8 @@ type RuntimeConfig struct {
 	Environment string        `json:"environment"`
 	Scheduler   SchedulerInfo `json:"scheduler"`
 	Risk        RiskInfo      `json:"risk"`
+	Strategy    StrategyInfo  `json:"strategy"`
+	MarketData  MarketDataInfo `json:"market_data"`
 }
 
 type SchedulerInfo struct {
@@ -76,6 +78,28 @@ type RiskInfo struct {
 	MaxOpenPositions    int      `json:"max_open_positions"`
 	MaxConcentrationPct float64  `json:"max_concentration_pct"`
 }
+
+type StrategyInfo struct {
+	RiskPct                float64 `json:"risk_pct"`
+	MaxNotional            float64 `json:"max_notional"`
+	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
+	TrailingGapPct         float64 `json:"trailing_gap_pct"`
+	TrailingStopLossPct    float64 `json:"trailing_stop_loss_pct"`
+	TrailingMaxHoldMinutes int     `json:"trailing_max_hold_minutes"`
+	BollingerPeriod        int     `json:"bollinger_period"`
+	BollingerStdDev        float64 `json:"bollinger_std_dev"`
+	RSIPeriod              int     `json:"rsi_period"`
+	RSIOversold            float64 `json:"rsi_oversold"`
+	RSIOverbought          float64 `json:"rsi_overbought"`
+	EMAFast                int     `json:"ema_fast"`
+	EMASlow                int     `json:"ema_slow"`
+}
+
+type MarketDataInfo struct {
+	Source         string  `json:"source"`
+	InitialBalance float64 `json:"initial_balance"`
+}
+
 
 type Dependencies struct {
 	StatusProvider               func() Status

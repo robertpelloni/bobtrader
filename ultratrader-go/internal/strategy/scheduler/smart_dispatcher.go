@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,15 +14,16 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 )
 
-// PositionChecker knows whether we hold a position in a symbol.
+// PositionChecker knows whether we hold a position in a symbol and its quantity.
 type PositionChecker interface {
 	HasOpenPosition(symbol string) bool
+	PositionQuantity(symbol string) float64
 }
 
 // SmartDispatcher wraps a base Scheduler and adds:
-//   - Position awareness (skip buy if already long, skip sell if flat)
-//   - Real notional calculation using market data prices
-//   - Signal logging for every signal + outcome
+// - Position awareness (skip buy if already long, skip sell if flat)
+// - Real notional calculation using market data prices
+// - Signal logging for every signal + outcome
 type SmartDispatcher struct {
 	inner     *Scheduler
 	portfolio PositionChecker
@@ -90,9 +92,9 @@ func smartToOrder(signal strategy.Signal, marketPrice float64) (exchange.OrderRe
 	intent := risk.OrderIntent{
 		AccountID: signal.AccountID,
 		Symbol:    signal.Symbol,
+		Side:      riskSide(signal.Action),
 		Notional:  notional,
 	}
-
 	return request, intent, nil
 }
 
@@ -109,20 +111,53 @@ func extractStrategyName(reason string) string {
 	return name
 }
 
+func formatDispQuantity(qty float64) string {
+	if qty >= 1 {
+		return fmt.Sprintf("%.4f", qty)
+	}
+	if qty >= 0.01 {
+		return fmt.Sprintf("%.6f", qty)
+	}
+	return fmt.Sprintf("%.8f", qty)
+}
+
+func riskSide(action string) risk.OrderSide {
+	switch strings.ToLower(action) {
+	case "buy":
+		return risk.BuySide
+	case "sell":
+		return risk.SellSide
+	default:
+		return risk.BuySide
+	}
+}
+
+// entryPriceReader is checked on the portfolio to get average entry price for PnL.
+type entryPriceReader interface {
+	AverageEntryPrice(symbol string) float64
+}
+
 // ExecuteSignals evaluates and dispatches signals with full position awareness
 // and signal logging. This replaces the scheduler's internal executeSignals.
 func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService *execution.Service, portfolio PositionChecker, feed marketdata.Feed, signalLog *strategy.SignalLog) {
 	for _, signal := range signals {
-		// Position awareness: skip if already in position
+		// Position awareness: check portfolio state before each signal
 		if portfolio != nil {
 			hasPosition := portfolio.HasOpenPosition(signal.Symbol)
-			if strings.EqualFold(signal.Action, "buy") && hasPosition {
-				recordSignal(signal, strategy.OutcomeSkipped, "already-in-position", "", "", feed, signalLog)
+			heldQty := portfolio.PositionQuantity(signal.Symbol)
+
+			if strings.EqualFold(signal.Action, "buy") && hasPosition && heldQty > 0.00001 {
+				recordSignal(signal, strategy.OutcomeSkipped, "already-in-position", "", "", 0, 0, feed, signalLog)
 				continue
 			}
-			if strings.EqualFold(signal.Action, "sell") && !hasPosition {
-				recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", feed, signalLog)
-				continue
+			if strings.EqualFold(signal.Action, "sell") {
+				// No position or only dust remaining — cannot sell
+				if !hasPosition || heldQty < 0.00001 {
+					recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", 0, 0, feed, signalLog)
+					continue
+				}
+				// Override quantity with full held quantity
+				signal.Quantity = formatDispQuantity(heldQty)
 			}
 		}
 
@@ -138,36 +173,66 @@ func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService 
 		// Build order request with real price
 		request, intent, err := smartToOrder(signal, price)
 		if err != nil {
-			recordSignal(signal, strategy.OutcomeBlocked, err.Error(), "", "", feed, signalLog)
+			recordSignal(signal, strategy.OutcomeBlocked, err.Error(), "", "", 0, 0, feed, signalLog)
 			continue
+		}
+
+		// Mark sell intents as exits so risk guards treat them differently
+		if strings.EqualFold(signal.Action, "sell") {
+			intent.IsExit = true
+		}
+
+		// Record entry price before execution for PnL calculation on sells
+		var entryPrice float64
+		if strings.EqualFold(signal.Action, "sell") && portfolio != nil {
+			if ep, ok := portfolio.(entryPriceReader); ok {
+				entryPrice = ep.AverageEntryPrice(signal.Symbol)
+			}
 		}
 
 		order, execErr := execService.Execute(ctx, signal.AccountID, request, intent)
 		if execErr != nil {
 			blockedBy := "unknown"
-			errMsg := execErr.Error()
-			if idx := strings.Index(errMsg, "guard "); idx >= 0 {
-				rest := errMsg[idx+6:]
-				if spaceIdx := strings.Index(rest, " "); spaceIdx > 0 {
-					blockedBy = rest[:spaceIdx]
-				} else if len(rest) > 0 {
-					blockedBy = rest
+			var guardErr risk.GuardError
+			if errors.As(execErr, &guardErr) {
+				blockedBy = guardErr.GuardName
+			} else {
+				// Fallback: try string parsing for non-GuardError execution errors
+				errMsg := execErr.Error()
+				if idx := strings.Index(errMsg, "guard "); idx >= 0 {
+					rest := errMsg[idx+6:]
+					if spaceIdx := strings.Index(rest, " "); spaceIdx > 0 {
+						blockedBy = rest[:spaceIdx]
+					} else if len(rest) > 0 {
+						blockedBy = rest
+					}
+				}
+				// Classify non-guard execution errors
+				if strings.Contains(errMsg, "insufficient") {
+					blockedBy = "insufficient-balance"
+				} else if strings.Contains(errMsg, "not found") {
+					blockedBy = "account-not-found"
+				} else if blockedBy == "unknown" {
+					blockedBy = "exec-error:" + errMsg[:min(50, len(errMsg))]
 				}
 			}
-			var guardErr risk.GuardError
-			if guardErr, ok := execErr.(risk.GuardError); ok {
-				blockedBy = guardErr.GuardName
-			}
-			_ = guardErr
-			recordSignal(signal, strategy.OutcomeBlocked, blockedBy, "", "", feed, signalLog)
+			recordSignal(signal, strategy.OutcomeBlocked, blockedBy, "", "", 0, 0, feed, signalLog)
 			continue
 		}
 
-		recordSignal(signal, strategy.OutcomeExecuted, "", order.Price, order.ID, feed, signalLog)
+		// Compute realized PnL for sells
+		var pnl float64
+		fillPrice := utils.ParseFloat(order.Price)
+		if strings.EqualFold(signal.Action, "sell") && entryPrice > 0 {
+			qty := utils.ParseFloat(signal.Quantity)
+			pnl = (fillPrice - entryPrice) * qty
+		}
+
+		recordSignal(signal, strategy.OutcomeExecuted, "", order.Price, order.ID, pnl, entryPrice, feed, signalLog)
 	}
 }
 
-func recordSignal(signal strategy.Signal, outcome strategy.SignalOutcome, blockedBy, fillPrice, orderID string, feed marketdata.Feed, signalLog *strategy.SignalLog) {
+func recordSignal(signal strategy.Signal, outcome strategy.SignalOutcome, blockedBy, fillPrice, orderID string, pnl, entryPrice float64, feed marketdata.Feed, signalLog *strategy.SignalLog) {
 	if signalLog == nil {
 		return
 	}
@@ -179,15 +244,17 @@ func recordSignal(signal strategy.Signal, outcome strategy.SignalOutcome, blocke
 		}
 	}
 	signalLog.Record(strategy.LoggedSignal{
-		Strategy:  signal.StrategyName,
-		Symbol:    signal.Symbol,
-		Action:    signal.Action,
-		Quantity:  signal.Quantity,
-		Price:     price,
-		Reason:    signal.Reason,
-		Outcome:   outcome,
-		BlockedBy: blockedBy,
-		FillPrice: fillPrice,
-		OrderID:   orderID,
+		Strategy:   signal.StrategyName,
+		Symbol:     signal.Symbol,
+		Action:     signal.Action,
+		Quantity:   signal.Quantity,
+		Price:      price,
+		Reason:     signal.Reason,
+		Outcome:    outcome,
+		BlockedBy:  blockedBy,
+		FillPrice:  fillPrice,
+		OrderID:    orderID,
+		PnL:        pnl,
+		EntryPrice: entryPrice,
 	})
 }

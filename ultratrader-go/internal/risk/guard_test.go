@@ -3,6 +3,7 @@ package risk
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -28,5 +29,16 @@ func TestPipelineStopsOnError(t *testing.T) {
 	}
 	if guardErr.GuardName != "fail" {
 		t.Fatalf("expected guard name fail, got %q", guardErr.GuardName)
+	}
+}
+
+func TestGuardErrorErrorsAs(t *testing.T) {
+	err := GuardError{GuardName: "cooldown", Cause: fmt.Errorf("active")}
+	var ge GuardError
+	if !errors.As(err, &ge) {
+		t.Fatal("errors.As should find GuardError")
+	}
+	if ge.GuardName != "cooldown" {
+		t.Fatalf("expected guard name 'cooldown', got %q", ge.GuardName)
 	}
 }

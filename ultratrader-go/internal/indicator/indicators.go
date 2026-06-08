@@ -131,6 +131,12 @@ func (r *RSI) Last() float64 {
 	return 100 - (100 / (1 + rs))
 }
 
+// Ready returns true once the RSI has seen at least period+1 prices
+// (it needs period+1 data points to compute the first real RSI value).
+func (r *RSI) Ready() bool {
+	return r.count >= r.period
+}
+
 // MACD (Moving Average Convergence Divergence) tracks the relationship between
 // two EMAs. It produces three values: the MACD line, the Signal line, and the
 // Histogram (MACD - Signal).

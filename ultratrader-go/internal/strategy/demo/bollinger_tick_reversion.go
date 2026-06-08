@@ -90,5 +90,12 @@ func (s *BollingerTickReversion) OnMarketTick(_ context.Context, tick marketdata
 		}}, nil
 	}
 
+	// Reset signal state when price returns to middle of bands
+	// This allows re-entry after a round-trip trade
+	bandWidth := result.Upper - result.Lower
+	if bandWidth > 0 && price > result.Lower+bandWidth*0.25 && price < result.Upper-bandWidth*0.25 {
+		s.lastSignal = "" // neutral zone — ready for next signal
+	}
+
 	return nil, nil
 }

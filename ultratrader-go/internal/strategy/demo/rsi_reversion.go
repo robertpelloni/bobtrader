@@ -64,6 +64,11 @@ func (s *RSIReversion) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]
 
 	rsiVal := s.rsi.Update(price)
 
+	// Don't signal until RSI is fully warmed up
+	if !s.rsi.Ready() {
+		return nil, nil
+	}
+
 	// Buy when RSI crosses back above oversold from below
 	// (only after RSI has had enough data to be meaningful)
 	if rsiVal <= s.oversold && s.lastSignal != "buy" && rsiVal > 0 && rsiVal < 100 {
@@ -89,6 +94,11 @@ func (s *RSIReversion) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]
 			Quantity:  s.quantity,
 			OrderType: "market",
 		}}, nil
+	}
+
+	// Reset signal state when RSI returns to neutral zone (40-60)
+	if rsiVal >= 40 && rsiVal <= 60 {
+		s.lastSignal = ""
 	}
 
 	return nil, nil
