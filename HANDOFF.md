@@ -148,7 +148,7 @@ Dashboard: http://127.0.0.1:8300/
 
 ### Next Steps
 
-1. **WebSocket real-time integration** — Test WS config with live data, verify lower latency
+1. **WebSocket feed debugging** — WS connects but goroutine output doesn't reach channel; needs deeper goroutine/concurrency investigation
 2. **Position sizing optimization** — Kelly criterion or volatility-adjusted sizing
 3. **Strategy parameter optimization** — Walk-forward on historical data
 4. **Real exchange adapter** — Wire execution to real Binance spot API
