@@ -5,6 +5,15 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.56] - 2026-06-08
+
+### Added
+- **Sandbox Verification Phase Completion**
+  - Implemented `TestAlgoVerification` and `TestRiskControlVerification` in `ultratrader-go/internal/core/app/`.
+  - Created `config/sandbox-test.json` for rapid security and algorithm validation.
+  - Programmatically verified whitelist, notional, and strategy-to-execution coordination.
+  - Confirmed 100% pass rate across entire Go test suite during stress simulation.
+
 ## [2.0.55] - 2026-06-07
 
 ### Added

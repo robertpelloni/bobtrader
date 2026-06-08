@@ -76,5 +76,6 @@
 - [x] Assimilate `ctubio/Krypto-trading-bot` market-making (initial MarketMaker)
 - [x] Assimilate `whittlem/pycryptobot` risk management (DynamicTSL, ProfitBank)
 - [x] Execute System Test Phase and verify trading functionality
+- [x] Execute Sandbox Test Phase and verify risk controls
 - [ ] Deploy to live market conditions (Phase 6: Final Validation)
 - [ ] Search and categorize next 44 candidates in `ASSIMILATION_CANDIDATES.md`
