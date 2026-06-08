@@ -7,14 +7,19 @@ import (
 )
 
 type Factory func() Adapter
+type AccountFactory func(apiKey, secretKey string, testnet bool) Adapter
 
 type Registry struct {
-	mu        sync.RWMutex
-	factories map[string]Factory
+	mu               sync.RWMutex
+	factories        map[string]Factory
+	accountFactories map[string]AccountFactory
 }
 
 func NewRegistry() *Registry {
-	return &Registry{factories: make(map[string]Factory)}
+	return &Registry{
+		factories:        make(map[string]Factory),
+		accountFactories: make(map[string]AccountFactory),
+	}
 }
 
 func (r *Registry) Register(name string, factory Factory) error {
@@ -35,6 +40,21 @@ func (r *Registry) Register(name string, factory Factory) error {
 	return nil
 }
 
+func (r *Registry) RegisterAccountFactory(name string, factory AccountFactory) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if name == "" {
+		return fmt.Errorf("exchange name is required")
+	}
+	if factory == nil {
+		return fmt.Errorf("account factory is required")
+	}
+
+	r.accountFactories[name] = factory
+	return nil
+}
+
 func (r *Registry) Create(name string) (Adapter, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -44,6 +64,19 @@ func (r *Registry) Create(name string) (Adapter, error) {
 		return nil, fmt.Errorf("exchange %q is not registered", name)
 	}
 	return factory(), nil
+}
+
+func (r *Registry) CreateForAccount(name string, apiKey, secretKey string, testnet bool) (Adapter, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	// Try account-specific factory first
+	if factory, ok := r.accountFactories[name]; ok {
+		return factory(apiKey, secretKey, testnet), nil
+	}
+
+	// Fallback to default factory
+	return r.Create(name)
 }
 
 func (r *Registry) Names() []string {

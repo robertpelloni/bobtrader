@@ -69,7 +69,7 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		return exchange.Order{}, err
 	}
 
-	adapter, err := s.registry.Create(acct.ExchangeName)
+	adapter, err := s.registry.CreateForAccount(acct.ExchangeName, acct.APIKey, acct.SecretKey, acct.Testnet)
 	if err != nil {
 		return exchange.Order{}, err
 	}

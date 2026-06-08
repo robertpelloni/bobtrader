@@ -5,6 +5,16 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.58] - 2026-06-08
+
+### Added
+- **Live Trading Module Initiation**
+  - Implemented `LiveStrategyWrapper` in `internal/trading/execution/live_strategy.go` for production safety checks.
+  - Enhanced `ExchangeRegistry` and `ExecutionService` to support account-specific API credentials for live trading.
+  - Extended `Account` models in `internal/trading/account` to persist API keys and secrets.
+  - Created `config/live-trading-binance.json` with production risk limits.
+  - Verified live module initialization in `internal/core/app/live_trading_test.go`.
+
 ## [2.0.57] - 2026-06-08
 
 ### Added

@@ -1,0 +1,34 @@
+{
+  "environment": "production-live-trading",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8400"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 1000
+  },
+  "risk": {
+    "max_notional": 200,
+    "max_notional_per_symbol": 100,
+    "allowed_symbols": ["BTCUSDT", "ETHUSDT"],
+    "cooldown_ms": 60000,
+    "duplicate_window_ms": 300000,
+    "duplicate_side_window_ms": 150000,
+    "max_open_positions": 2,
+    "max_concentration_pct": 50
+  },
+  "accounts": [
+    {
+      "id": "binance-live",
+      "name": "Binance Live Account",
+      "enabled": false,
+      "exchange": "binance",
+      "api_key": "YOUR_API_KEY",
+      "secret_key": "YOUR_SECRET_KEY",
+      "testnet": false,
+      "capabilities": ["spot", "balances", "orders", "candles", "tickers"]
+    }
+  ]
+}

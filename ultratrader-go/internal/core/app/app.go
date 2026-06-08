@@ -108,6 +108,15 @@ func New(cfg config.Config) (*App, error) {
 	}); err != nil {
 		return nil, fmt.Errorf("register binance exchange: %w", err)
 	}
+	if err := registry.RegisterAccountFactory("binance", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return binance.New(binance.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+			Testnet:   testnet,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register binance account factory: %w", err)
+	}
 
 	// ── Market Data Feed ───────────────────────────────────────
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
