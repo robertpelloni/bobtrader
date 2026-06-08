@@ -1,6 +1,9 @@
 package exchange
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Market struct {
 	Symbol        string
@@ -8,17 +11,20 @@ type Market struct {
 	QuoteAsset    string
 	PriceScale    int
 	QuantityScale int
+	MinNotional   string
+	Status        string // "trading", "break", "halt"
 }
 
 type Balance struct {
 	Asset  string
 	Free   string
 	Locked string
+	Total  string
 }
 
 type OrderSide string
-
 type OrderType string
+type OrderStatus string
 
 const (
 	Buy  OrderSide = "buy"
@@ -26,6 +32,12 @@ const (
 
 	MarketOrder OrderType = "market"
 	LimitOrder  OrderType = "limit"
+
+	StatusOpen     OrderStatus = "open"
+	StatusClosed   OrderStatus = "closed"
+	StatusCanceled OrderStatus = "canceled"
+	StatusExpired  OrderStatus = "expired"
+	StatusRejected OrderStatus = "rejected"
 )
 
 type OrderRequest struct {
@@ -37,13 +49,19 @@ type OrderRequest struct {
 }
 
 type Order struct {
-	ID       string
-	Symbol   string
-	Side     OrderSide
-	Type     OrderType
-	Status   string
-	Quantity string
-	Price    string
+	ID            string
+	Symbol        string
+	Side          OrderSide
+	Type          OrderType
+	Status        OrderStatus
+	Quantity      string
+	Price         string
+	ExecutedQty   string
+	RemainingQty  string
+	Cost          string
+	AveragePrice  string
+	Timestamp     time.Time
+	LastTradeTime *time.Time
 }
 
 type Adapter interface {

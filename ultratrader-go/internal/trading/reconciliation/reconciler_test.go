@@ -36,7 +36,7 @@ func TestReconcileOrders_Matched(t *testing.T) {
 
 	reconciler := NewReconciler(querier)
 	localOrders := []exchange.Order{
-		{ID: "123", Symbol: "BTCUSDT", Status: "filled"},
+		{ID: "123", Symbol: "BTCUSDT", Status: exchange.StatusClosed},
 	}
 
 	result, err := reconciler.ReconcileOrders(context.Background(), localOrders)
@@ -63,7 +63,7 @@ func TestReconcileOrders_Discrepancy(t *testing.T) {
 
 	reconciler := NewReconciler(querier)
 	localOrders := []exchange.Order{
-		{ID: "456", Symbol: "BTCUSDT", Status: "filled"},
+		{ID: "456", Symbol: "BTCUSDT", Status: exchange.StatusClosed},
 	}
 
 	result, err := reconciler.ReconcileOrders(context.Background(), localOrders)
@@ -73,7 +73,7 @@ func TestReconcileOrders_Discrepancy(t *testing.T) {
 	if len(result.Discrepancies) != 1 {
 		t.Fatalf("expected 1 discrepancy, got %d", len(result.Discrepancies))
 	}
-	if result.Discrepancies[0].InternalStatus != "filled" {
+	if result.Discrepancies[0].InternalStatus != string(exchange.StatusClosed) {
 		t.Errorf("expected internal status filled, got %s", result.Discrepancies[0].InternalStatus)
 	}
 	if result.Discrepancies[0].ExchangeStatus != "CANCELED" {
@@ -96,8 +96,8 @@ func TestReconcileOrders_NoQuerier(t *testing.T) {
 	reconciler := NewReconciler(&stubAdapter{})
 
 	localOrders := []exchange.Order{
-		{ID: "1", Symbol: "BTCUSDT", Status: "filled"},
-		{ID: "2", Symbol: "ETHUSDT", Status: "canceled"},
+		{ID: "1", Symbol: "BTCUSDT", Status: exchange.StatusClosed},
+		{ID: "2", Symbol: "ETHUSDT", Status: exchange.StatusCanceled},
 	}
 
 	result, err := reconciler.ReconcileOrders(context.Background(), localOrders)

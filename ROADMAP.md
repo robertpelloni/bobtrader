@@ -34,6 +34,7 @@ Recommended next work for the Go track:
 - eventual backtesting/optimization/exchange-adapter expansion
 - [x] Submodule Assimilation (Phase 1: OpenAlice, bbgo)
 - [x] Submodule Assimilation (Phase 2: WolfBot)
+- [x] Submodule Assimilation (Phase 3 & 4: CCXT, Krypto-trading-bot)
 
 
 ## Version 3.0.0 (Current) - Released 2026-01-18

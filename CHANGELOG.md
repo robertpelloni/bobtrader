@@ -5,6 +5,16 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.53] - 2026-06-07
+
+### Added
+- **Submodule Assimilation Program Phase 3 & 4**
+  - Analyzed and documented `ccxt/ccxt` architecture and exchange abstraction.
+  - Analyzed and documented `ctubio/Krypto-trading-bot` market-making strategies.
+  - Enhanced Go exchange abstractions with CCXT-inspired unified error mapping (`internal/exchange/errors.go`) and expanded `Order` / `Market` structs.
+  - Implemented initial `MarketMaker` strategy in Go (`internal/strategy/marketmaking/`) with PingPong quoting logic.
+  - Ported breakout-aware technical analysis patterns from CCXT and WolfBot.
+
 ## [2.0.52] - 2026-06-07
 
 ### Added
