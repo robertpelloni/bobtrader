@@ -120,7 +120,14 @@ func (a *MarketAwareAdapter) PlaceOrder(ctx context.Context, request exchange.Or
 	case exchange.Sell:
 		held := a.positions[baseAsset]
 		if qty > held {
-			return exchange.Order{}, fmt.Errorf("insufficient %s balance: need %.8f, have %.8f", baseAsset, qty, held)
+			// If the difference is just fee dust, cap at held amount
+			if qty-held < qty*0.002 {
+				qty = held
+				netQty = qty
+				notional = price * qty
+			} else {
+				return exchange.Order{}, fmt.Errorf("insufficient %s balance: need %.8f, have %.8f", baseAsset, qty, held)
+			}
 		}
 		a.positions[baseAsset] -= qty
 		a.balance += notional - fee // fee taken from USDT proceeds

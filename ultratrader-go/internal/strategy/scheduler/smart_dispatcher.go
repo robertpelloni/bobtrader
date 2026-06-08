@@ -141,27 +141,23 @@ type entryPriceReader interface {
 // and signal logging. This replaces the scheduler's internal executeSignals.
 func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService *execution.Service, portfolio PositionChecker, feed marketdata.Feed, signalLog *strategy.SignalLog) {
 	for _, signal := range signals {
-		// Position awareness: skip if already in position
+		// Position awareness: check portfolio state before each signal
 		if portfolio != nil {
 			hasPosition := portfolio.HasOpenPosition(signal.Symbol)
-			if strings.EqualFold(signal.Action, "buy") && hasPosition {
+			heldQty := portfolio.PositionQuantity(signal.Symbol)
+
+			if strings.EqualFold(signal.Action, "buy") && hasPosition && heldQty > 0.00001 {
 				recordSignal(signal, strategy.OutcomeSkipped, "already-in-position", "", "", 0, 0, feed, signalLog)
 				continue
 			}
-			if strings.EqualFold(signal.Action, "sell") && !hasPosition {
-				recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", 0, 0, feed, signalLog)
-				continue
-			}
-
-			// For sell signals, override quantity with full position
-			// (slightly reduced to account for buy-side fee rounding)
 			if strings.EqualFold(signal.Action, "sell") {
-				heldQty := portfolio.PositionQuantity(signal.Symbol)
-				if heldQty > 0 {
-					// Subtract 0.15% buffer for fee rounding
-					sellQty := heldQty * 0.9985
-					signal.Quantity = formatDispQuantity(sellQty)
+				// No position or only dust remaining — cannot sell
+				if !hasPosition || heldQty < 0.00001 {
+					recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", 0, 0, feed, signalLog)
+					continue
 				}
+				// Override quantity with full held quantity
+				signal.Quantity = formatDispQuantity(heldQty)
 			}
 		}
 
