@@ -40,6 +40,11 @@ func (g *CooldownGuard) Check(_ context.Context, acct account.Account, intent Or
 		return nil
 	}
 
+	// Exit orders bypass cooldown — we always want to allow closing positions
+	if intent.IsExit {
+		return nil
+	}
+
 	key := acct.ID + ":" + strings.ToUpper(strings.TrimSpace(intent.Symbol))
 	now := time.Now().UTC()
 

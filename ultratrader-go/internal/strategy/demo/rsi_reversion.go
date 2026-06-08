@@ -96,5 +96,10 @@ func (s *RSIReversion) OnMarketTick(_ context.Context, tick marketdata.Tick) ([]
 		}}, nil
 	}
 
+	// Reset signal state when RSI returns to neutral zone (40-60)
+	if rsiVal >= 40 && rsiVal <= 60 {
+		s.lastSignal = ""
+	}
+
 	return nil, nil
 }

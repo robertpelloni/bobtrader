@@ -134,7 +134,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxNotionalPerSymbolGuard(cfg.Risk.MaxNotionalPerSymbol, exposureView),
 		risk.NewCooldownGuard(time.Duration(cfg.Risk.CooldownMS)*time.Millisecond),
 		risk.NewDuplicateSymbolGuard(executionRepo, time.Duration(cfg.Risk.DuplicateWindowMS)*time.Millisecond),
-		risk.NewDuplicateSideGuard(executionRepo, exchange.Buy, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
+		risk.NewDuplicateSideGuard(executionRepo, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
@@ -398,9 +398,9 @@ func buildAutonomousStrategyRuntime(
 			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
 			strategies = append(strategies, bbSized)
 
-			// ── Entry Strategy 3: RSI Reversion (14, 30/70) ─────
-			// Mean-reversion: buys oversold, sells overbought
-			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", 14, 30, 70)
+			// ── Entry Strategy 3: RSI Reversion (14, 35/65) ─────
+			// Wider thresholds for more frequent signals
+			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", 14, 35, 65)
 			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, riskPct, maxNotional)
 			strategies = append(strategies, rsiSized)
 

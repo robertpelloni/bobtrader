@@ -3,6 +3,7 @@ package demo
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
@@ -17,24 +18,32 @@ import (
 // 1. Wait until price is at least activatePct% above the entry price
 // 2. Track the high water mark as price rises
 // 3. When price drops trailPct% below the high water mark, sell
+// 4. If price drops stopLossPct% below entry, cut losses (stop-loss)
+// 5. If position is held longer than maxHoldDuration, sell (time-based exit)
 type TrailingTakeProfit struct {
-	accountID     string
-	symbol        string
-	quantity      string
-	activatePct   float64 // profit % above entry to activate
-	trailPct      float64 // trail gap % below peak
-	portfolio     PositionReader
-	feed          marketdata.Feed
-	entryPrice    float64 // recorded when position detected
-	activated     bool
+	accountID   string
+	symbol      string
+	quantity    string
+	activatePct float64       // profit % above entry to activate trailing
+	trailPct    float64       // trail gap % below peak
+	stopLossPct float64       // max loss % before cutting (0 = disabled)
+	maxHold     time.Duration // max time to hold a position (0 = disabled)
+
+	portfolio PositionReader
+	feed      marketdata.Feed
+
+	entryPrice    float64
 	highWaterMark float64
+	activated     bool
 	positionKnown bool
+	positionStart time.Time // when we first detected the position
 }
 
-// PositionReader reads the current held quantity for a symbol.
+// PositionReader reads current position data for a symbol.
 type PositionReader interface {
 	HasOpenPosition(symbol string) bool
 	PositionQuantity(symbol string) float64
+	AverageEntryPrice(symbol string) float64
 }
 
 func NewTrailingTakeProfit(
@@ -44,10 +53,10 @@ func NewTrailingTakeProfit(
 	feed marketdata.Feed,
 ) *TrailingTakeProfit {
 	if activatePct <= 0 {
-		activatePct = 2.0
+		activatePct = 1.0
 	}
 	if trailPct <= 0 {
-		trailPct = 0.5
+		trailPct = 0.3
 	}
 	return &TrailingTakeProfit{
 		accountID:   accountID,
@@ -55,9 +64,23 @@ func NewTrailingTakeProfit(
 		quantity:    quantity,
 		activatePct: activatePct,
 		trailPct:    trailPct,
+		stopLossPct: 3.0,
+		maxHold:     5 * time.Minute, // default: force exit after 5 minutes
 		portfolio:   portfolio,
 		feed:        feed,
 	}
+}
+
+// WithStopLoss sets the stop-loss percentage. Set to 0 to disable.
+func (s *TrailingTakeProfit) WithStopLoss(pct float64) *TrailingTakeProfit {
+	s.stopLossPct = pct
+	return s
+}
+
+// WithMaxHold sets the maximum hold duration. Set to 0 to disable.
+func (s *TrailingTakeProfit) WithMaxHold(d time.Duration) *TrailingTakeProfit {
+	s.maxHold = d
+	return s
 }
 
 func (s *TrailingTakeProfit) Name() string {
@@ -73,12 +96,9 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		return nil, nil
 	}
 
-	// Only sell if we have a position
+	// Reset state when no position held
 	if s.portfolio == nil || !s.portfolio.HasOpenPosition(s.symbol) {
-		s.activated = false
-		s.highWaterMark = 0
-		s.entryPrice = 0
-		s.positionKnown = false
+		s.resetState()
 		return nil, nil
 	}
 
@@ -87,17 +107,73 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		return nil, nil
 	}
 
-	// Record entry price when we first detect a position
+	// Record entry price from portfolio when we first detect a position
 	if !s.positionKnown {
-		s.entryPrice = price
+		s.entryPrice = s.portfolio.AverageEntryPrice(s.symbol)
+		if s.entryPrice <= 0 {
+			s.entryPrice = price
+		}
 		s.positionKnown = true
 		s.highWaterMark = price
+		s.positionStart = time.Now().UTC()
 		return nil, nil // wait one tick before evaluating
 	}
 
 	// Update high water mark
 	if price > s.highWaterMark {
 		s.highWaterMark = price
+	}
+
+	// Check time-based exit: if held too long without reaching activation
+	if s.maxHold > 0 && !s.positionStart.IsZero() {
+		held := time.Since(s.positionStart)
+		if held >= s.maxHold {
+			heldQty := s.portfolio.PositionQuantity(s.symbol)
+			qty := formatQuantity(heldQty)
+			if heldQty <= 0 {
+				qty = s.quantity
+			}
+			profitPct := 0.0
+			if s.entryPrice > 0 {
+				profitPct = ((price - s.entryPrice) / s.entryPrice) * 100
+			}
+			reason := "max-hold-exit"
+			if profitPct > 0 {
+				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (+%.2f%% from entry %.2f)", s.maxHold.Seconds(), price, profitPct, s.entryPrice)
+			} else {
+				reason = fmt.Sprintf("max-hold %.0fs: price %.2f (%.2f%% from entry %.2f)", s.maxHold.Seconds(), price, profitPct, s.entryPrice)
+			}
+			s.resetState()
+			return []strategy.Signal{{
+				AccountID: s.accountID,
+				Symbol:    s.symbol,
+				Action:    "sell",
+				Reason:    reason,
+				Quantity:  qty,
+				OrderType: "market",
+			}}, nil
+		}
+	}
+
+	// Check stop-loss first: if price dropped too far below entry, cut losses
+	if s.stopLossPct > 0 && s.entryPrice > 0 {
+		lossPct := ((s.entryPrice - price) / s.entryPrice) * 100
+		if lossPct >= s.stopLossPct {
+			heldQty := s.portfolio.PositionQuantity(s.symbol)
+			qty := formatQuantity(heldQty)
+			if heldQty <= 0 {
+				qty = s.quantity
+			}
+			s.resetState()
+			return []strategy.Signal{{
+				AccountID: s.accountID,
+				Symbol:    s.symbol,
+				Action:    "sell",
+				Reason:    fmt.Sprintf("stop-loss: price %.2f dropped %.1f%% below entry %.2f", price, lossPct, s.entryPrice),
+				Quantity:  qty,
+				OrderType: "market",
+			}}, nil
+		}
 	}
 
 	// Check activation: price must be at least activatePct% above entry
@@ -116,16 +192,12 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 	// After activation, sell if price drops below trailing stop
 	trailStop := s.highWaterMark * (1 - s.trailPct/100)
 	if price <= trailStop {
-		// Sell entire position
 		heldQty := s.portfolio.PositionQuantity(s.symbol)
 		qty := formatQuantity(heldQty)
 		if heldQty <= 0 {
-			qty = s.quantity // fallback
+			qty = s.quantity
 		}
-		s.activated = false
-		s.highWaterMark = 0
-		s.entryPrice = 0
-		s.positionKnown = false
+		s.resetState()
 		return []strategy.Signal{{
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
@@ -137,6 +209,14 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 	}
 
 	return nil, nil
+}
+
+func (s *TrailingTakeProfit) resetState() {
+	s.activated = false
+	s.highWaterMark = 0
+	s.entryPrice = 0
+	s.positionKnown = false
+	s.positionStart = time.Time{}
 }
 
 // formatQuantity formats a float64 quantity to a string with appropriate precision.

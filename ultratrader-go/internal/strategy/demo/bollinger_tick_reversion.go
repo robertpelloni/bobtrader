@@ -78,7 +78,6 @@ func (s *BollingerTickReversion) OnMarketTick(_ context.Context, tick marketdata
 	}
 
 	// Sell when price rises to or above upper band
-	// (only if we're already in a position — the TrailingTakeProfit also handles exits)
 	if price >= result.Upper && s.lastSignal != "sell" {
 		s.lastSignal = "sell"
 		return []strategy.Signal{{
@@ -89,6 +88,13 @@ func (s *BollingerTickReversion) OnMarketTick(_ context.Context, tick marketdata
 			Quantity:  s.quantity,
 			OrderType: "market",
 		}}, nil
+	}
+
+	// Reset signal state when price returns to middle of bands
+	// This allows re-entry after a round-trip trade
+	bandWidth := result.Upper - result.Lower
+	if bandWidth > 0 && price > result.Lower+bandWidth*0.25 && price < result.Upper-bandWidth*0.25 {
+		s.lastSignal = "" // neutral zone — ready for next signal
 	}
 
 	return nil, nil

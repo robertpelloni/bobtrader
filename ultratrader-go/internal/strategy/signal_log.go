@@ -27,7 +27,9 @@ type LoggedSignal struct {
 	BlockedBy string        `json:"blocked_by,omitempty"`
 	FillPrice string        `json:"fill_price,omitempty"`
 	OrderID   string        `json:"order_id,omitempty"`
-	Timestamp time.Time     `json:"timestamp"`
+	PnL       float64       `json:"pnl,omitempty"`        // realized PnL for sell trades
+	EntryPrice float64      `json:"entry_price,omitempty"` // average entry price for sell trades
+	Timestamp  time.Time    `json:"timestamp"`
 }
 
 // StrategyStats tracks per-strategy performance.
@@ -101,6 +103,14 @@ func (l *SignalLog) StatsByStrategy() map[string]StrategyStats {
 		switch s.Outcome {
 		case OutcomeExecuted:
 			st.Executed++
+			if s.Action == "sell" {
+				st.TotalPnL += s.PnL
+				if s.PnL >= 0 {
+					st.WinTrades++
+				} else {
+					st.LossTrades++
+				}
+			}
 		case OutcomeBlocked:
 			st.Blocked++
 		case OutcomeSkipped:

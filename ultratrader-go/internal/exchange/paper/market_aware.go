@@ -102,30 +102,28 @@ func (a *MarketAwareAdapter) PlaceOrder(ctx context.Context, request exchange.Or
 
 	// Simulate balance changes
 	baseAsset := baseFromSymbol(request.Symbol)
+
+	// Calculate net quantity after 0.1% taker fee
+	fee := notional * 0.001
+	netQty := qty
+	if request.Side == exchange.Buy {
+		netQty = qty - qty*0.001
+	}
+
 	switch request.Side {
 	case exchange.Buy:
 		if notional > a.balance {
 			return exchange.Order{}, fmt.Errorf("insufficient USDT balance: need %.2f, have %.2f", notional, a.balance)
 		}
 		a.balance -= notional
-		a.positions[baseAsset] += qty
+		a.positions[baseAsset] += netQty
 	case exchange.Sell:
 		held := a.positions[baseAsset]
 		if qty > held {
 			return exchange.Order{}, fmt.Errorf("insufficient %s balance: need %.8f, have %.8f", baseAsset, qty, held)
 		}
 		a.positions[baseAsset] -= qty
-		a.balance += notional
-	}
-
-	// Add 0.1% taker fee
-	fee := notional * 0.001
-	if request.Side == exchange.Buy {
-		// Fee taken from received base asset (reduce position slightly)
-		a.positions[baseAsset] -= qty * 0.001
-	} else {
-		// Fee taken from received USDT
-		a.balance -= fee
+		a.balance += notional - fee // fee taken from USDT proceeds
 	}
 
 	order := exchange.Order{
@@ -134,7 +132,7 @@ func (a *MarketAwareAdapter) PlaceOrder(ctx context.Context, request exchange.Or
 		Side:     request.Side,
 		Type:     request.Type,
 		Status:   "filled",
-		Quantity: request.Quantity,
+		Quantity: fmt.Sprintf("%.8f", netQty),
 		Price:    priceStr,
 	}
 	a.orders = append(a.orders, order)
