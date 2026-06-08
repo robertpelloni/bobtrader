@@ -14,6 +14,7 @@ type Signal struct {
 	StrategyName string
 	Quantity     string
 	OrderType    string
+	GroupID      string // Optional: used to link entry and exit for PnL calculation
 }
 
 type Strategy interface {

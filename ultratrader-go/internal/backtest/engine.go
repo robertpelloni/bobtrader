@@ -177,7 +177,7 @@ func (e *Engine) processSignals(signals []strategy.Signal, rawPrice string) {
 			Symbol:   sig.Symbol,
 			Side:     side,
 			Type:     exchange.MarketOrder, // Treating signals as market execution by default
-			Status:   "filled",
+			Status:   exchange.StatusClosed,
 			Quantity: sig.Quantity,
 			Price:    simulatedPriceStr,
 		}

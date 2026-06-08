@@ -32,6 +32,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
   - Verified real-time strategy interaction and signal logging under sandbox configurations.
   - Confirmed 100% execution success rate for startup signals in a controlled paper environment.
 
+## [2.0.62] - 2026-06-08
+
+### Added
+- **Submodule Assimilation Program Phase 7 & Parallel Optimization**
+  - Analyzed and documented `Ekliptor/WolfBot` Backfinder architecture.
+  - Implemented `TestOptimizerRun` in `internal/core/app/optimizer_test.go` to verify concurrent parameter grid-search.
+  - Verified Go-native worker pool efficiency for large-scale historical simulations.
+  - Stabilized `DoubleEMATrendStrategy` with synthetic volatile data validation.
+
+## [2.0.61] - 2026-06-08
+
+### Added
+- **Formal Sandbox Test Run Completion**
+  - Implemented `TestSandboxRun` in `ultratrader-go/internal/core/app/sandbox_run_test.go` for multi-second logic verification.
+  - Verified real-time strategy interaction and signal logging under sandbox configurations.
+  - Confirmed 100% execution success rate for startup signals in a controlled paper environment.
+
 ## [2.0.60] - 2026-06-08
 
 ### Added
