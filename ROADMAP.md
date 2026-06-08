@@ -41,6 +41,7 @@ Recommended next work for the Go track:
 - [x] Live Market Feed Integration Phase
 - [x] Live Trading Module Initiation
 - [x] Integration Testing Phase (Market Data & Execution)
+- [x] Strategy Backtesting Phase (Live-Data & Synthetic)
 
 
 ## Version 3.0.0 (Current) - Released 2026-01-18

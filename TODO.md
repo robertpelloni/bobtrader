@@ -80,5 +80,6 @@
 - [x] Integrate and verify live market feed performance
 - [x] Initiate live trading module and verify initialization
 - [x] Execute Integration Test Phase and verify market data/execution
+- [x] Perform back-test of strategies using live market data (Phase 6)
 - [ ] Deploy to live market conditions (Phase 6: Final Validation)
 - [ ] Search and categorize next 44 candidates in `ASSIMILATION_CANDIDATES.md`

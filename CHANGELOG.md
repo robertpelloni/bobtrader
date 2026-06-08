@@ -24,10 +24,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
   - Created `config/live-trading-binance.json` with production risk limits.
   - Verified live module initialization in `internal/core/app/live_trading_test.go`.
 
-## [2.0.57] - 2026-06-08
+## [2.0.60] - 2026-06-08
 
 ### Added
-- **Live Market Feed Integration Phase Completion**
+- **Submodule Assimilation Program Phase 6 & Backtesting Expansion**
+  - Analyzed and documented `freqtrade/freqtrade` strategy architecture.
+  - Implemented `DoubleEMATrendStrategy` in `internal/strategy/demo/double_ema_trend.go` with long-period trend filtering.
+  - Implemented `LiveHistoryProvider` in `internal/backtest/live_history.go` for real-market data simulations.
+  - Added `GetKlines` to Binance adapter for historical candle ingestion.
+  - Verified strategy performance using high-fidelity synthetic backtesting in `internal/core/app/backtest_test.go`.
+
+## [2.0.59] - 2026-06-08
+
+### Added
+- **Integration Testing Phase Completion**
   - Implemented `TestLiveMarketMonitor` and `TestLivePerformanceIntegration` in `ultratrader-go/internal/core/app/`.
   - Fixed build errors and strengthened Binance WebSocket feed (`internal/marketdata/binance/ws_feed.go`) with robust TLS handling.
   - Verified real-time system performance and clean shutdown under live network conditions.
