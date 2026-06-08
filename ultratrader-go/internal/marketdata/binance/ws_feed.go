@@ -2,11 +2,11 @@ package binance
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -16,9 +16,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 )
 
-// StreamFeed implements marketdata.StreamFeed using Binance combined WebSocket streams.
-// For simplicity and zero external dependencies, this implementation uses
-// a minimal pure-Go WebSocket client.
+// StreamFeed implements marketdata.StreamFeed using Binance WebSocket streams.
 type StreamFeed struct {
 	adapter *binance.Adapter
 	mu      sync.Mutex
@@ -57,7 +55,6 @@ func (f *StreamFeed) LatestCandle(ctx context.Context, symbol, interval string) 
 func (f *StreamFeed) SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) marketdata.TickSubscription {
 	ch := make(chan marketdata.Tick, 10)
 	streamPath := fmt.Sprintf("%s/%s@ticker", f.baseURL, strings.ToLower(symbol))
-
 	go f.connectAndStream(ctx, streamPath, func(msg []byte) {
 		if tick, ok := parseTickerMessage(msg); ok {
 			select {
@@ -66,14 +63,12 @@ func (f *StreamFeed) SubscribeTicks(ctx context.Context, symbol string, interval
 			}
 		}
 	})
-
 	return tickSub{ch: ch}
 }
 
 func (f *StreamFeed) SubscribeCandles(ctx context.Context, symbol, interval string) marketdata.CandleSubscription {
 	ch := make(chan marketdata.Candle, 10)
 	streamPath := fmt.Sprintf("%s/%s@kline_%s", f.baseURL, strings.ToLower(symbol), interval)
-
 	go f.connectAndStream(ctx, streamPath, func(msg []byte) {
 		if candle, ok := parseKlineMessage(msg); ok {
 			select {
@@ -82,7 +77,6 @@ func (f *StreamFeed) SubscribeCandles(ctx context.Context, symbol, interval stri
 			}
 		}
 	})
-
 	return candleSub{ch: ch}
 }
 
@@ -91,20 +85,17 @@ func (f *StreamFeed) SubscribeCandles(ctx context.Context, symbol, interval stri
 func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler func([]byte)) {
 	backoff := 1 * time.Second
 	maxBackoff := 30 * time.Second
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 		}
-
 		err := f.dialAndRead(ctx, wsURL, handler)
 		if ctx.Err() != nil {
 			return
 		}
 		if err != nil {
-			// Connection lost, wait before reconnecting
 			select {
 			case <-ctx.Done():
 				return
@@ -121,20 +112,18 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 }
 
 // dialAndRead performs a WebSocket upgrade and reads text frames.
-// Uses a minimal WebSocket client implemented with standard library.
+// Uses the exact same approach as the working standalone test.
 func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func([]byte)) error {
 	parsed, err := url.Parse(wsURL)
 	if err != nil {
 		return fmt.Errorf("parse ws url: %w", err)
 	}
-
-	host := parsed.Host
+	host := parsed.Hostname()
 	path := parsed.Path
 	if parsed.RawQuery != "" {
 		path += "?" + parsed.RawQuery
 	}
 
-	// Determine if we need TLS
 	useTLS := parsed.Scheme == "wss"
 	port := parsed.Port()
 	if port == "" {
@@ -148,10 +137,11 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 	// Connect via TCP
 	var conn net.Conn
 	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	addr := net.JoinHostPort(host, port)
 	if useTLS {
-		conn, err = dialTLS(ctx, net.JoinHostPort(host, port))
+		conn, err = dialTLS(ctx, addr)
 	} else {
-		conn, err = dialer.DialContext(ctx, "tcp", net.JoinHostPort(host, port))
+		conn, err = dialer.DialContext(ctx, "tcp", addr)
 	}
 	if err != nil {
 		return fmt.Errorf("dial %s: %w", host, err)
@@ -165,14 +155,15 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		"Upgrade: websocket\r\n"+
 		"Connection: Upgrade\r\n"+
 		"Sec-WebSocket-Key: %s\r\n"+
-		"Sec-WebSocket-Version: 13\r\n\r\n", path, host, key)
+		"Sec-WebSocket-Version: 13\r\n\r\n", path, net.JoinHostPort(host, port), key)
 
 	if _, err := conn.Write([]byte(upgradeReq)); err != nil {
 		return fmt.Errorf("send upgrade: %w", err)
 	}
 
-	// Read HTTP response (upgrade confirmation)
+	// Read HTTP response — same approach as working standalone test
 	buf := make([]byte, 4096)
+	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
 	n, err := conn.Read(buf)
 	if err != nil {
 		return fmt.Errorf("read upgrade response: %w", err)
@@ -182,7 +173,19 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		return fmt.Errorf("websocket upgrade failed: %s", response[:min(200, len(response))])
 	}
 
-	// Read WebSocket frames
+	// Find end of HTTP headers — any data after \r\n\r\n belongs to WS frames
+	headerEnd := strings.Index(response, "\r\n\r\n")
+	if headerEnd >= 0 && headerEnd+4 < n {
+		// There's leftover data after HTTP headers — process it as a WS frame
+		leftover := buf[headerEnd+4 : n]
+		frame, ok := parseWSFrame(leftover)
+		if ok {
+			handler(frame)
+		}
+	}
+
+	// Continue reading WebSocket frames directly from conn
+	frameCount := 0
 	for {
 		select {
 		case <-ctx.Done():
@@ -191,18 +194,19 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		}
 
 		conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-		frame, err := readWebSocketFrame(conn)
+		frame, err := readWSFrameConn(conn)
 		if err != nil {
-			return fmt.Errorf("read frame: %w", err)
+			return fmt.Errorf("read frame (after %d frames): %w", frameCount, err)
 		}
 		if frame != nil {
 			handler(frame)
+			frameCount++
 		}
 	}
 }
 
-// readWebSocketFrame reads a single WebSocket text frame.
-func readWebSocketFrame(conn net.Conn) ([]byte, error) {
+// readWSFrameConn reads a single WebSocket frame from a net.Conn.
+func readWSFrameConn(conn net.Conn) ([]byte, error) {
 	header := make([]byte, 2)
 	if _, err := io.ReadFull(conn, header); err != nil {
 		return nil, err
@@ -247,7 +251,6 @@ func readWebSocketFrame(conn net.Conn) ([]byte, error) {
 		}
 	}
 
-	// opcode: text=0x1, binary=0x2, close=0x8, ping=0x9, pong=0xA
 	opcode := header[0] & 0x0F
 	switch opcode {
 	case 0x8: // close
@@ -268,8 +271,56 @@ func readWebSocketFrame(conn net.Conn) ([]byte, error) {
 	}
 }
 
+// parseWSFrame parses a WebSocket frame from raw bytes (for leftover data after HTTP upgrade).
+func parseWSFrame(data []byte) ([]byte, bool) {
+	if len(data) < 2 {
+		return nil, false
+	}
+	payloadLen := int(data[1] & 0x7F)
+	offset := 2
+	if payloadLen == 126 {
+		if len(data) < 4 {
+			return nil, false
+		}
+		payloadLen = int(data[2])<<8 | int(data[3])
+		offset = 4
+	} else if payloadLen == 127 {
+		if len(data) < 10 {
+			return nil, false
+		}
+		payloadLen = 0
+		for i := 0; i < 8; i++ {
+			payloadLen = payloadLen<<8 | int(data[2+i])
+		}
+		offset = 10
+	}
+
+	masked := (data[1] & 0x80) != 0
+	if masked {
+		offset += 4 // skip mask key
+	}
+
+	if offset+payloadLen > len(data) {
+		return nil, false
+	}
+
+	payload := data[offset : offset+payloadLen]
+	if masked {
+		maskKey := data[offset-4 : offset]
+		for i := range payload {
+			payload[i] ^= maskKey[i%4]
+		}
+	}
+
+	opcode := data[0] & 0x0F
+	if opcode == 0x1 || opcode == 0x2 {
+		return payload, true
+	}
+	return nil, false
+}
+
 func generateWSKey() string {
-	return "dGhlIHNhbXBsZSBub25jZQ==" // Standard test key, Binance accepts any valid base64
+	return "dGhlIHNhbXBsZSBub25jZQ=="
 }
 
 func min(a, b int) int {
@@ -280,7 +331,6 @@ func min(a, b int) int {
 }
 
 // Binance WebSocket message structures
-
 type tickerMessage struct {
 	EventType string `json:"e"`
 	Symbol    string `json:"s"`
@@ -341,7 +391,11 @@ func parseKlineMessage(data []byte) (marketdata.Candle, bool) {
 	}, true
 }
 
-// Stub for TLS dial (uses crypto/tls via net/http default transport)
+// dialTLS creates a TLS connection using crypto/tls.
 func dialTLS(ctx context.Context, addr string) (net.Conn, error) {
-	return (&http.Transport{}).DialTLSContext(ctx, "tcp", addr)
+	host, _, _ := net.SplitHostPort(addr)
+	dialer := &net.Dialer{Timeout: 10 * time.Second}
+	return tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{
+		ServerName: host,
+	})
 }
