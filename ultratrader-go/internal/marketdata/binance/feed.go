@@ -133,10 +133,3 @@ func candleIntervalToDuration(interval string) time.Duration {
 	}
 }
 
-type tickSub struct{ ch <-chan marketdata.Tick }
-
-func (s tickSub) Chan() <-chan marketdata.Tick { return s.ch }
-
-type candleSub struct{ ch <-chan marketdata.Candle }
-
-func (s candleSub) Chan() <-chan marketdata.Candle { return s.ch }

@@ -2,11 +2,11 @@ package binance
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -288,6 +288,14 @@ type tickerMessage struct {
 	EventTime int64  `json:"E"`
 }
 
+type tickSub struct{ ch <-chan marketdata.Tick }
+
+func (s tickSub) Chan() <-chan marketdata.Tick { return s.ch }
+
+type candleSub struct{ ch <-chan marketdata.Candle }
+
+func (s candleSub) Chan() <-chan marketdata.Candle { return s.ch }
+
 type klineMessage struct {
 	EventType string      `json:"e"`
 	Symbol    string      `json:"s"`
@@ -341,7 +349,12 @@ func parseKlineMessage(data []byte) (marketdata.Candle, bool) {
 	}, true
 }
 
-// Stub for TLS dial (uses crypto/tls via net/http default transport)
+// dialTLS performs a TLS handshake.
 func dialTLS(ctx context.Context, addr string) (net.Conn, error) {
-	return (&http.Transport{}).DialTLSContext(ctx, "tcp", addr)
+	dialer := &tls.Dialer{
+		NetDialer: &net.Dialer{
+			Timeout: 10 * time.Second,
+		},
+	}
+	return dialer.DialContext(ctx, "tcp", addr)
 }

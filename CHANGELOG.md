@@ -5,6 +5,15 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.57] - 2026-06-08
+
+### Added
+- **Live Market Feed Integration Phase Completion**
+  - Implemented `TestLiveMarketMonitor` and `TestLivePerformanceIntegration` in `ultratrader-go/internal/core/app/`.
+  - Fixed build errors and strengthened Binance WebSocket feed (`internal/marketdata/binance/ws_feed.go`) with robust TLS handling.
+  - Verified real-time system performance and clean shutdown under live network conditions.
+  - Stabilized unified subscription types for ticker and candle streams.
+
 ## [2.0.56] - 2026-06-08
 
 ### Added
