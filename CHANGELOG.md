@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
   - Created `config/live-trading-binance.json` with production risk limits.
   - Verified live module initialization in `internal/core/app/live_trading_test.go`.
 
+## [2.0.61] - 2026-06-08
+
+### Added
+- **Formal Sandbox Test Run Completion**
+  - Implemented `TestSandboxRun` in `ultratrader-go/internal/core/app/sandbox_run_test.go` for multi-second logic verification.
+  - Verified real-time strategy interaction and signal logging under sandbox configurations.
+  - Confirmed 100% execution success rate for startup signals in a controlled paper environment.
+
 ## [2.0.60] - 2026-06-08
 
 ### Added
