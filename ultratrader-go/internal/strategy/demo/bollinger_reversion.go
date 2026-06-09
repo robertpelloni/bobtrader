@@ -13,12 +13,13 @@ import (
 // price touches the lower band (oversold) and sells when price touches the
 // upper band (overbought).
 type BollingerReversion struct {
-	accountID string
-	symbol    string
-	quantity  string
-	bb        *indicator.BollingerBands
-	warmup    int
-	period    int
+	accountID   string
+	symbol      string
+	quantity    string
+	bb          *indicator.BollingerBands
+	warmup      int
+	period      int
+	lastSignal  string // "buy", "sell", or "" — prevents repeated same-direction signals
 }
 
 func NewBollingerReversion(accountID, symbol, quantity string, period int, multiplier float64) *BollingerReversion {
@@ -51,7 +52,9 @@ func (s *BollingerReversion) OnMarketCandle(ctx context.Context, candle marketda
 	var signals []strategy.Signal
 
 	// Buy when price touches or drops below the lower band (oversold)
-	if closePrice <= result.Lower {
+	// Use else-if to prevent both buy AND sell on the same candle.
+	// Skip if lastSignal was already "buy" — prevents repeated same-direction signals.
+	if closePrice <= result.Lower && s.lastSignal != "buy" {
 		signals = append(signals, strategy.Signal{
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
@@ -59,10 +62,9 @@ func (s *BollingerReversion) OnMarketCandle(ctx context.Context, candle marketda
 			Quantity:  s.quantity,
 			OrderType: "market",
 		})
-	}
-
-	// Sell when price touches or exceeds the upper band (overbought)
-	if closePrice >= result.Upper {
+		s.lastSignal = "buy"
+	} else if closePrice >= result.Upper && s.lastSignal != "sell" {
+		// Sell when price touches or exceeds the upper band (overbought)
 		signals = append(signals, strategy.Signal{
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
@@ -70,6 +72,12 @@ func (s *BollingerReversion) OnMarketCandle(ctx context.Context, candle marketda
 			Quantity:  s.quantity,
 			OrderType: "market",
 		})
+		s.lastSignal = "sell"
+	} else if closePrice > result.Lower+(result.Upper-result.Lower)*0.25 &&
+		closePrice < result.Upper-(result.Upper-result.Lower)*0.25 {
+		// Neutral zone: price has moved back into the middle 50% of the band.
+		// Reset lastSignal so the strategy can re-enter from either side.
+		s.lastSignal = ""
 	}
 
 	return signals, nil
