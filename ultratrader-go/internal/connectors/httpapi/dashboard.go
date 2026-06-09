@@ -1095,7 +1095,8 @@ async function refreshDashboard() {
       fetchJson('/api/runtime-reports/trends'),
       fetchJson('/api/runtime-reports/latest'),
       fetchJson('/api/runtime-reports/history?type=metrics-snapshot&limit=20'),
-      fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20')
+      fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20'),
+      fetchJson('/api/config')
     ]);
 
     appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist,
