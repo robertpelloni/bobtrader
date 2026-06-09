@@ -14,3 +14,8 @@ ultratrader-go/ultratrader.exe
 ultratrader-go/data/
 *.exe
 *.test
+
+# Binance API credentials (never commit)
+
+# Binance API credentials (never commit these)
+ultratrader-go/config/secrets/

@@ -44,8 +44,7 @@
       "name": "Binance Spot Live",
       "enabled": true,
       "exchange": "binance",
-      "api_key": "YOUR_REAL_API_KEY",
-      "secret_key": "YOUR_REAL_SECRET_KEY",
+      "secrets_file": "config/secrets/binance-production.json",
       "testnet": false,
       "capabilities": ["spot", "candles", "balances", "orders"]
     }

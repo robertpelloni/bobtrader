@@ -44,8 +44,7 @@
       "name": "Binance Spot Testnet",
       "enabled": true,
       "exchange": "binance",
-      "api_key": "YOUR_TESTNET_API_KEY",
-      "secret_key": "YOUR_TESTNET_SECRET_KEY",
+      "secrets_file": "config/secrets/binance-testnet.json",
       "testnet": true,
       "capabilities": ["spot", "candles", "balances", "orders"]
     }

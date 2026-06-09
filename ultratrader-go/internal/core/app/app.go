@@ -370,7 +370,7 @@ func New(cfg config.Config) (*App, error) {
 func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.StreamFeed {
 	for _, acct := range cfg.Accounts {
 		if acct.Exchange == "binance" || acct.Exchange == "paper-market-aware" {
-			adapter := binance.New(binance.Config{Testnet: acct.Testnet})
+			adapter := binance.New(binance.Config{APIKey: acct.APIKey, SecretKey: acct.SecretKey, Testnet: acct.Testnet})
 
 			switch cfg.MarketData.Source {
 			case "websocket", "ws":

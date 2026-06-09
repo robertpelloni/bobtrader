@@ -95,6 +95,12 @@ type AccountConfig struct {
 	APIKey       string   `json:"api_key"`
 	SecretKey    string   `json:"secret_key"`
 	Testnet      bool     `json:"testnet"`
+	SecretsFile   string   `json:"secrets_file"` // path to JSON file with api_key/secret_key
+}
+
+type secretsFile struct {
+	APIKey    string `json:"api_key"`
+	SecretKey string `json:"secret_key"`
 }
 
 func Default() Config {
@@ -242,5 +248,26 @@ func Load(path string) (Config, error) {
 	if cfg.MarketData.InitialBalance == 0 {
 		cfg.MarketData.InitialBalance = defaults.MarketData.InitialBalance
 	}
+	// Load secrets from separate files if specified
+	for i := range cfg.Accounts {
+		acct := &cfg.Accounts[i]
+		if acct.SecretsFile != "" {
+			secData, err := os.ReadFile(acct.SecretsFile)
+			if err != nil {
+				return Config{}, fmt.Errorf("read secrets file %s: %w", acct.SecretsFile, err)
+			}
+			var sec secretsFile
+			if err := json.Unmarshal(secData, &sec); err != nil {
+				return Config{}, fmt.Errorf("unmarshal secrets file %s: %w", acct.SecretsFile, err)
+			}
+			if sec.APIKey != "" {
+				acct.APIKey = sec.APIKey
+			}
+			if sec.SecretKey != "" {
+				acct.SecretKey = sec.SecretKey
+			}
+		}
+	}
+
 	return cfg, nil
 }
