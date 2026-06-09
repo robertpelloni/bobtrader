@@ -1,381 +1,386 @@
-# PowerTrader_AI
-Fully automated crypto trading powered by a custom price prediction AI and a structured/tiered DCA system.
+# BobTrader / UltraTrader
 
-I have not checked any PowerTrader AI forks and cannot confirm or deny their legitimacy.
+**Autonomous cryptocurrency trading platform — Go runtime with real market data, paper trading, and 8 built-in strategies.**
 
-This is my personal trading bot that I decided to make open source. I made this strategy to match my personal goals. This system is meant to be a foundation/framework for you to build your dream bot! You are responsible for all financial and security risks associated with PowerTrader AI.
-
-I know there are "commonly essential" trading features that are missing (like no stop loss for example). This is by design because many of those things would just not work with this system's strategy as it stands, for my personal reasons below:
-
-I do not believe in selling worthwhile coins at a loss (and why would you trade anything besides worthwhile coins with a trading bot, anyways???).
-
-I DO believe in crypto. I'd rather just wait and maybe add more money to my account if need be so that the bot can buy even more of the coin while the price is down.
-
-I personally feel like many of those common things people use, like stop loss, are actually a trick or something, and I personally have absolutely no problem adding more money to my account to afford more DCA or having to wait for extended periods of time, if need be. In my opinion, anything else is just greedy and desperate, which is the exact OPPOSITE of needed attributes for long term growth. Plus, this is just spot trading... there's no worry of liquidation and it feels to me like many "risk management" tactics are really only meant for futures trading but people blindly apply them to spot trading when it just plain isn't necessary.
-
-I know the AI and the trading strategy are extremely simple because I'm the one that designed and made them. I've been developing this specific trading strategy for almost a decade and the design of the AI system for the last few years. The overall strategy is based on what ACTUALLY works from real trading experience, not just stuff I read in LLM responses or search engine results.
-
-
-Ok now that all of that is out of the way...
-
-I am not selling this trading bot. This trading bot is not a product. This system is for experimentation and education. The only reason you would EVER send me money is if you are voluntarily donating (donation routes can be found at the bottom of this readme :) ) or buying merch. Do not fall for any scams! PowerTrader AI is COMPLETELY FREE FOREVER!!!!
-
-IMPORTANT: This software places real trades automatically. You are responsible for everything it does to your money and your account. Keep your API keys private. I am not giving financial advice. I am not responsible for any losses incurred or any security breaches to your computer (the code is entirely open source and can be confirmed non-malicious). You are fully responsible for doing your own due diligence to learn and understand this trading system and to use it properly. You are fully responsible for all of your money and all of the bot's actions, and any gains or losses.
-
-“It’s an instance-based (kNN/kernel-style) predictor with online per-instance reliability weighting, used as a multi-timeframe trading signal.” - ChatGPT on the type of AI used in this trading bot.
-
-So what exactly does that mean?
-
-When people think AI, they usually think about LLM style AIs and neural networks. What many people don't realize is there are many types of Artificial Intelligence and Machine Learning - and the one in my trading system falls under the "Other" category.
-
-When training for a coin, it goes through the entire history for that coin on multiple timeframes and saves each pattern it sees, along with what happens on the next candle AFTER the pattern. It uses these saved patterns to generate a predicted candle by taking a weighted average of the closest matches in memory to the current pattern in time. This weighted average output is done once for each timeframe, from 1 hour up to 1 week. Each timeframe gets its own predicted candle. The low and high prices from these candles are what are shown as the blue and orange horizontal lines on the price charts. 
-
-After a candle closes, it checks what happened against what it predicted, and adjusts the weight for each "memory pattern" that was used to generate the weighted average, depending on how accurate each pattern was compared to what actually happened.
-
-Yes, it is EXTREMELY simple. Yes, it is STILL considered AI.
-
-Here is how the trading bot utilizes the price prediction ai to automatically make trades:
-
-For determining when to start trades, the AI's Thinker script sends a signal to start a trade for a coin if the ask price for the coin drops below at least 3 of the the AI's predicted low prices for the coin (it predicts the currently active candle's high and low prices for each timeframe across all timeframes from 1hr to 1wk).
-
-For determining when to DCA, it uses either the current price level from the AI that is tied to the current amount of DCA buys that have been done on the trade (for example, right after a trade starts when 3 blue lines get crossed, its first DCA wont happen until the price crosses the 4th line, so on so forth), or it uses the hardcoded drawdown % for its current level, whichever it hits first. It only allows a max of 2 DCAs within a rolling 24hr window to keep from dumping all of your money in too quickly on coins that are having an extended downtrend. Other risk management features can easily be added, as well, with just a bit of Python code!
-
-For determining when to sell, the bot uses a trailing profit margin to maximize the potential gains. The margin line is set at either 5% gain if no DCA has happened on the trade, or 2.5% gain if any DCA has happened. The trailing margin gap is 0.5% (this is the amount the price has to go over the profit margin to begin raising the profit margin up to TRAIL after the price and maximize how much profit is gained once the price drops below the profit margin again and the bot sells the trade.
-
-
-# Setup & First-Time Use (Windows)
-
-THESE INSTRUCTIONS WERE WRITTEN BY AI! PLEASE LET ME KNOW IF THERE ARE ANY ERRORS OR ISSUES WITH THIS SETUP PROCESS!
-
-If you have any crypto holdings in Robinhood currently, either transfer them out of your Robinhood account or sell them to dollars BEFORE going through this setup process!
-
-This page walks you through installing PowerTrader AI from start to finish, in the exact order a first-time user should do it.  
-No coding knowledge needed.  
-These instructions are Windows-based but PowerTrader AI *should* be able to run on any OS.
-
-IMPORTANT: This software places real trades automatically. You are responsible for everything it does to your money and your account. Keep your API keys private. I am not giving financial advice. I am not responsible for any losses incurred or any security breaches to your computer (the code is entirely open source and can be confirmed non-malicious). You are fully responsible for doing your own due diligence to learn and understand this trading system and to use it properly. You are fully responsible for all of your money and all of the bot's actions, and any gains or losses.
+> ⚠️ **This software can place real trades automatically.** You are responsible for all financial outcomes. Keep API keys private. This is not financial advice. See the [Apache 2.0 license](LICENSE) for full disclaimers.
 
 ---
 
-## Step 1 — Install Python
+## What Is This?
 
-1. Go to **python.org** and download Python for Windows.
-2. Run the installer.
-3. **Check the box** that says: **“Add Python to PATH”**.
-4. Click **Install Now**.
+BobTrader (UltraTrader) is a modular, daemon-grade cryptocurrency trading platform written in Go. It connects to live Binance market data, runs configurable trading strategies through a multi-layered risk pipeline, and executes trades via a paper-trading engine with realistic fee simulation. The system is designed to be observable, safe, and extensible — a foundation you can build your own trading bot on top of.
 
----
+The project also preserves a legacy Python trading system (`pt_*.py` files, ~25K lines) for reference, and maintains a research corpus of 42 open-source trading bot submodules for architecture and feature inspiration.
 
-## Step 2 — Download PowerTrader AI
+### Key Facts
 
-1. Do not download the zip file of the repo! There is an issue I have to fix.
-2. Create a folder on your computer, like: `C:\PowerTraderAI\`
-3. On the PowerTrader_AI repo page, go to the code page for pt_hub.py, click the "Download Raw File" button, save it into the folder you just created.
-4. Repeat that for all files in the repo (except the readme and the license).
-
----
-
-## Step 3 — Install PowerTrader AI (one command)
-
-1. Open **Command Prompt** (Windows key → type **cmd** → Enter).
-2. Go into your PowerTrader AI folder. Example:
-
-   `cd C:\PowerTraderAI`
-
-3. If using Python 3.12 or higher (or, later on, if you just run into the pkg_resources error) , run this command:
-
-   `python -m pip install "setuptools==81.0.0"`
-
-v81 is required, pkg_resources is not included with v82. I'll change the code away from it soon.
-
-4. Install everything PowerTrader AI needs:
-
-   `python -m pip install -r requirements.txt`
+| | |
+|---|---|
+| **Language** | Go 1.24.3 (primary), Python (legacy, frozen) |
+| **Source Files** | 229 Go files, ~25,700 lines of Go code |
+| **Market Data** | Binance.US REST (production), WebSocket (experimental) |
+| **Execution** | Paper trading with 0.1% taker fee simulation |
+| **Strategies** | 8 built-in (Bollinger, RSI, EMA, Trailing TP, WolfBot, DoubleEMA, MarketMaker, Safety) |
+| **Risk Guards** | 8 guards (whitelist, notional, concentration, cooldown, duplicate, max-positions) |
+| **API** | 20+ REST endpoints for portfolio, orders, diagnostics, config |
+| **Config** | JSON-driven — no recompilation needed to tune strategies |
+| **License** | Apache 2.0 |
 
 ---
 
-## Step 4 — Start PowerTrader AI
+## Architecture
 
-From the same Command Prompt window (inside your PowerTrader folder), run:
-
-`python pt_hub.py`
-
-The app that opens is the **PowerTrader Hub**.  
-This is the only thing you need to run day-to-day.
-
----
-
-## Step 5 — Set your folder, coins, and Robinhood keys (inside the Hub)
-
-### Open Settings
-
-In the Hub, open **Settings** and do this in order:
-
-- **Main Neural Folder**: set this to the same folder that contains `pt_hub.py` (recommended easiest).
-- **Choose which coins to trade**: start with **BTC**.
-- **While you are still in Settings**, click **Robinhood API Setup** and do this:
-
-1. Click **Generate Keys**.
-2. Copy the **Public Key** shown in the wizard.
-3. On Robinhood, add a new API key and paste that Public Key.
-4. Set permissions to allow trading (the wizard tells you what to select).
-5. Robinhood will show your API Key (often starts with `rh`). Copy it.
-6. Paste the API Key back into the wizard and click **Save**.
-7. Close the wizard and go back to the **Settings** screen.
-8. **NOW** click **Save** in Settings.
-
-After saving, you will have two files in your PowerTrader AI folder:  
-`r_key.txt` and `r_secret.txt`  
-Keep them private.
-
-PowerTrader AI uses a simple folder style:  
-**BTC uses the main folder**, and other coins use their own subfolders (like `ETH\`).
+```
+                    ┌─────────────────────────────────────────────────┐
+                    │              UltraTrader Go Runtime             │
+                    │                                                 │
+  Binance.US ──────▶  Market Data Feed (REST 5s / WS 1s)            │
+  Real Prices       │         │                                       │
+                    │         ▼                                       │
+                    │  Strategy Runtime                              │
+                    │  ┌─────────────────────────────────┐          │
+                    │  │ Bollinger │ RSI │ EMA │ Trailing │          │
+                    │  │ WolfBot   │ DEMA│ MktMaker│Safety│          │
+                    │  └─────────────┬───────────────────┘          │
+                    │                │ Signals                        │
+                    │                ▼                                │
+                    │  Risk Pipeline (8 Guards)                      │
+                    │  ┌──────────────────────────────────┐         │
+                    │  │ Whitelist │ MaxNotional │ Cooldown│         │
+                    │  │ MaxConc   │ Duplicate   │ MaxPos  │         │
+                    │  └─────────────┬────────────────────┘         │
+                    │                │ Approved Orders               │
+                    │                ▼                                │
+                    │  Paper Execution Engine                       │
+                    │  (Market-Aware, 0.1% Taker Fee)               │
+                    │                │                                │
+                    │                ▼                                │
+                    │  Portfolio Tracker │ Signal Log │ Order Journal│
+                    └─────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+                            HTTP API + Dashboard
+                       (Portfolio, Guards, Metrics, Config)
+```
 
 ---
 
-## Step 6 — Train (inside the Hub)
+## Quick Start
 
-Training builds the system’s coin “memory” so it can generate signals.
+### Prerequisites
 
-1. In the Hub, click **Train All**.
-2. Wait until training finishes.
+- [Go 1.24+](https://go.dev/dl/)
+- Internet access (for Binance.US market data)
 
----
+### Build & Run
 
-## Step 7 — Start the system (inside the Hub)
+```bash
+# Clone
+git clone https://github.com/robertpelloni/bobtrader.git
+cd bobtrader/ultratrader-go
 
-When all coins have completed training, click:
+# Build
+go build -o ultratrader.exe ./cmd/ultratrader
 
-1. **Start All**
+# Run autonomous paper trading (REST feed, $10K starting balance)
+./ultratrader.exe --config config/autonomous-paper.json
+```
 
-The Hub will:  
-**start pt_thinker.py**, wait until it is ready, then it will **start pt_trader.py**.  
-You don’t need to manually start separate programs. The hub handles everything!
+Open the dashboard: **http://127.0.0.1:8300/**
 
----
+The system immediately begins pulling live BTC/ETH/SOL prices from Binance.US, generating strategy signals, and executing simulated trades.
 
-## Neural Levels (the LONG/SHORT numbers)
+### Run with Docker
 
-- These are signal strength levels from low to high.
-- They are predicted high and low prices for all timeframes from 1hr to 1wk.
-- They are used to show how stretched a coin's price is and for determining when to start trades and potentially when to DCA for the first few levels of DCA (Whichever price is higher, Neural level or hardcoded drawdown % for the current DCA level).
-- Higher number = stronger signal.
-- LONG = buy-direction signal. SHORT = No-start signal
-
-A TRADE WILL START FOR A COIN IF THAT COIN REACHES A LONG LEVEL OF 3 OR HIGHER WHILE HAVING A SHORT LEVEL OF 0! This is adjustable in the settings.
-
----
-
-## Features (Version 2.0.0 - 2026-01-18)
-
-### New in v2.0.0: Comprehensive Dashboard & Risk Management
-- **Volume Analysis Dashboard**: Visualize volume trends, anomalies, and profiles per coin.
-- **Risk Management Dashboard**: Correlation matrix and portfolio diversification analysis.
-- **Enhanced Settings**: Centralized configuration for all modules via a tabbed interface.
-- **Advanced Documentation**: See [MANUAL.md](MANUAL.md) for a complete guide.
-
-### Analytics Integration System
-- **Persistent Trade Journal**: SQLite-based database logging for all trades
-- **Performance Tracking**: Real-time metrics including win rate, P&L, Sharpe ratio, max drawdown
-- **Trade Group IDs**: Automatic linking of entries, DCAs, and exits for complete trade tracking
-- **Dashboard Widgets**: Real-time KPI cards and period comparison tables
-- **Integration**: Single-point integration into pt_trader.py with graceful fallback
-
-**Modules**: pt_analytics.py, pt_analytics_dashboard.py
-
-### Analytics Dashboard
-- **KPI Cards**: Total trades, win rate, today's P&L, max drawdown
-- **Performance Tables**: Period comparisons (all-time, 7 days, 30 days)
-- **Real-time Updates**: Auto-refresh with 5-second cache interval
-- **GUI Integration**: Dedicated ANALYTICS tab in pt_hub.py
+```bash
+cd ultratrader-go
+docker build -t ultratrader-go .
+docker run --rm -p 8300:8300 ultratrader-go
+```
 
 ---
 
-### Multi-Exchange Price Aggregation
-- **Unified Interface**: ExchangeManager for KuCoin, Binance, and Coinbase
-- **Cross-Exchange Price**: Median/VWAP across multiple exchanges
-- **Arbitrage Monitoring**: Automatic detection of price spreads between exchanges
-- **Fallback Chain**: KuCoin → Binance → Coinbase for reliability
-- **Real-time Verification**: Price data verification before trading decisions
+## Config Profiles
 
-**Modules**: pt_exchanges.py (1006 lines), pt_thinker_exchanges.py (100 lines)
+| Config File | Purpose | Market Data | Balance |
+|---|---|---|---|
+| `autonomous-paper.json` | **Production paper trading** | Binance.US REST 5s | $10,000 |
+| `autonomous-paper-ws.json` | WebSocket paper trading (experimental) | Binance.US WS 1s | $10,000 |
+| `development-timer.json` | Development with timer scheduler | Paper mock | $10,000 |
+| `development-stream.json` | Development with stream scheduler | Paper mock | $10,000 |
+| `paper-service.json` | Headless paper service | Paper mock | $10,000 |
+| `live-trading-binance.json` | Live trading template (requires API keys) | Binance REST | — |
 
----
+All strategy parameters are configurable via JSON — **no recompilation needed**:
 
-### Notification System
-- **Multi-Platform Support**: Email (Gmail), Discord (webhooks), Telegram (bot)
-- **Unified Interface**: Single NotificationManager for all platforms
-- **Rate Limiting**: Platform-specific limits (Email: 2/hr, Discord: 30/min, Telegram: 20/min)
-- **Notification Levels**: INFO, WARNING, ERROR, CRITICAL with color coding
-- **Configuration**: JSON-based configuration file
-- **SQLite Logging**: All sent notifications logged for audit trail
-- **Async Support**: Non-blocking notifications via asyncio
-
-**Modules**: pt_notifications.py (876 lines)
-
----
-
-### Volume Analysis System
-- **Technical Indicators**: SMA, EMA, VWAP calculations
-- **Volume Trend Detection**: Increasing, decreasing, or stable analysis
-- **Anomaly Detection**: Z-score based statistical outlier detection
-- **CLI Tools**: Backtesting utilities for volume-based strategies
-
-**Modules**: pt_volume.py (237 lines)
+```json
+{
+  "strategy": {
+    "risk_pct": 2.0,
+    "trailing_activate_pct": 1.0,
+    "trailing_gap_pct": 0.3,
+    "trailing_stop_loss_pct": 3.0,
+    "bollinger_period": 20,
+    "bollinger_std_dev": 2.0,
+    "rsi_oversold": 35,
+    "rsi_overbought": 65,
+    "ema_fast": 9,
+    "ema_slow": 21
+  }
+}
+```
 
 ---
 
-### Multi-Asset Correlation Analysis
-- **Portfolio Correlation Calculation**: Position-weighted correlation analysis
-- **Historical Correlation Tracking**: 7/30/90-day correlation periods
-- **Diversification Alerts**: Automatic alerts when correlations exceed thresholds (>0.8)
-- **Correlation Matrix**: Multi-asset correlation computation
-- **Integration Ready**: Integration points for pt_thinker.py and pt_analytics.py
+## Strategies
 
-**Modules**: pt_correlation.py (447 lines)
+| Strategy | Type | Signal | Inspiration |
+|---|---|---|---|
+| **Bollinger Tick Reversion** | Mean-reversion | Buy at lower band, sell at upper band | Original |
+| **RSI Reversion** | Mean-reversion | Buy oversold (<35), sell overbought (>65) | Original |
+| **EMA Tick Crossover** | Trend-following | Golden/death cross on 9/21 EMA | Original |
+| **Trailing Take Profit** | Exit | Trailing stop after 1% activation | Original |
+| **WolfBot Bollinger** | Breakout | Bollinger breakout detection | Ekliptor/WolfBot |
+| **Double EMA Trend** | Trend-following | Dual EMA with long-period filter | freqtrade |
+| **Market Maker** | Liquidity | Ping-pong quoting | Krypto-trading-bot |
+| **Dynamic Trailing Stop** | Risk | High-price tracking stop | pycryptobot |
+| **ProfitBank / PreventLoss** | Safety | Multi-layered exit triggers | pycryptobot |
 
----
-
-### Volatility-Adjusted Position Sizing
-- **ATR Calculation**: 14-period Average True Range for volatility measurement
-- **True Range Calculation**: Accurate volatility assessment using high/low/close
-- **Risk-Adjusted Sizing**: Position sizes based on configurable risk (1%-10% of account)
-- **Volatility Factor Adjustment**: Dynamic position sizing based on ATR %
-  - Low volatility (<1%): 1.5x position size
-  - Medium volatility (1-2%): 1.25x position size
-  - High volatility (>5%): 0.75x position size
-  - Very high volatility (>8%): 0.5x position size
-- **Market Volatility Data**: Volatility metrics retrieval from analytics database
-- **Complete Recommendation System**: Position sizing with volatility level classification
-
-**Modules**: pt_position_sizing.py (414 lines)
+Each strategy runs per-symbol. The default config runs 4 strategies × 3 symbols = 12 concurrent strategy instances.
 
 ---
 
-### Version Management
-- **Single Source of Truth**: VERSION.md contains project version number
-- **Dynamic Display**: Version number shown in GUI header (v2.0.0)
-- **Automated Bumping**: Version increments with each release
-- **Change Tracking**: Comprehensive CHANGELOG.md documenting all changes
-- **Documentation**: ROADMAP.md and MODULE_INDEX.md for project inventory
+## Risk Pipeline
 
-**Files**: VERSION.md (current version), CHANGELOG.md, ROADMAP.md, MODULE_INDEX.md
+Every signal passes through 8 risk guards before execution:
 
----
+| Guard | Purpose |
+|---|---|
+| **Symbol Whitelist** | Only trade approved symbols |
+| **Max Notional** | Cap total order value |
+| **Max Notional Per Symbol** | Cap per-symbol exposure |
+| **Max Concentration** | Prevent portfolio over-concentration (uses live market values) |
+| **Cooldown** | Side-aware rate limiting (10s buy, 5s sell) |
+| **Duplicate Symbol** | Prevent rapid re-entry on same symbol |
+| **Duplicate Side** | Prevent rapid repeated buy or sell |
+| **Max Open Positions** | Cap total concurrent positions |
 
-### Configuration Management System
-- **Unified Configuration**: Centralized configuration management with YAML format
-- **Config Validation**: Schema validation and constraint checking (trading, notifications, system)
-- **Environment Variables**: POWERTRADER_ prefix overrides (KUCOIN_API_KEY, EMAIL_ADDRESS, etc.)
-- **Hot-Reload Support**: File watcher for automatic configuration reloading
-- **Migration Path**: Seamless migration from existing gui_settings.json
-- **Configuration Dataclasses**: TradingConfig, NotificationConfig, ExchangeConfig, AnalyticsConfig, SystemConfig
-- **ConfigManager Singleton**: Global access with get_config() function
-- **Callback System**: Configuration change notifications for GUI integration
-- **Export Methods**: dict and JSON export for GUI settings panel
-- **Retention Policies**: Configurable log file rotation and backup retention
-
-**Modules**: pt_config.py (628 lines)
+**Sell orders bypass most guards** — exits reduce exposure and should never be blocked by notional/concentration limits.
 
 ---
 
-### Structured Logging System
-- **Structured JSON Logging**: JSON-formatted log entries with timestamps, levels, modules
-- **Console & File Handlers**: Dual output (human-readable console, structured file)
-- **Log Rotation**: Automatic rotation by file size (configurable max size)
-- **Retention Policies**: Backup log retention (configurable count)
-- **Critical Notifications**: Integration with pt_notifications.py for critical log events
-- **Specialized Loggers**: Module-specific loggers (main, trader, thinker, analytics, notifications, exchanges)
-- **Search Functionality**: Query logs by level, module, or text
-- **Summary Generation**: By-level and by-module log summaries for dashboard
-- **Color-Coded Console**: DEBUG, INFO, WARNING, ERROR, CRITICAL with colors
-- **Performance Tracking**: API call timing and performance metrics logging
+## API Endpoints
 
-**Modules**: pt_logging.py (538 lines)
+| Endpoint | Description |
+|---|---|
+| `GET /healthz` | Health check |
+| `GET /readyz` | Readiness check |
+| `GET /api/status` | Runtime status |
+| `GET /api/portfolio` | Full portfolio with positions & PnL |
+| `GET /api/portfolio-summary` | Compact portfolio summary |
+| `GET /api/orders` | Order history |
+| `GET /api/execution-summary` | Execution statistics |
+| `GET /api/execution-diagnostics` | Detailed execution diagnostics |
+| `GET /api/exposure-diagnostics` | Exposure/concentration details |
+| `GET /api/metrics` | Runtime metrics |
+| `GET /api/guards` | Guard names |
+| `GET /api/guard-diagnostics` | Guard block reasons & counts |
+| `GET /api/config` | Full config including strategy params |
+| `GET /api/signals` | Recent signal log |
+| `GET /api/strategy-stats` | Per-strategy win rate, PnL, signal count |
+| `GET /api/runtime-reports/latest` | Latest runtime report |
+| `GET /api/runtime-reports/history` | Historical reports |
+| `GET /api/runtime-reports/trends` | Trend analysis (variances) |
+| `GET /dashboard` | Web dashboard UI |
 
 ---
 
-## Documentation
+## Verified Performance
 
-- **[MANUAL.md](MANUAL.md)**: **COMPLETE USER MANUAL** - Start here!
-- **README.md**: This file - main project documentation, setup, and usage
-- **CHANGELOG.md**: Complete version history with all changes documented
-- **ROADMAP.md**: Current status and future feature planning
-- **MODULE_INDEX.md**: Complete inventory of all modules with versions and locations
-- **UNIVERSAL_LLM_INSTRUCTIONS.md**: Universal guidelines for all AI agents
-- **Model-Specific Files**: CLAUDE.md (Claude), GEMINI.md (Gemini), GPT.md (GPT), copilot-instructions.md (Copilot)
-- **AGENTS.md**: Comprehensive agent instruction documentation
-- **MCP_SERVERS_RESEARCH.md**: Research on 25+ MCP servers and financial libraries for future integration
+20-minute autonomous paper trading test with real Binance.US market data (BTC/ETH/SOL, $10K USDT):
+
+| Metric | Result |
+|---|---|
+| Executed Trades | 47 |
+| Win Rate | **80%** (20W / 5L) |
+| Bollinger Strategy | 87% WR, +$0.14 PnL |
+| RSI Strategy | 100% WR |
+| EMA Strategy | 71% WR |
+| Guard Block Rate | 39% (prevents over-trading) |
 
 ---
 
 ## Project Structure
 
-**Core System (5 files)**:
-- pt_hub.py (5,835 lines) - Main GUI and orchestration hub
-- pt_thinker.py (1,381 lines) - Price prediction AI
-- pt_trader.py (2,421 lines) - Trade execution engine
-- pt_trainer.py (1,625 lines) - AI training system
-- pt_backtester.py (876 lines) - Historical strategy testing
+```
+bobtrader/
+├── ultratrader-go/                  # Go ultra-project (primary)
+│   ├── cmd/ultratrader/             # Application entrypoint
+│   ├── config/                      # JSON config profiles
+│   ├── internal/
+│   │   ├── core/                    # App composition, config, logging, event log
+│   │   ├── marketdata/              # Market data feeds (Binance REST/WS, paper)
+│   │   ├── strategy/                # Trading strategies + scheduler + signal log
+│   │   │   ├── demo/                # 16 strategy implementations
+│   │   │   ├── scheduler/           # Enhanced scheduler + smart dispatcher
+│   │   │   ├── sizing/              # Position sizing (PortfolioSizer)
+│   │   │   ├── marketmaking/        # Market maker strategy
+│   │   │   ├── composite/           # Signal composition/voting
+│   │   │   ├── regime/              # Market regime detection
+│   │   │   └── nlp/                 # NLP strategy parsing
+│   │   ├── risk/                    # 8 risk guards + circuit breaker
+│   │   ├── trading/                 # Execution, portfolio, reconciliation
+│   │   │   ├── execution/           # ExecutionManager, WolfBot, Safety, MarketMaker
+│   │   │   ├── portfolio/           # Position tracker, exposure view
+│   │   │   ├── orders/              # Order journal
+│   │   │   ├── account/             # Account service
+│   │   │   ├── reconciliation/      # Order reconciliation
+│   │   │   └── rebalancer/          # Portfolio rebalancer
+│   │   ├── exchange/                # Exchange registry + adapters
+│   │   │   ├── binance/             # Binance REST adapter
+│   │   │   ├── paper/               # Market-aware paper exchange
+│   │   │   ├── aggregator/          # Multi-exchange price aggregation
+│   │   │   └── ratelimit/           # Token bucket rate limiter
+│   │   ├── analytics/               # Journal, correlation, ML, RL, sentiment
+│   │   ├── backtest/                # Engine + optimizer (walk-forward, grid, Monte Carlo)
+│   │   ├── connectors/httpapi/      # HTTP API + dashboard
+│   │   ├── notification/            # Discord, Telegram, Email
+│   │   ├── enterprise/              # RBAC, audit logging
+│   │   ├── persistence/             # Orders, snapshots, reports (JSONL)
+│   │   ├── indicator/               # Technical indicators (MACD, Bollinger, ATR)
+│   │   └── metrics/                 # Runtime metrics tracker
+│   ├── Dockerfile
+│   └── docker-compose.yml
+│
+├── pt_*.py                          # Legacy Python system (frozen, ~25K lines)
+├── submodules/                      # 42 reference trading bot repos
+├── docs/                            # Architecture analysis, assimilation docs
+├── HANDOFF.md                       # Session-to-session handoff log
+├── ROADMAP.md                       # Development roadmap
+├── TODO.md                          # Task tracking
+├── DEPLOY.md                        # Deployment instructions
+├── VERSION.md                       # Current version (2.0.54)
+└── CHANGELOG.md                     # Version history
+```
 
-**Analytics System (3 files)**:
-- pt_analytics.py (770 lines) - SQLite trade journal
-- pt_analytics_dashboard.py (262 lines) - Dashboard widgets
+---
 
-**Exchange System (2 files)**:
-- pt_exchanges.py (1006 lines) - Multi-exchange manager
-- pt_thinker_exchanges.py (100 lines) - Exchange integration wrapper
+## Legacy Python System
 
-**Notification System (2 files)**:
-- pt_notifications.py (876 lines) - Unified notification system
+The original PowerTrader AI is preserved in the root `pt_*.py` files. It is a Tkinter-based desktop app with:
 
-**Volume Analysis (1 file)**:
-- pt_volume.py (237 lines) - Volume metrics and analysis
+- **kNN price prediction AI** — instance-based predictor with online reliability weighting
+- **Structured DCA system** — tiered dollar-cost-averaging with neural level triggers
+- **Robinhood Crypto execution** — spot trading via Robinhood API
+- **Multi-exchange price aggregation** — KuCoin + Binance + Coinbase with median/VWAP
+- **Notifications** — Email, Discord, Telegram
+- **25,300 lines** across 36 Python modules
 
-**Risk Management (2 files)**:
-- pt_correlation.py (447 lines) - Multi-asset correlation analysis
-- pt_position_sizing.py (414 lines) - Volatility-adjusted position sizing
+The Python system is **frozen** (no longer actively developed). All new development targets the Go runtime.
 
-**Configuration Management (1 file)**:
-- pt_config.py (628 lines) - Unified configuration management with hot-reload
+---
 
-**Logging System (1 file)**:
-- pt_logging.py (538 lines) - Structured JSON logging with rotation
+## Research Corpus
 
-**Total**: 17 Python modules, ~17,530 lines of code
+The `submodules/` directory contains 42 open-source trading bot repositories for architecture and feature reference:
+
+| Category | Notable Projects |
+|---|---|
+| Architecture | TraderAlice/OpenAlice |
+| Go Kernel | c9s/bbgo |
+| Exchange Abstraction | ccxt/ccxt |
+| Advanced Features | Ekliptor/WolfBot |
+| Market Making | ctubio/Krypto-trading-bot |
+| ML Strategies | AI4Finance-Foundation/FinRL_Crypto |
+| Risk Management | whittlem/pycryptobot |
+
+The Go project uses **clean-room reimplementation** — studying architecture and behavior without direct source reuse, to avoid licensing conflicts.
+
+---
+
+## Testing
+
+```bash
+cd ultratrader-go
+
+# Run core test suite
+go test ./internal/core/... ./internal/strategy/... ./internal/risk/... \
+       ./internal/trading/... ./internal/marketdata/... ./internal/exchange/paper/...
+
+# Run all tests
+go test ./...
+
+# Build binary
+go build -o ultratrader.exe ./cmd/ultratrader
+```
+
+---
+
+## Configuration Reference
+
+```json
+{
+  "environment": "autonomous-paper-trading",
+  "server": { "enabled": true, "address": "0.0.0.0:8300" },
+  "scheduler": { "enabled": true, "mode": "stream", "interval_ms": 5000 },
+  "risk": {
+    "max_notional": 500,
+    "max_notional_per_symbol": 250,
+    "allowed_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+    "cooldown_ms": 10000,
+    "duplicate_window_ms": 15000,
+    "duplicate_side_window_ms": 10000,
+    "max_open_positions": 5,
+    "max_concentration_pct": 90
+  },
+  "strategy": {
+    "risk_pct": 2.0,
+    "max_notional": 500,
+    "trailing_activate_pct": 1.0,
+    "trailing_gap_pct": 0.3,
+    "trailing_stop_loss_pct": 3.0,
+    "trailing_max_hold_minutes": 5,
+    "bollinger_period": 20,
+    "bollinger_std_dev": 2.0,
+    "rsi_period": 14,
+    "rsi_oversold": 35,
+    "rsi_overbought": 65,
+    "ema_fast": 9,
+    "ema_slow": 21
+  },
+  "market_data": { "source": "rest", "initial_balance": 10000 },
+  "accounts": [{
+    "id": "paper-main",
+    "name": "Paper Trading (Live Binance Data)",
+    "enabled": true,
+    "exchange": "paper-market-aware"
+  }]
+}
+```
+
+---
+
+## Documentation
+
+| File | Description |
+|---|---|
+| [MANUAL.md](MANUAL.md) | Legacy Python user manual |
+| [DEPLOY.md](DEPLOY.md) | Deployment instructions (Go + Python) |
+| [ROADMAP.md](ROADMAP.md) | Development roadmap |
+| [TODO.md](TODO.md) | Task tracking |
+| [HANDOFF.md](HANDOFF.md) | Session-to-session development log |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [MODULE_INDEX.md](MODULE_INDEX.md) | Python→Go module mapping |
+| [MCP_SERVERS_RESEARCH.md](MCP_SERVERS_RESEARCH.md) | 25+ MCP server research |
+
+---
+
+## Disclaimer
+
+This software is for **educational and experimental purposes**. It can place real trades automatically. You are responsible for everything it does to your money and your account. Keep your API keys private. This is not financial advice. The authors are not responsible for any losses incurred or security breaches.
 
 ---
 
 ## License
 
-PowerTrader AI is released under **Apache 2.0** license.
-
----
-
-## Adding more coins (later)
-
-1. Open **Settings**
-2. Add one new coin
-3. Save
-4. Click **Train All**, wait for training to complete
-5. Click **Start All**
-
----
-
-## Donate
-
-PowerTrader AI is COMPLETELY free and open source! If you want to support the project, you can donate or become a member:
-
-- Cash App: **$garagesteve**
-- PayPal: **@garagesteve**
-- Facebook (Subscribe to my Facebook page for only $1/month): **https://www.facebook.com/stephen.bryant.hughes**
-
----
-
-## License
-
-PowerTrader AI is released under the **Apache 2.0** license.
-
----
-
-IMPORTANT: This software places real trades automatically. You are responsible for everything it does to your money and your account. Keep your API keys private. I am not giving financial advice. I am not responsible for any losses incurred or any security breaches to your computer (the code is entirely open source and can be confirmed non-malicious). You are fully responsible for doing your own due diligence to learn and understand this trading system and to use it properly. You are fully responsible for all of your money and all of the bot's actions, and any gains or losses.
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
