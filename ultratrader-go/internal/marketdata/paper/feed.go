@@ -143,5 +143,6 @@ func streamPrices() map[string][]string {
 	return map[string][]string{
 		"BTCUSDT": {"65000.00", "64950.00", "65050.00", "64975.00"},
 		"ETHUSDT": {"3200.00", "3190.00", "3210.00", "3195.00"},
+		"SOLUSDT": {"145.00", "144.50", "146.00", "145.50"},
 	}
 }

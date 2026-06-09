@@ -20,7 +20,7 @@ type Adapter struct {
 
 // NewAdapter creates a new Binance adapter.
 func NewAdapter(apiKey string, isTestnet bool) *Adapter {
-	baseURL := "https://api.binance.com"
+	baseURL := "https://api.binance.us"
 	if isTestnet {
 		baseURL = "https://testnet.binance.vision"
 	}
