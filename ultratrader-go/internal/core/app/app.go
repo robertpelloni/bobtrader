@@ -177,9 +177,25 @@ func New(cfg config.Config) (*App, error) {
 	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
 	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
+	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
+	// For paper accounts: use the MarketAwarePaper adapter (simulated balance)
+	// For real Binance accounts: use BinanceBalanceReader (queries real account)
+	var balanceReader strategydemo.BalanceReader = marketAwarePaper
+	for _, acct := range cfg.Accounts {
+		if acct.Enabled && acct.Exchange == "binance" {
+			binanceAdapter := binance.New(binance.Config{
+				APIKey:   acct.APIKey,
+				SecretKey: acct.SecretKey,
+				Testnet:  acct.Testnet,
+			})
+			balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
+			break
+		}
+	}
+
 	// ── Strategy Runtime ───────────────────────────────────────
 	strategyRuntime := buildAutonomousStrategyRuntime(
-		cfg, primaryAccountID, marketDataFeed, portfolioTracker, marketAwarePaper,
+		cfg, primaryAccountID, marketDataFeed, portfolioTracker, balanceReader,
 	)
 
 	// ── Enhanced Scheduler (position-aware, signal-logged) ─────
@@ -384,7 +400,7 @@ func buildAutonomousStrategyRuntime(
 	accountID string,
 	feed marketdata.Feed,
 	portfolioTracker *portfolio.Tracker,
-	marketAwarePaper *exchangepaper.MarketAwareAdapter,
+	balanceReader strategydemo.BalanceReader,
 ) *strategy.Runtime {
 	symbols := cfg.Risk.AllowedSymbols
 	if len(symbols) == 0 {
@@ -405,17 +421,17 @@ func buildAutonomousStrategyRuntime(
 		for _, symbol := range symbols {
 			// ── Entry Strategy 1: EMA Crossover ──────────
 			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
-			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
+			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, emaSized)
 
 			// ── Entry Strategy 2: Bollinger Band Reversion ──
 			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
-			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
+			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, bbSized)
 
 			// ── Entry Strategy 3: RSI Reversion ──────────
 			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
-			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
+			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, rsiSized)
 
 			// ── Exit Strategy: Trailing Take Profit ──────
