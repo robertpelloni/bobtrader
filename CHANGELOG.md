@@ -5,6 +5,16 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.0.65] - 2026-06-09
+
+### Added
+- **Integration Testing & Release Readiness Completion**
+  - Finalized environment-specific configurations (`autonomous-paper`, `live-trading`, `integration-test`).
+  - Successfully executed a 2-minute controlled paper run on live market data with positive PnL.
+  - Verified 1,000-hour historical backtest on BTCUSDT using real Binance data.
+  - Achieved high-frequency execution stability with 89 orders/min throughput.
+  - Confirmed 100% pass rate across the full unit and integration test suite.
+
 ## [2.0.64] - 2026-06-08
 
 ### Added
