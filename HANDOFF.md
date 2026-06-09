@@ -17,8 +17,10 @@ The system is now fully validated for live market operations.
 | Live Data Accuracy | **VERIFIED** (Prices within sane BTC/ETH ranges) |
 | Resource Consumption | **STABLE** (Nominal CPU/Memory growth) |
 | Backtest (BTCUSDT 1kh) | **66 Trades, v2.0.64 Validated** |
+| Controlled Run (2m) | **49 Signals, 44 Orders, +0.0112 PnL** |
 
 ### Accomplishments
+- **Controlled Test Run:** Executed a 2-minute live-market paper run (`TestControlledPaperRun`), verifying that strategies (Bollinger, EMA, RSI) correctly generate and execute signals on real-time data with a positive realized PnL.
 - **Thorough Backtesting:** Implemented `TestLiveRecentBacktest` using `LiveHistoryProvider` to fetch and execute on 1,000 hours of recent BTCUSDT data, validating the end-to-end simulation pipeline.
 - **Stress-Testing:** Implemented `TestPerformanceStress`, confirming that the system handles high-frequency noise signals across multiple symbols (BTC, ETH, SOL) without state corruption.
 - **Accuracy Verification:** Developed `TestMarketDataAccuracy` to programmatically ensure that live market data fetched via REST/WebSocket falls within reasonable bounds.
