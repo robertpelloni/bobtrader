@@ -1,2 +1,16 @@
 # Jules AI session logs (auto-generated, not needed in repo)
 .jules/sessions/
+
+# Orphaned submodule directories (removed from git tracking, kept as local references)
+submodules/page-03/Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot/
+submodules/page-03/RobertMarcellos__polymarket-copy-trading-bot/
+submodules/page-03/ericjang__cryptocurrency_arbitrage/
+submodules/page-04/hello2all__gamma-ray/
+submodules/page-05/fluidex__dingir-exchange/
+submodules/page-06/SFCQuantX__polymarket-trading-agent/
+
+# Build artifacts
+ultratrader-go/ultratrader.exe
+ultratrader-go/data/
+*.exe
+*.test

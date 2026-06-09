@@ -32,6 +32,19 @@ Recommended next work for the Go track:
 - deeper exposure/concentration enforcement
 - coordinated shutdown tests
 - eventual backtesting/optimization/exchange-adapter expansion
+- [x] Submodule Assimilation (Phase 1: OpenAlice, bbgo)
+- [x] Submodule Assimilation (Phase 2: WolfBot)
+- [x] Submodule Assimilation (Phase 3 & 4: CCXT, Krypto-trading-bot)
+- [x] Submodule Assimilation (Phase 5: PyCryptoBot)
+- [x] System Test Phase (End-to-End Simulation)
+- [x] Sandbox Verification Phase (Algo & Risk Controls)
+- [x] Live Market Feed Integration Phase
+- [x] Live Trading Module Initiation
+- [x] Integration Testing Phase (Market Data & Execution)
+- [x] Strategy Backtesting Phase (Live-Data & Synthetic)
+- [x] Formal Sandbox Test Run (Real-time Interaction)
+- [x] Parallel Strategy Optimization Phase (WolfBot-inspired)
+- [x] Final Live Integration Testing Phase
 
 
 ## Version 3.0.0 (Current) - Released 2026-01-18

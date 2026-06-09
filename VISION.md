@@ -7,8 +7,8 @@ This repository is evolving from a single Python trading bot into a **unified tr
 2. **Build a next-generation Go ultra-project** that clean-room assimilates the strongest architecture, execution patterns, analytics ideas, and operator workflows from the imported reference corpus.
 
 The end state is intended to be a highly capable, modular, observable, and operator-friendly trading platform that combines:
-- robust exchange abstractions,
-- safe execution pipelines,
+- robust exchange abstractions (assimilating bbgo patterns),
+- safe execution pipelines (assimilating OpenAlice patterns),
 - strategy runtime composition,
 - rich analytics and journaling,
 - operator-facing diagnostics and dashboards,

@@ -174,14 +174,33 @@ func (a *Adapter) PlaceOrder(ctx context.Context, request exchange.OrderRequest)
 	}
 
 	return exchange.Order{
-		ID:       strconv.FormatInt(resp.OrderID, 10),
-		Symbol:   resp.Symbol,
-		Side:     request.Side,
-		Type:     request.Type,
-		Status:   resp.Status,
-		Quantity: resp.ExecutedQty,
-		Price:    resp.Price,
+		ID:          strconv.FormatInt(resp.OrderID, 10),
+		Symbol:      resp.Symbol,
+		Side:        request.Side,
+		Type:        request.Type,
+		Status:      mapStatus(resp.Status),
+		Quantity:    resp.OrigQty,
+		ExecutedQty: resp.ExecutedQty,
+		Price:       resp.Price,
+		Timestamp:   time.UnixMilli(resp.TransactTime),
 	}, nil
+}
+
+func mapStatus(s string) exchange.OrderStatus {
+	switch s {
+	case "NEW", "PARTIALLY_FILLED":
+		return exchange.StatusOpen
+	case "FILLED":
+		return exchange.StatusClosed
+	case "CANCELED":
+		return exchange.StatusCanceled
+	case "EXPIRED":
+		return exchange.StatusExpired
+	case "REJECTED":
+		return exchange.StatusRejected
+	default:
+		return exchange.StatusOpen
+	}
 }
 
 // QueryOrder fetches the current status of an order from Binance.

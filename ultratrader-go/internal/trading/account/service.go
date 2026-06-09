@@ -31,6 +31,9 @@ func NewService(cfg []config.AccountConfig) (*Service, error) {
 			Enabled:      item.Enabled,
 			ExchangeName: item.Exchange,
 			Capabilities: caps,
+			APIKey:       item.APIKey,
+			SecretKey:    item.SecretKey,
+			Testnet:      item.Testnet,
 		}
 	}
 

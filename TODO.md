@@ -69,3 +69,20 @@
 ## Repo-wide Documentation
 - [x] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
 - [x] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas
+- [x] Assimilate `TraderAlice/OpenAlice` architectural patterns (ExecutionManager)
+- [x] Assimilate `c9s/bbgo` exchange abstractions (Binance Adapter)
+- [x] Assimilate `Ekliptor/WolfBot` advanced features (WolfBotBollingerStrategy)
+- [x] Assimilate `ccxt/ccxt` exchange abstraction realism (TypedError mapping)
+- [x] Assimilate `ctubio/Krypto-trading-bot` market-making (initial MarketMaker)
+- [x] Assimilate `whittlem/pycryptobot` risk management (DynamicTSL, ProfitBank)
+- [x] Execute System Test Phase and verify trading functionality
+- [x] Execute Sandbox Test Phase and verify risk controls
+- [x] Integrate and verify live market feed performance
+- [x] Initiate live trading module and verify initialization
+- [x] Execute Integration Test Phase and verify market data/execution
+- [x] Perform back-test of strategies using live market data (Phase 6)
+- [x] Initiate and complete formal sandbox test run
+- [x] Implement and verify parallel strategy optimization (Phase 7)
+- [x] Conduct final live integration test and verify real-time performance
+- [ ] Deploy to live market conditions (Phase 6: Final Validation)
+- [ ] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`

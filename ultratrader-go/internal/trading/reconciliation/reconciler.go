@@ -70,9 +70,9 @@ func (r *Reconciler) ReconcileOrders(ctx context.Context, localOrders []exchange
 		// Without a query interface, just count local states
 		for _, o := range localOrders {
 			switch o.Status {
-			case "filled":
+			case exchange.StatusClosed:
 				result.Filled++
-			case "canceled":
+			case exchange.StatusCanceled:
 				result.Canceled++
 			default:
 				result.Unknown++
@@ -93,7 +93,7 @@ func (r *Reconciler) ReconcileOrders(ctx context.Context, localOrders []exchange
 			result.Unknown++
 			result.Discrepancies = append(result.Discrepancies, Discrepancy{
 				OrderID:        local.ID,
-				InternalStatus: local.Status,
+				InternalStatus: string(local.Status),
 				ExchangeStatus: "unknown",
 				Description:    fmt.Sprintf("query error: %v", err),
 			})
@@ -101,12 +101,12 @@ func (r *Reconciler) ReconcileOrders(ctx context.Context, localOrders []exchange
 		}
 
 		// Compare statuses
-		if normalizeStatus(local.Status) == normalizeStatus(remote.Status) {
+		if normalizeStatus(string(local.Status)) == normalizeStatus(remote.Status) {
 			result.Matched++
 		} else {
 			result.Discrepancies = append(result.Discrepancies, Discrepancy{
 				OrderID:        local.ID,
-				InternalStatus: local.Status,
+				InternalStatus: string(local.Status),
 				ExchangeStatus: remote.Status,
 				Description:    fmt.Sprintf("status mismatch: local=%s exchange=%s", local.Status, remote.Status),
 			})
@@ -139,17 +139,17 @@ func (r *ReconcileResult) Summary() string {
 
 func normalizeStatus(status string) string {
 	switch status {
-	case "FILLED", "filled":
+	case "FILLED", "filled", string(exchange.StatusClosed):
 		return "filled"
 	case "PARTIALLY_FILLED", "partially_filled":
 		return "partially_filled"
-	case "CANCELED", "canceled":
+	case "CANCELED", string(exchange.StatusCanceled):
 		return "canceled"
-	case "REJECTED", "rejected":
+	case "REJECTED", string(exchange.StatusRejected):
 		return "rejected"
-	case "EXPIRED", "expired":
+	case "EXPIRED", string(exchange.StatusExpired):
 		return "expired"
-	case "NEW", "new":
+	case "NEW", "new", string(exchange.StatusOpen):
 		return "new"
 	default:
 		return status

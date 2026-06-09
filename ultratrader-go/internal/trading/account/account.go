@@ -8,6 +8,9 @@ type Account struct {
 	Enabled      bool
 	ExchangeName string
 	Capabilities []exchange.Capability
+	APIKey       string
+	SecretKey    string
+	Testnet      bool
 }
 
 func (a Account) Supports(capability exchange.Capability) bool {

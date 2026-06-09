@@ -36,29 +36,30 @@ type starter interface{ Start(context.Context) }
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
-	config           config.Config
-	logger           *logging.Logger
-	eventLog         *eventlog.Log
-	snapshotStore    *snapshot.Store
-	orderStore       *orders.Store
-	reportStore      *reports.Store
-	accountService   *account.Service
-	exchangeRegistry *exchange.Registry
-	marketDataFeed   marketdata.StreamFeed
-	metricsTracker   *metrics.Tracker
-	executionRepo    *execution.Repository
-	portfolioTracker *portfolio.Tracker
-	executionService *execution.Service
-	strategyRuntime  *strategy.Runtime
-	scheduler        *strategyscheduler.EnhancedScheduler
-	schedulerService starter
-	cycleRunner      cycleRunner
-	pipeline         *risk.Pipeline
-	signalLog        *strategy.SignalLog
-	signalLogStop    func()
-	marketAwarePaper *exchangepaper.MarketAwareAdapter
-	httpHandler      http.Handler
-	httpRuntime      *httpapi.Runtime
+	config                  config.Config
+	logger                  *logging.Logger
+	eventLog                *eventlog.Log
+	snapshotStore           *snapshot.Store
+	orderStore              *orders.Store
+	reportStore             *reports.Store
+	accountService          *account.Service
+	exchangeRegistry        *exchange.Registry
+	marketDataFeed          marketdata.StreamFeed
+	metricsTracker          *metrics.Tracker
+	executionRepo           *execution.Repository
+	portfolioTracker        *portfolio.Tracker
+	executionService        *execution.Service
+	executionManager        *execution.Manager
+	strategyRuntime         *strategy.Runtime
+	scheduler               *strategyscheduler.EnhancedScheduler
+	schedulerService        starter
+	cycleRunner             cycleRunner
+	pipeline                *risk.Pipeline
+	signalLog               *strategy.SignalLog
+	signalLogStop           func()
+	marketAwarePaper        *exchangepaper.MarketAwareAdapter
+	httpHandler             http.Handler
+	httpRuntime             *httpapi.Runtime
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -106,6 +107,15 @@ func New(cfg config.Config) (*App, error) {
 	}
 	if err := registry.Register("binance", func() exchange.Adapter { return binance.New(binance.Config{Testnet: true}) }); err != nil {
 		return nil, fmt.Errorf("register binance exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("binance", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return binance.New(binance.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+			Testnet:   testnet,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register binance account factory: %w", err)
 	}
 
 	// ── Market Data Feed ───────────────────────────────────────
@@ -160,6 +170,12 @@ func New(cfg config.Config) (*App, error) {
 		accountService, registry, pipeline, eventLog,
 		orderStore, executionRepo, portfolioTracker, logger, metricsTracker,
 	)
+
+	// ── Execution Manager ──────────────────────────────────────
+	executionManager := execution.NewManager()
+	paperAdapter := exchangepaper.New()
+	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
+	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
 	// ── Strategy Runtime ───────────────────────────────────────
 	strategyRuntime := buildAutonomousStrategyRuntime(
@@ -318,6 +334,7 @@ func New(cfg config.Config) (*App, error) {
 		executionRepo:    executionRepo,
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
+		executionManager: executionManager,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,

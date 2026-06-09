@@ -338,6 +338,14 @@ type tickerMessage struct {
 	EventTime int64  `json:"E"`
 }
 
+type tickSub struct{ ch <-chan marketdata.Tick }
+
+func (s tickSub) Chan() <-chan marketdata.Tick { return s.ch }
+
+type candleSub struct{ ch <-chan marketdata.Candle }
+
+func (s candleSub) Chan() <-chan marketdata.Candle { return s.ch }
+
 type klineMessage struct {
 	EventType string      `json:"e"`
 	Symbol    string      `json:"s"`

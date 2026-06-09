@@ -69,7 +69,7 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		return exchange.Order{}, err
 	}
 
-	adapter, err := s.registry.Create(acct.ExchangeName)
+	adapter, err := s.registry.CreateForAccount(acct.ExchangeName, acct.APIKey, acct.SecretKey, acct.Testnet)
 	if err != nil {
 		return exchange.Order{}, err
 	}
@@ -85,17 +85,17 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		s.portfolio.Apply(order)
 	}
 	if s.orders != nil {
-		if err := s.orders.Append(ctx, orders.Record{AccountID: acct.ID, Exchange: acct.ExchangeName, OrderID: order.ID, Symbol: order.Symbol, Side: string(order.Side), Type: string(order.Type), Status: order.Status, Quantity: order.Quantity, Price: order.Price, Metadata: map[string]any{"account_name": acct.Name, "correlation_id": correlationID}}); err != nil {
+		if err := s.orders.Append(ctx, orders.Record{AccountID: acct.ID, Exchange: acct.ExchangeName, OrderID: order.ID, Symbol: order.Symbol, Side: string(order.Side), Type: string(order.Type), Status: string(order.Status), Quantity: order.Quantity, Price: order.Price, Metadata: map[string]any{"account_name": acct.Name, "correlation_id": correlationID}}); err != nil {
 			return exchange.Order{}, fmt.Errorf("append order record: %w", err)
 		}
 	}
 	if s.events != nil {
-		_ = s.events.Append(ctx, eventlog.Entry{Type: "execution.order_placed", Source: "execution-service", Payload: map[string]any{"account_id": accountID, "exchange": acct.ExchangeName, "symbol": order.Symbol, "side": order.Side, "type": order.Type, "status": order.Status, "order_id": order.ID, "correlation_id": correlationID}})
+		_ = s.events.Append(ctx, eventlog.Entry{Type: "execution.order_placed", Source: "execution-service", Payload: map[string]any{"account_id": accountID, "exchange": acct.ExchangeName, "symbol": order.Symbol, "side": order.Side, "type": order.Type, "status": string(order.Status), "order_id": order.ID, "correlation_id": correlationID}})
 	}
 	if s.metrics != nil {
 		s.metrics.RecordSuccess()
 	}
-	log.Info("execution completed", map[string]any{"account_id": accountID, "order_id": order.ID, "symbol": order.Symbol, "status": order.Status})
+	log.Info("execution completed", map[string]any{"account_id": accountID, "order_id": order.ID, "symbol": order.Symbol, "status": string(order.Status)})
 	return order, nil
 }
 
