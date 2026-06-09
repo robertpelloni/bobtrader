@@ -1,6 +1,15 @@
 @echo off
-echo Building bobtrader...
-pip install -r requirements.txt
-python -m py_compile pt_hub.py pt_trader.py
-echo Build complete.
-pause
+setlocal
+title BobTrader - UltraTrader Go
+cd /d "%~dp0"
+
+echo [BobTrader] Building UltraTrader Go...
+cd ultratrader-go
+go build -o ultratrader.exe ./cmd/ultratrader
+if errorlevel 1 (
+    echo [BobTrader] Build failed.
+    pause
+    exit /b 1
+)
+echo [BobTrader] Build complete.
+endlocal
