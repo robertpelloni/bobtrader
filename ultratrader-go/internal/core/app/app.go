@@ -460,6 +460,16 @@ func buildAutonomousStrategyRuntime(
 				strategydemo.WithFeed(feed),
 			)
 			strategies = append(strategies, trailingTP)
+
+			// ── Entry Strategy 4: Tick Momentum Burst ────
+			momentumBase := strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.15, 0.15)
+			momentumSized := strategydemo.NewPortfolioSizer(momentumBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, momentumSized)
+
+			// ── Entry Strategy 5: Tick Mean Reversion ────
+			meanRevBase := strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.10, 0.10)
+			meanRevSized := strategydemo.NewPortfolioSizer(meanRevBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, meanRevSized)
 		}
 
 	case "candle-stream":
