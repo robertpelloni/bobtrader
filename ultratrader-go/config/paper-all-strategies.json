@@ -12,7 +12,17 @@
   "risk": {
     "max_notional": 1000,
     "max_notional_per_symbol": 500,
-    "allowed_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT", "USDTUSD", "USDCUSD"],
+    "allowed_symbols": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "XLMUSDT",
+      "ADAUSDT",
+      "DOGEUSDT",
+      "XRPUSDT",
+      "USDTUSD",
+      "USDCUSD"
+    ],
     "cooldown_ms": 5000,
     "duplicate_window_ms": 10000,
     "duplicate_side_window_ms": 5000,
@@ -44,7 +54,13 @@
       "name": "Paper Trading All Strategies (Real Binance.US Prices)",
       "enabled": true,
       "exchange": "paper-market-aware",
-      "capabilities": ["spot", "paper", "candles", "balances", "orders"]
+      "capabilities": [
+        "spot",
+        "paper",
+        "candles",
+        "balances",
+        "orders"
+      ]
     }
   ]
 }
