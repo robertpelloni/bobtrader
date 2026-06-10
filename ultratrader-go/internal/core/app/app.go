@@ -523,6 +523,19 @@ func buildAutonomousStrategyRuntime(
 			strategies = append(strategies, sentimentSized)
 		}
 
+		// ── Time-Based Cycle Strategies ──────────────
+		for _, symbol := range cfg.Risk.AllowedSymbols {
+			// Weekly Cycle: Buy Monday dip, sell Sunday peak
+			weeklyCycleBase := strategydemo.NewWeeklyCycleStrategy(accountID, symbol, "0.001")
+			weeklyCycleSized := strategydemo.NewPortfolioSizer(weeklyCycleBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, weeklyCycleSized)
+
+			// China Session: Buy pre-Asia quiet, sell Asia volatility spike
+			chinaSessionBase := strategydemo.NewChinaSessionStrategy(accountID, symbol, "0.001")
+			chinaSessionSized := strategydemo.NewPortfolioSizer(chinaSessionBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, chinaSessionSized)
+		}
+
 	case "candle-stream":
 		for _, symbol := range symbols {
 			strategies = append(strategies, strategydemo.NewMACDCrossover(accountID, symbol, "0.001", 12, 26, 9))
