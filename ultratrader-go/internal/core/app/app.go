@@ -514,6 +514,7 @@ func buildAutonomousStrategyRuntime(
 		// CryptoNews and YouTube providers need API keys — register with empty key for now
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewCryptoNewsProvider("", sentLogger))
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewStockMarketCorrelation("", sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewWhaleAlertProvider("", 500000, sentLogger))
 
 		// ── Sentiment-Aware Strategy ─────────────────
 		// Combines all sentiment sources with technical analysis
@@ -534,6 +535,11 @@ func buildAutonomousStrategyRuntime(
 			chinaSessionBase := strategydemo.NewChinaSessionStrategy(accountID, symbol, "0.001")
 			chinaSessionSized := strategydemo.NewPortfolioSizer(chinaSessionBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, chinaSessionSized)
+
+			// Whale Alert: Trade based on large whale movements
+			whaleAlertBase := strategydemo.NewWhaleAlertStrategy(accountID, symbol, "0.001")
+			whaleAlertSized := strategydemo.NewPortfolioSizer(whaleAlertBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, whaleAlertSized)
 		}
 
 	case "candle-stream":
