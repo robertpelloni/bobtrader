@@ -76,6 +76,10 @@ func TestSystemSimulation(t *testing.T) {
 	if application.signalLog.Count() > 0 {
 		t.Logf("Recorded %d strategy signals during simulation", application.signalLog.Count())
 	}
+
+	// Explicitly close application and logs to ensure file handles are released
+	application.Close()
+	time.Sleep(100 * time.Millisecond) // Give OS a moment to release handles
 }
 
 func verifyFileExists(t *testing.T, path string, name string) {
