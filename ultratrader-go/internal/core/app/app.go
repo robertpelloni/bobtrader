@@ -25,6 +25,7 @@ import (
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
+	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -470,6 +471,56 @@ func buildAutonomousStrategyRuntime(
 			meanRevBase := strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.10, 0.10)
 			meanRevSized := strategydemo.NewPortfolioSizer(meanRevBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 			strategies = append(strategies, meanRevSized)
+
+			// ── Entry Strategy 6: Double EMA Trend ─────
+			doubleEMABase := strategydemo.NewDoubleEMATrendStrategy(accountID, symbol, "0.001", 5, 13, 50)
+			doubleEMASized := strategydemo.NewPortfolioSizer(doubleEMABase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, doubleEMASized)
+
+			// ── Entry Strategy 7: Tick Price Threshold ──
+			// Buy when price drops below a dynamic threshold
+			priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
+			strategies = append(strategies, priceThresholdBase)
+		}
+
+		// ── USDT Stablecoin Scalp Strategy ──────────
+		// Trades USDT fluctuations around $1.00 peg
+		// Buy at 0.9992, sell at 0.9999, stop loss at 0.98
+		usdtScalp := strategydemo.NewUSDTStablecoinScalp(
+			accountID, "USDTUSD", "100",
+			0.9992, 0.9999, 0.9800, 500.0,
+		)
+		strategies = append(strategies, usdtScalp)
+
+		// ── USDC Stablecoin Scalp Strategy ──────────
+		// USDC is more volatile than USDT — wider thresholds
+		// Buy at 0.9985, sell at 0.9998, stop loss at 0.97
+		usdcScalp := strategydemo.NewUSDTStablecoinScalp(
+			accountID, "USDCUSD", "100",
+			0.9985, 0.9998, 0.9700, 500.0,
+		)
+		strategies = append(strategies, usdcScalp)
+
+		// ── Sentiment Engine Setup ───────────────────
+		// Aggregates sentiment from multiple sources:
+		// - CryptoPanic news API
+		// - Fear & Greed Index
+		// - Market events (halving, FOMC, ETF decisions)
+		// - Stock market correlation (SPY)
+		sentLogger, _ := logging.New(logging.Config{Stdout: false})
+		sentimentEngine := sentimentsentiment.NewEngine(sentLogger)
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewFearGreedProvider(sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewMarketEventsProvider(sentLogger))
+		// CryptoNews and YouTube providers need API keys — register with empty key for now
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewCryptoNewsProvider("", sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewStockMarketCorrelation("", sentLogger))
+
+		// ── Sentiment-Aware Strategy ─────────────────
+		// Combines all sentiment sources with technical analysis
+		for _, symbol := range cfg.Risk.AllowedSymbols {
+			sentimentBase := strategydemo.NewSentimentAwareStrategy(accountID, symbol, "0.001", sentimentEngine, 0.2)
+			sentimentSized := strategydemo.NewPortfolioSizer(sentimentBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+			strategies = append(strategies, sentimentSized)
 		}
 
 	case "candle-stream":
