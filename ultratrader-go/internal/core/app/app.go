@@ -149,13 +149,26 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
 
-	// Determine the primary account ID for strategy signals
-	primaryAccountID := "paper-main"
+	// Determine the primary account ID for strategy signals.
+	// Prefer paper accounts when available (safe default for paper-trading mode).
+	// If no paper account exists, use the first enabled account.
+	primaryAccountID := ""
 	for _, acct := range cfg.Accounts {
-		if acct.Enabled {
+		if acct.Enabled && (acct.Exchange == "paper" || acct.Exchange == "paper-market-aware") {
 			primaryAccountID = acct.ID
 			break
 		}
+	}
+	if primaryAccountID == "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled {
+				primaryAccountID = acct.ID
+				break
+			}
+		}
+	}
+	if primaryAccountID == "" {
+		primaryAccountID = "paper-main" // ultimate fallback
 	}
 
 	// ── Strategy Signal Log ────────────────────────────────────
@@ -178,18 +191,20 @@ func New(cfg config.Config) (*App, error) {
 	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
 	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
-	// For paper accounts: use the MarketAwarePaper adapter (simulated balance)
-	// For real Binance accounts: use BinanceBalanceReader (queries real account)
+	// Use paper balance (simulated) when trading on paper account.
+	// Use real Binance balance only when the primary account is a real Binance account.
 	var balanceReader strategydemo.BalanceReader = marketAwarePaper
-	for _, acct := range cfg.Accounts {
-		if acct.Enabled && acct.Exchange == "binance" {
-			binanceAdapter := binance.New(binance.Config{
-				APIKey:   acct.APIKey,
-				SecretKey: acct.SecretKey,
-				Testnet:  acct.Testnet,
-			})
-			balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
-			break
+	if primaryAccountID != "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
+				binanceAdapter := binance.New(binance.Config{
+					APIKey:   acct.APIKey,
+					SecretKey: acct.SecretKey,
+					Testnet:  acct.Testnet,
+				})
+				balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
+				break
+			}
 		}
 	}
 
