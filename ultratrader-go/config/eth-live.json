@@ -13,9 +13,9 @@
     "max_notional": 55,
     "max_notional_per_symbol": 55,
     "allowed_symbols": ["ETHUSDT"],
-    "cooldown_ms": 120000,
-    "duplicate_window_ms": 300000,
-    "duplicate_side_window_ms": 120000,
+    "cooldown_ms": 30000,
+    "duplicate_window_ms": 1000,
+    "duplicate_side_window_ms": 60000,
     "max_open_positions": 1,
     "max_concentration_pct": 100
   },

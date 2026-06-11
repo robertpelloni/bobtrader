@@ -5,6 +5,10 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.1.2] - 2026-06-11
+### Changed
+- **Live Risk Settings** — Optimized `config/eth-live.json` by reducing `cooldown_ms` to 30s and `duplicate_window_ms` to 1s to prevent over-blocking strategy transitions.
+
 ## [2.1.1] - 2026-06-11
 ### Added
 - **CGO-Free Persistence Layer** — Replaced `github.com/mattn/go-sqlite3` with `modernc.org/sqlite` to eliminate CGO dependencies and enable native cross-compilation on Windows.
