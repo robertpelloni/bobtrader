@@ -5,6 +5,14 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.1.1] - 2026-06-11
+### Added
+- **CGO-Free Persistence Layer** — Replaced `github.com/mattn/go-sqlite3` with `modernc.org/sqlite` to eliminate CGO dependencies and enable native cross-compilation on Windows.
+- **BNB Fee Optimization** — Purchased BNB balance to pay for live trading transaction fees at a 25% discount.
+
+### Fixed
+- **Windows Compilation Blockers** — Resolved cgo compiler compatibility issues with GCC 15/w64devkit.
+
 ## [2.1.0] - 2026-06-10
 ### Added
 - **Paper trading with real Binance.US data** — `config/paper-live-data.json` uses real market prices for simulated execution ($10k starting balance)
