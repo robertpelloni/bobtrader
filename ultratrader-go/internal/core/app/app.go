@@ -204,6 +204,7 @@ func New(cfg config.Config) (*App, error) {
 					Testnet:  acct.Testnet,
 				})
 				balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
+				balanceReader.(*strategydemo.BinanceBalanceReader).SetPriceQuerier(binanceAdapter)
 				break
 			}
 		}

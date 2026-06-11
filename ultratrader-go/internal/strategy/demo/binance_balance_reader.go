@@ -14,12 +14,18 @@ import (
 // for cacheTTL to avoid hitting rate limits on every tick.
 type BinanceBalanceReader struct {
 	adapter  exchange.Adapter
+	feed     PriceQuerier
 	cacheTTL time.Duration
 
 	mu        sync.Mutex
 	cachedBal float64
 	cachedAt  time.Time
 	quote     string // usually "USDT"
+}
+
+// PriceQuerier can fetch a ticker price for a symbol.
+type PriceQuerier interface {
+	GetTickerPrice(ctx context.Context, symbol string) (string, error)
 }
 
 // NewBinanceBalanceReader creates a balance reader backed by a real
@@ -36,8 +42,16 @@ func NewBinanceBalanceReader(adapter exchange.Adapter, cacheTTL time.Duration) *
 	}
 }
 
-// USDTBalance returns the available USDT balance from the Binance
-// account, using a cached value when fresh.
+// SetPriceQuerier sets the price source for non-USDT asset valuation.
+func (r *BinanceBalanceReader) SetPriceQuerier(q PriceQuerier) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.feed = q
+	r.cachedAt = time.Time{} // force refresh
+}
+
+// USDTBalance returns the total portfolio value in USDT terms.
+// Includes USDT balance plus USDT-equivalent of all crypto holdings.
 func (r *BinanceBalanceReader) USDTBalance() float64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -51,20 +65,33 @@ func (r *BinanceBalanceReader) USDTBalance() float64 {
 
 	balances, err := r.adapter.Balances(ctx)
 	if err != nil {
-		// Return stale cached value on error — better than returning 0
 		return r.cachedBal
 	}
 
+	totalUSDT := 0.0
 	for _, b := range balances {
-		if b.Asset == r.quote {
-			free, _ := strconv.ParseFloat(b.Free, 64)
-			r.cachedBal = free
-			r.cachedAt = time.Now()
-			return free
+		free, _ := strconv.ParseFloat(b.Free, 64)
+		if free <= 0 {
+			continue
+		}
+		if b.Asset == "USDT" || b.Asset == "BUSD" || b.Asset == "USD" {
+			totalUSDT += free
+		} else if r.feed != nil {
+			// Get USDT price for this asset
+			symbol := b.Asset + "USDT"
+			priceStr, err := r.feed.GetTickerPrice(ctx, symbol)
+			if err == nil {
+				price, _ := strconv.ParseFloat(priceStr, 64)
+				if price > 0 {
+					totalUSDT += free * price
+				}
+			}
 		}
 	}
 
-	return r.cachedBal
+	r.cachedBal = totalUSDT
+	r.cachedAt = time.Now()
+	return totalUSDT
 }
 
 // SetQuoteAsset changes the quote asset to look up (default: "USDT").
