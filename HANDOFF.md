@@ -1,86 +1,86 @@
 # Handoff
 
-## Current State: v2.0.54 — Repository Synchronized & Autonomous Trading Verified
+## Current State: v2.1.0 — Full Strategy Arsenal & Sentiment Intelligence
 
-The system runs as a fully autonomous paper trader using real-time Binance.US market data. All strategy parameters are configurable via JSON — no recompilation needed.
+The system runs as a fully autonomous paper trader using real-time Binance.US market data with **14 strategies** across **9 trading pairs**. All strategy parameters are configurable via JSON — no recompilation needed.
 
-### v2.0.53 Verification (20-min live test)
-| Metric | Result |
-|--------|--------|
-| Executed Trades | 47 |
-| Win Rate | **80%** (20W / 5L) |
-| Realized PnL | ~$0 (break-even, fees on sideways market) |
-| Bollinger Strategy | 87% WR, +$0.14 |
-| RSI Strategy | 100% WR |
-| EMA Strategy | 71% WR |
-| Guard Block Rate | 39% |
-| Signal Log | 102 signals persisted |
+### v2.1.0 — Major Feature Release
 
-### What Changed in v2.0.53–v2.0.54
+**14 Active Strategies per Symbol:**
+| # | Strategy | Type | Source |
+|---|----------|------|--------|
+| 1 | EMA Crossover (5/13) | Technical | Original |
+| 2 | Bollinger Tick (15, 1.5σ) | Technical | Original |
+| 3 | RSI Reversion (10) | Technical | Original |
+| 4 | Trailing Take Profit | Exit | Original |
+| 5 | Tick Momentum Burst | Technical | Original |
+| 6 | Tick Mean Reversion | Technical | Original |
+| 7 | Double EMA Trend | Technical | freqtrade |
+| 8 | Tick Price Threshold | Technical | Original |
+| 9 | Sentiment-Aware | Sentiment | NEW |
+| 10 | USDT Stablecoin Scalp | Stablecoin | NEW |
+| 11 | USDC Stablecoin Scalp | Stablecoin | NEW |
+| 12 | Weekly Cycle | Time-based | NEW |
+| 13 | China Session | Time-based | NEW |
+| 14 | Whale Alert | On-chain | NEW |
 
-**Config-driven strategy params** — All strategy tuning is now in the JSON config file:
-- `strategy.risk_pct` (default: 2%)
-- `strategy.trailing_activate_pct`, `trailing_gap_pct`, `trailing_stop_loss_pct`, `trailing_max_hold_minutes`
-- `strategy.bollinger_period`, `bollinger_std_dev`
-- `strategy.rsi_period`, `rsi_oversold`, `rsi_overbought`
-- `strategy.ema_fast`, `ema_slow`
+**9 Trading Pairs:**
+BTC, ETH, SOL, XLM, ADA, DOGE, XRP, USDT, USDC
 
-**WebSocket market data** — `market_data.source: "websocket"` option available (experimental):
-- `config/autonomous-paper.json` — REST feed, 5s polling (production)
-- `config/autonomous-paper-ws.json` — WebSocket feed, 1s ticks (needs goroutine debugging)
+**Sentiment Intelligence Layer:**
+- Fear & Greed Index (live, free API)
+- Market Events (BTC halving, FOMC, ETF decisions, tax season)
+- CryptoPanic News (needs free API key)
+- YouTube Sentiment (monitors 8 channels: Arcane Bear, Benjamin Cowen, Coin Bureau, etc.)
+- Stock Market Correlation (SPY as risk indicator)
+- Whale Alert (tracks large exchange inflows/outflows)
 
-**Signal log persistence** — Signals auto-flush to `data/signals/signals.jsonl`:
-- JSONL format, one signal per line
-- Auto-flush every 30 seconds, final flush on graceful shutdown
+**Time-Based Strategies:**
+- Weekly Cycle: Buy Monday dip, sell Sunday peak
+- China Session: Buy pre-Asia 00:00-01:00 UTC, sell Asia spike 01:30-03:00 UTC
 
-**Submodule sanitization (v2.0.54)** — Removed 6 orphaned submodule references:
-- Krypto-Hashers-Community/polymarket-crypto-sports-arbitrage-trading-bot
-- RobertMarcellos/polymarket-copy-trading-bot
-- ericjang/cryptocurrency_arbitrage
-- hello2all/gamma-ray
-- fluidex/dingir-exchange
-- SFCQuantX/polymarket-trading-agent
+**Stablecoin Strategies:**
+- USDT Scalp: Buy 0.9992, sell 0.9999, stop 0.98
+- USDC Scalp: Buy 0.9985, sell 0.9998, stop 0.97
 
-**Feature branch merge (v2.0.54)** — Assimilated `assimilate-top-crypto-bots-phase-1` branch:
-- `ExecutionManager` — Modular strategy coordination
-- `WolfBotBollingerStrategy` — Breakout-aware Bollinger from WolfBot
-- `DoubleEMATrendStrategy` — Trend-following from freqtrade patterns
-- `DynamicTrailingStop`, `ProfitBank`, `PreventLoss` — Safety strategies from pycryptobot
-- `MarketMakerStrategy` — Ping-pong quoting from Krypto-trading-bot
-- `LiveHistoryProvider` — High-fidelity backtesting with real market data
-- CCXT-inspired unified error mapping (`internal/exchange/errors.go`)
-- Expanded `Order`/`Market` structs
-- Sandbox, system test, and live integration verification tests
-- `LiveStrategyWrapper` for production safety checks
-- API credential persistence in Account models
-
-### Architecture
-```
-Binance.US → MarketDataFeed → Strategy Runtime → Risk Pipeline → Paper Execution
-(REST/WS)    (5s/1s ticks)    (12+ strategies)   (8 guards)    (fee simulation)
-```
-
-### Active Strategies (per symbol: BTC, ETH, SOL)
-| Strategy | Type | Signal | Source |
-|----------|------|--------|--------|
-| EMA Crossover | Trend | Golden/death cross | Original |
-| Bollinger Reversion | Mean-reversion | Band touch | Original |
-| RSI Reversion | Mean-reversion | Overbought/oversold | Original |
-| Trailing Take Profit | Exit | Trail after activation | Original |
-| WolfBot Bollinger | Breakout | Bollinger breakout | WolfBot |
-| Double EMA Trend | Trend | Dual EMA crossover | freqtrade |
-| Market Maker | Liquidity | Ping-pong quoting | Krypto-trading-bot |
-| Trailing Safety | Risk | Dynamic trailing stop | pycryptobot |
+### Config Files
+| Config | Purpose |
+|--------|---------|
+| `config/paper-live-data.json` | Conservative: real prices, paper execution |
+| `config/paper-aggressive.json` | Aggressive: 5% risk, 5s cooldown, tight Bollinger |
+| `config/paper-all-strategies.json` | Full arsenal: 14 strategies, 9 symbols |
+| `config/autonomous-paper.json` | Original autonomous paper trading |
 
 ### How to Run
 ```bash
 cd ultratrader-go
-# REST feed (5s polling) — PRODUCTION
-go run ./cmd/ultratrader --config config/autonomous-paper.json
-# WebSocket feed (1s real-time) — EXPERIMENTAL
-go run ./cmd/ultratrader --config config/autonomous-paper-ws.json
+
+# Full strategy arsenal (recommended)
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-all-strategies.json
+
+# Conservative paper trading
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-live-data.json
+
+# Aggressive mode
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-aggressive.json
 ```
+
 Dashboard: http://127.0.0.1:8300/
+
+### Key Files Modified (v2.1.0)
+- `internal/strategy/demo/sentiment_aware.go` — Sentiment-aware strategy
+- `internal/strategy/demo/usdt_stablecoin_scalp.go` — USDT/USDC stablecoin scalping
+- `internal/strategy/demo/weekly_cycle.go` — Weekly cycle (Sunday peak pattern)
+- `internal/strategy/demo/china_session.go` — China session (1AM UTC volatility)
+- `internal/strategy/demo/whale_alert_strategy.go` — Whale alert trading
+- `internal/strategy/demo/cross_exchange_arbitrage.go` — Cross-exchange arbitrage
+- `internal/strategy/demo/tick_momentum_burst.go` — Momentum burst signals
+- `internal/strategy/demo/tick_mean_reversion.go` — Mean reversion signals
+- `internal/analytics/sentiment/providers.go` — Fear/Greed, Market Events, Stock Correlation
+- `internal/analytics/sentiment/youtube.go` — YouTube channel sentiment analysis
+- `internal/analytics/sentiment/whale_alert.go` — Whale Alert API integration
+- `internal/core/app/app.go` — All strategies wired into runtime
+- `config/paper-all-strategies.json` — 9 symbols, 14 strategies
 
 ### Data Files
 | File | Description |
@@ -91,61 +91,20 @@ Dashboard: http://127.0.0.1:8300/
 | `data/eventlog/events.jsonl` | Application lifecycle events |
 | `data/logs/app.jsonl` | Structured application log |
 
-### Key Files Modified (v2.0.52–v2.0.54)
-- `internal/core/config/config.go` — StrategyConfig, MarketDataConfig structs
-- `internal/core/app/app.go` — Config-driven strategy construction, WS feed, signal persistence
-- `internal/strategy/demo/trailing_take_profit.go` — Functional option pattern
-- `internal/strategy/signal_log.go` — JSONL persistence, auto-flush
-- `internal/connectors/httpapi/server.go` — StrategyInfo, MarketDataInfo types
-- `internal/connectors/httpapi/dashboard.go` — Strategy/MarketData config cards
-- `internal/risk/guard.go` — OrderSide, IsExit on OrderIntent
-- `internal/risk/cooldown.go` — Side-aware cooldown with IsExit bypass
-- `internal/risk/duplicate_side.go` — Both-side support, IsExit bypass
-- `internal/risk/duplicate_symbol.go` — Sell bypass, IsExit bypass
-- `internal/strategy/scheduler/smart_dispatcher.go` — Position re-check, dust threshold
-- `internal/exchange/paper/market_aware.go` — Net qty, fee dust cap
-- `internal/marketdata/binance/ws_feed.go` — TLS dial, Host header fix, frame reader
-- `internal/trading/execution/manager.go` — Modular strategy coordination (from feature branch)
-- `internal/trading/execution/wolfbot_bollinger.go` — WolfBot Bollinger strategy (from feature branch)
-- `internal/trading/execution/trailing_stop.go` — DynamicTrailingStop (from feature branch)
-- `internal/trading/execution/safety.go` — ProfitBank, PreventLoss (from feature branch)
-- `internal/trading/execution/live_strategy.go` — LiveStrategyWrapper (from feature branch)
-- `internal/trading/execution/market.go` — MarketMaker strategy (from feature branch)
+### API Keys (Optional — unlocks full functionality)
+| Service | Key | Free Tier |
+|---------|-----|-----------|
+| CryptoPanic | https://cryptopanic.com/developers/api/ | Yes |
+| YouTube Data | https://console.cloud.google.com | Yes |
+| Alpha Vantage | https://www.alphavantage.co/support/#api-key | Yes |
+| Whale Alert | https://whale-alert.io/ | 10 req/min |
 
 ### Next Steps
-1. **WebSocket feed debugging** — WS connects but goroutine output doesn't reach channel
-2. **Position sizing optimization** — Kelly criterion or volatility-adjusted sizing
-3. **Strategy parameter optimization** — Walk-forward on historical data
-4. **Real exchange adapter** — Wire execution to real Binance spot API
+1. **Add more exchange adapters** — Coinbase, Kraken, KuCoin for cross-exchange arbitrage
+2. **WebSocket feed debugging** — WS connects but goroutine output doesn't reach channel
+3. **Position sizing optimization** — Kelly criterion or volatility-adjusted sizing
+4. **Strategy parameter optimization** — Walk-forward on historical data
 5. **React/Vite dashboard** — Replace server-rendered HTML with SPA
 6. **More candle-based strategies** — MACD, ATR sizing in stream mode
 7. **Trade journal analytics** — Query persisted signals for long-term performance
-
-## Completed Tasks in Go Port (Version 3.0.0)
-
-### 1. Backtesting & Analytics
-- **Multi-Symbol Synchronization:** `internal/backtest/multisymbol.go`
-- **Walk-Forward Optimization:** `internal/backtest/optimizer/walkforward.go`
-- **Grid Search & Monte Carlo:** `internal/backtest/optimizer/gridsearch.go`, `montecarlo.go`
-- **Machine Learning Ensembles:** `internal/analytics/ml/ensemble.go`
-- **Q-Learning RL Agent:** `internal/analytics/rl/qlearning.go`
-- **Pattern Recognition:** `internal/analytics/patterns.go`
-- **Arbitrage & Order Flow:** `internal/analytics/arbitrage.go`, `orderflow.go`
-
-### 2. Security & Enterprise
-- **Secrets Management (AES-GCM):** `internal/core/config/secrets.go`
-- **Strict Input Validation:** `internal/reporting/api/validation.go`
-- **API Rate Limiter (Token Bucket):** `internal/reporting/api/middleware.go`
-- **SQL Injection Prevention:** `internal/persistence/db.go`
-- **Client-Side Exchange Rate Limiter:** `internal/exchange/ratelimit.go`
-- **Multi-Account RBAC:** `internal/enterprise/rbac.go`
-- **Cryptographic Audit Logging:** `internal/enterprise/audit.go`
-
-### 3. Assimilation Program (Feature Branch)
-- **WolfBot Bollinger Strategy** — Breakout detection patterns
-- **DoubleEMA Trend Strategy** — freqtrade-inspired trend following
-- **Market Maker Strategy** — Krypto-trading-bot ping-pong quoting
-- **Dynamic Trailing Stop** — pycryptobot safety patterns
-- **ProfitBank / PreventLoss** — Multi-layered exit safety
-- **CCXT Error Mapping** — Unified exchange error handling
-- **Live History Provider** — Real-market backtesting data
+8. **API key integration** — Add CryptoPanic, YouTube, Whale Alert keys for full sentiment

@@ -1,58 +1,42 @@
-| 33 | bobtrader | main | 1b8422b | robertpelloni/bobtrader | clean |
-
-## Submodule Inventory (44 active, 6 orphaned removed)
-
-### Active Submodules (tracked in .gitmodules)
-
-| Page | Submodule | Remote | Commit | Status |
-|------|-----------|--------|--------|--------|
-| page-02 | Bohr1005__xcrypto | github.com/Bohr1005/xcrypto | 3d9fb4d | clean |
-| page-02 | JulyIghor__QtBitcoinTrader | github.com/JulyIghor/QtBitcoinTrader | 7941537 | clean |
-| page-02 | Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance | github.com/Roibal/Cryptocurrency-Trading-Bots-Python-Beginner-Advance | 6cd9f63 | clean |
-| page-02 | TraderAlice__OpenAlice | github.com/TraderAlice/OpenAlice | a387c96 | clean |
-| page-02 | ctubio__Krypto-trading-bot | github.com/ctubio/Krypto-trading-bot | f592cc3 | clean |
-| page-02 | jammy928__CoinExchange_CryptoExchange_Java | github.com/jammy928/CoinExchange_CryptoExchange_Java | 8adf508 | clean |
-| page-02 | pirate__crypto-trader | github.com/pirate/crypto-trader | ec5d709 | clean |
-| page-02 | scrtlabs__catalyst | github.com/scrtlabs/catalyst | 2e80297 | clean |
-| page-02 | taniman__profit-trailer | github.com/taniman/profit-trailer | 04d8f20 | clean |
-| page-02 | warp-id__solana-trading-bot | github.com/warp-id/solana-trading-bot | 4c9304a | clean |
-| page-03 | AdeelMufti__CryptoBot | github.com/AdeelMufti/CryptoBot | 6cbdfea | clean |
-| page-03 | Ekliptor__WolfBot | github.com/Ekliptor/WolfBot | 0f45aae | clean |
-| page-03 | GuillermoEguilaz__Polymarket-Crypto-Trading-Bot | github.com/GuillermoEguilaz/Polymarket-Crypto-Trading-Bot | aa9759f | clean |
-| page-03 | kelvinau__crypto-arbitrage | github.com/kelvinau/crypto-arbitrage | 44a3469 | clean |
-| page-03 | markusaksli__TradeBot | github.com/markusaksli/TradeBot | 2296fe6 | clean |
-| page-03 | saniales__golang-crypto-trading-bot | github.com/saniales/golang-crypto-trading-bot | 02695e5 | clean |
-| page-03 | steeply__gbot-trader | github.com/steeply/gbot-trader | c8240aa | clean |
-| page-04 | ArsenAbazian__CryptoTradingFramework | github.com/ArsenAbazian/CryptoTradingFramework | 1962078 | clean |
-| page-04 | PolyStrategy__Polymarket-Crypto-Market-Bot | github.com/PolyStrategy/Polymarket-Crypto-Market-Bot | a66249b | clean |
-| page-04 | bitisanop__CryptoExchange_TradingPlatform_CoinExchange | github.com/bitisanop/CryptoExchange_TradingPlatform_CoinExchange | 9ad7651 | clean |
-| page-04 | blockplusim__crypto_trading_service_for_tradingview | github.com/blockplusim/crypto_trading_service_for_tradingview | 2265e6e | clean |
-| page-04 | c9s__bbgo | github.com/c9s/bbgo | 816670a | clean |
-| page-04 | ccxt__ccxt | github.com/ccxt/ccxt | 98076b3 | clean |
-| page-04 | hackingthemarkets__binance-tutorials | github.com/hackingthemarkets/binance-tutorials | 791930d | clean |
-| page-04 | paulcpk__freqtrade-strategies-that-work | github.com/paulcpk/freqtrade-strategies-that-work | 1e154a2 | clean |
-| page-05 | 6551Team__opennews-mcp | github.com/6551Team/opennews-mcp | e4f40e1 | clean |
-| page-05 | AI4Finance-Foundation__FinRL_Crypto | github.com/AI4Finance-Foundation/FinRL_Crypto | 495a428 | clean |
-| page-05 | CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins | github.com/CyberPunkMetalHead/gateio-crypto-trading-bot-binance-announcements-new-coins | 180763f | clean |
-| page-05 | JPStrydom__Crypto-Trading-Bot | github.com/JPStrydom/Crypto-Trading-Bot | 94b5aab | clean |
-| page-05 | Mathieu2301__TradingView-API | github.com/Mathieu2301/TradingView-API | 574a994 | clean |
-| page-05 | asavinov__intelligent-trading-bot | github.com/asavinov/intelligent-trading-bot | 5289048 | clean |
-| page-05 | ned0flanders__Cryptocoinopoly | github.com/ned0flanders/Cryptocoinopoly | ec6969f | clean |
-| page-05 | nicolasbonnici__cryptobot | github.com/nicolasbonnici/cryptobot | 78bdf1e | clean |
-| page-06 | MohammedRashad__Crypto-Copy-Trader | github.com/MohammedRashad/Crypto-Copy-Trader | 26016c5 | clean |
-| page-06 | Nafidinara__bot-pancakeswap | github.com/Nafidinara/bot-pancakeswap | 40cf4c8 | clean |
-| page-06 | andresilvasantos__bitprophet | github.com/andresilvasantos/bitprophet | 693765a | clean |
-| page-06 | fabston__TradingView-Webhook-Bot | github.com/fabston/TradingView-Webhook-Bot | 7eff8f9 | clean |
-| page-06 | johndpope__CryptoCurrencyTrader | github.com/johndpope/CryptoCurrencyTrader | d0dd817 | clean |
-| page-06 | nicknochnack__LLMAgentCrypto | github.com/nicknochnack/LLMAgentCrypto | cddada6 | clean |
-| page-06 | unterstein__binance-trader | github.com/unterstein/binance-trader | 8c3d471 | clean |
-| page-06 | wangzhe3224__awesome-systematic-trading | github.com/wangzhe3224/awesome-systematic-trading | fa002bf | clean |
-| page-06 | whittlem__pycryptobot | github.com/whittlem/pycryptobot | 1fa9aae | clean |
-
-### Removed Orphaned Submodules (v2.0.54)
-- Krypto-Hashers-Community__polymarket-crypto-sports-arbitrage-trading-bot (no URL in .gitmodules)
-- RobertMarcellos__polymarket-copy-trading-bot (no URL in .gitmodules)
-- ericjang__cryptocurrency_arbitrage (no URL in .gitmodules)
-- hello2all__gamma-ray (no URL in .gitmodules)
-- fluidex__dingir-exchange (no URL in .gitmodules)
-- SFCQuantX__polymarket-trading-agent (no URL in .gitmodules)
+ 3d9fb4d153f43408ce2bed2625a32014c1d3bf08 submodules/page-02/Bohr1005__xcrypto (heads/main)
+ 79415373d91c4031bda79256394c1cd51b837f1c submodules/page-02/JulyIghor__QtBitcoinTrader (heads/master)
+ 6cd9f639ac7f9d914d556738ca3aeeef53618146 submodules/page-02/Roibal__Cryptocurrency-Trading-Bots-Python-Beginner-Advance (heads/master)
+ a387c96a4378508fe35f62d34caa8d9aaaea167b submodules/page-02/TraderAlice__OpenAlice (v0.30.0-beta.1-27-ga387c96)
+ f592cc3cf9b3ca01f2cae2efe8eb0a9c18961e3f submodules/page-02/ctubio__Krypto-trading-bot (heads/master)
+ 8adf508b996020d3efbeeb2473d7235bd01436fa submodules/page-02/jammy928__CoinExchange_CryptoExchange_Java (heads/master)
+ ec5d7094685a0c00ddee246e27b36f9e8c9b09c7 submodules/page-02/pirate__crypto-trader (heads/master)
+ 2e8029780f2381da7a0729f7b52505e5db5f535b submodules/page-02/scrtlabs__catalyst (heads/master)
+ 04d8f20b17cd6e463aa66a0cc868efc68e78a060 submodules/page-02/taniman__profit-trailer (2.4.29)
+ 4c9304ace338544b1295d6dd11772f5661f9d250 submodules/page-02/warp-id__solana-trading-bot (heads/master)
+ 6cbdfea43af9690d289f92db6b1b3b371abbd2fb submodules/page-03/AdeelMufti__CryptoBot (heads/master)
+ 0f45aae699713c5947020ae79d9c4acf423bca59 submodules/page-03/Ekliptor__WolfBot (heads/master)
+ aa9759faf8d15807c902e1cc8b2dd8afab8f5f79 submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot (heads/main)
+ 44a3469fe3a6ca3aaf20ab175ea927f75b0b0c7a submodules/page-03/kelvinau__crypto-arbitrage (heads/master)
+ 2296fe6c18365f4150a4d47b64b16c26ef4576b6 submodules/page-03/markusaksli__TradeBot (heads/master)
+ 02695e5d0901d973199d8de56b16c4d691724f9b submodules/page-03/saniales__golang-crypto-trading-bot (v0.2.0)
+ c8240aae4d895338b1658b5346883a25a53a094c submodules/page-03/steeply__gbot-trader (heads/master)
+ 196207865c8c5d0105f27d5a0335ba6148649346 submodules/page-04/ArsenAbazian__CryptoTradingFramework (heads/master)
+ a66249bbbfb2e1db3b61656f60ee60602cb90111 submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot (heads/main)
+ 9ad7651e72d9901987f1ffc9b43d205791426b67 submodules/page-04/bitisanop__CryptoExchange_TradingPlatform_CoinExchange (heads/main)
+ 2265e6edbe448fd3b617c9caa113bd5caf83bf2b submodules/page-04/blockplusim__crypto_trading_service_for_tradingview (heads/main)
+ 816670adaa14e95d61697d2c2a81975fd90fdff3 submodules/page-04/c9s__bbgo (v1.64.2)
+ 98076b33142690bda180d50e71f1e38d0d9da960 submodules/page-04/ccxt__ccxt (go/v4.5.48-59-g98076b3)
+ 791930d6419820c447ee3f36fa9f97cb9e57267f submodules/page-04/hackingthemarkets__binance-tutorials (heads/master)
+ 1e154a2f6b9aeecbaacb7db5ed6b866603daee2c submodules/page-04/paulcpk__freqtrade-strategies-that-work (heads/main)
+ e4f40e1eddd0438939850f69a7435314d8fbeb7f submodules/page-05/6551Team__opennews-mcp (heads/main)
+ 495a4286e293e55d334680d821b93ac658abff80 submodules/page-05/AI4Finance-Foundation__FinRL_Crypto (heads/master)
+ 180763fa167ede0a7534d485a3c4c7b3030b43ec submodules/page-05/CyberPunkMetalHead__gateio-crypto-trading-bot-binance-announcements-new-coins (heads/master)
+ 94b5aab261a35d99bc044267baf4735f0ee3f89a submodules/page-05/JPStrydom__Crypto-Trading-Bot (heads/master)
+ 574a9948b2adb3396b934c612f58d2ab103a6915 submodules/page-05/Mathieu2301__TradingView-API (v3.5.2-14-g574a994)
+ 5289048f652d6519c916b10030d119afb0f2527c submodules/page-05/asavinov__intelligent-trading-bot (heads/master)
+ ec6969fbb54b759fbfb7c6f7554fbbe1403b5a31 submodules/page-05/ned0flanders__Cryptocoinopoly (heads/master)
+ 78bdf1e31916eb7f2b4899e398712a53b009c744 submodules/page-05/nicolasbonnici__cryptobot (heads/develop)
+ 26016c5d8d99095337bc95116296196967106214 submodules/page-06/MohammedRashad__Crypto-Copy-Trader (heads/master)
+ 40cf4c87c9bf312702b8b12a60d82d060229dc20 submodules/page-06/Nafidinara__bot-pancakeswap (heads/master)
+ 693765a9b9667cedb137fae556385f45ec811b54 submodules/page-06/andresilvasantos__bitprophet (heads/master)
+ 7eff8f9e9e13f350d7a3f258329285eb3a0bbd37 submodules/page-06/fabston__TradingView-Webhook-Bot (heads/master)
+ d0dd8178431ad7003f321468a3f8447a7151b2e0 submodules/page-06/johndpope__CryptoCurrencyTrader (heads/master)
+ cddada6555c15b21d1e7151c8678f189cd77ce57 submodules/page-06/nicknochnack__LLMAgentCrypto (heads/main)
+ 8c3d471a566f6164aebf4df74c3741eaf60e2538 submodules/page-06/unterstein__binance-trader (heads/master)
+ fa002bf65345b4432f0151068d7e8e1b0ba8e226 submodules/page-06/wangzhe3224__awesome-systematic-trading (heads/master)
+ 1fa9aaef141725623899230daa585e17fa7ba007 submodules/page-06/whittlem__pycryptobot (8.2.4)
