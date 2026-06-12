@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
@@ -613,6 +615,9 @@ func (a *App) Start(ctx context.Context) error {
 		a.logger.Info("http runtime started", map[string]any{"address": a.httpRuntime.Address()})
 	}
 
+	// Reconcile portfolio from exchange balances before starting scheduler
+	a.reconcilePortfolioFromExchange(ctx)
+
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
 		a.logger.Info("scheduler service started", map[string]any{
@@ -675,4 +680,83 @@ func (a *App) Address() string {
 		return a.httpRuntime.Address()
 	}
 	return ""
+}
+
+func (a *App) reconcilePortfolioFromExchange(ctx context.Context) {
+	// Find enabled real exchange accounts in config
+	for _, acct := range a.config.Accounts {
+		if !acct.Enabled || acct.Exchange != "binance" {
+			continue
+		}
+
+		// Create exchange adapter using the account config
+		adapter := binance.New(binance.Config{
+			APIKey:    acct.APIKey,
+			SecretKey: acct.SecretKey,
+			Testnet:   acct.Testnet,
+		})
+
+		// Fetch balances from exchange
+		balances, err := adapter.Balances(ctx)
+		if err != nil {
+			a.logger.Error("failed to fetch balances for portfolio reconciliation", map[string]any{"error": err.Error(), "account": acct.ID})
+			continue
+		}
+
+		// Map base assets of allowed symbols
+		allowedSymbols := a.config.Risk.AllowedSymbols
+		if len(allowedSymbols) == 0 {
+			allowedSymbols = []string{"BTCUSDT", "ETHUSDT"}
+		}
+
+		for _, symbol := range allowedSymbols {
+			// Find the base asset (e.g. "ETH" for "ETHUSDT")
+			baseAsset := symbol
+			if strings.HasSuffix(symbol, "USDT") {
+				baseAsset = strings.TrimSuffix(symbol, "USDT")
+			} else if strings.HasSuffix(symbol, "USD") {
+				baseAsset = strings.TrimSuffix(symbol, "USD")
+			}
+
+			// Find matching asset balance
+			for _, bal := range balances {
+				if strings.ToUpper(bal.Asset) == strings.ToUpper(baseAsset) {
+					freeVal := utils.ParseFloat(bal.Free)
+					lockedVal := utils.ParseFloat(bal.Locked)
+					qty := freeVal + lockedVal
+
+					// Skip dust/tiny balances (e.g. less than 0.0001 ETH)
+					minQty := 0.0001
+					if strings.Contains(symbol, "BTC") {
+						minQty = 0.00001
+					} else if strings.Contains(symbol, "XRP") {
+						minQty = 0.1
+					}
+
+					if qty >= minQty {
+						// Fetch current market price to establish a cost basis
+						priceStr, err := adapter.GetTickerPrice(ctx, symbol)
+						if err != nil {
+							priceStr = "0.0"
+						}
+
+						// Apply the existing position to tracker
+						a.portfolioTracker.Apply(exchange.Order{
+							Symbol:   symbol,
+							Side:     exchange.Buy,
+							Quantity: fmt.Sprintf("%f", qty),
+							Price:    priceStr,
+						})
+
+						a.logger.Info("reconciled open position from exchange balance", map[string]any{
+							"symbol":   symbol,
+							"quantity": qty,
+							"price":    priceStr,
+							"account":  acct.ID,
+						})
+					}
+				}
+			}
+		}
+	}
 }
