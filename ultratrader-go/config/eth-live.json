@@ -12,15 +12,15 @@
   "risk": {
     "max_notional": 55,
     "max_notional_per_symbol": 55,
-    "allowed_symbols": ["ETHUSDT"],
+    "allowed_symbols": ["ETHUSDT", "SOLUSDT"],
     "cooldown_ms": 30000,
     "duplicate_window_ms": 1000,
     "duplicate_side_window_ms": 60000,
-    "max_open_positions": 1,
+    "max_open_positions": 2,
     "max_concentration_pct": 100
   },
   "strategy": {
-    "risk_pct": 90.0,
+    "risk_pct": 45.0,
     "max_notional": 55,
     "trailing_activate_pct": 1.0,
     "trailing_gap_pct": 0.3,
@@ -35,7 +35,7 @@
     "ema_slow": 21
   },
   "market_data": {
-    "source": "rest",
+    "source": "websocket",
     "initial_balance": 55
   },
   "accounts": [
