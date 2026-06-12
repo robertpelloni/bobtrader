@@ -32,7 +32,18 @@
     "rsi_oversold": 35,
     "rsi_overbought": 65,
     "ema_fast": 5,
-    "ema_slow": 13
+    "ema_slow": 13,
+    "active_strategies": [
+      "ema_tick_crossover",
+      "bollinger_tick_reversion",
+      "rsi_reversion",
+      "rsi_bollinger_composite",
+      "tick_momentum_burst",
+      "tick_mean_reversion",
+      "double_ema_trend",
+      "tick_price_threshold",
+      "trailing_take_profit"
+    ]
   },
   "market_data": {
     "source": "rest",
@@ -41,7 +52,7 @@
   "accounts": [
     {
       "id": "binance-dual-live",
-      "name": "Binance Dual ETH+ADA Live",
+      "name": "Binance Dual ETH+ADA Live (All Strategies)",
       "enabled": true,
       "exchange": "binance",
       "secrets_file": "config/secrets/binance-production.json",
