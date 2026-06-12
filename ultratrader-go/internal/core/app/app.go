@@ -61,6 +61,7 @@ type App struct {
 	signalLog               *strategy.SignalLog
 	signalLogStop           func()
 	marketAwarePaper        *exchangepaper.MarketAwareAdapter
+	balanceReader           strategydemo.BalanceReader
 	httpHandler             http.Handler
 	httpRuntime             *httpapi.Runtime
 }
@@ -231,7 +232,7 @@ func New(cfg config.Config) (*App, error) {
 				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
 				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
 				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
-				"usdt_balance":    marketAwarePaper.USDTBalance(),
+				"usdt_balance":    balanceReader.USDTBalance(),
 			}},
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 			{Type: "strategy-signals", Payload: map[string]any{
@@ -378,6 +379,7 @@ func New(cfg config.Config) (*App, error) {
 		signalLog:        signalLog,
 		signalLogStop:   signalLogStop,
 		marketAwarePaper: marketAwarePaper,
+		balanceReader:    balanceReader,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
 	}, nil
@@ -473,7 +475,7 @@ func buildAutonomousStrategyRuntime(
 
 			// ── Entry Strategy 4: RSI Bollinger Composite ──
 			if isActive("rsi_bollinger_composite") {
-				compBase := strategydemo.NewRSIBollingerComposite(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought, sc.BollingerPeriod, sc.BollingerStdDev)
+				compBase := strategydemo.NewRSIBollingerComposite(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought, sc.BollingerPeriod, sc.BollingerStdDev, feed)
 				compSized := strategydemo.NewPortfolioSizer(compBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 				strategies = append(strategies, compSized)
 			}
@@ -522,20 +524,24 @@ func buildAutonomousStrategyRuntime(
 		// ── USDT Stablecoin Scalp Strategy ──────────
 		// Trades USDT fluctuations around $1.00 peg
 		// Buy at 0.9992, sell at 0.9999, stop loss at 0.98
-		usdtScalp := strategydemo.NewUSDTStablecoinScalp(
-			accountID, "USDTUSD", "100",
-			0.9992, 0.9999, 0.9800, 500.0,
-		)
-		strategies = append(strategies, usdtScalp)
+		if isActive("usdt_scalp") {
+			usdtScalp := strategydemo.NewUSDTStablecoinScalp(
+				accountID, "USDTUSD", "100",
+				0.9992, 0.9999, 0.9800, 500.0,
+			)
+			strategies = append(strategies, usdtScalp)
+		}
 
 		// ── USDC Stablecoin Scalp Strategy ──────────
 		// USDC is more volatile than USDT — wider thresholds
 		// Buy at 0.9985, sell at 0.9998, stop loss at 0.97
-		usdcScalp := strategydemo.NewUSDTStablecoinScalp(
-			accountID, "USDCUSD", "100",
-			0.9985, 0.9998, 0.9700, 500.0,
-		)
-		strategies = append(strategies, usdcScalp)
+		if isActive("usdc_scalp") {
+			usdcScalp := strategydemo.NewUSDTStablecoinScalp(
+				accountID, "USDCUSD", "100",
+				0.9985, 0.9998, 0.9700, 500.0,
+			)
+			strategies = append(strategies, usdcScalp)
+		}
 
 		// ── Sentiment Engine Setup ───────────────────
 		// Aggregates sentiment from multiple sources:
@@ -554,28 +560,36 @@ func buildAutonomousStrategyRuntime(
 
 		// ── Sentiment-Aware Strategy ─────────────────
 		// Combines all sentiment sources with technical analysis
-		for _, symbol := range cfg.Risk.AllowedSymbols {
-			sentimentBase := strategydemo.NewSentimentAwareStrategy(accountID, symbol, "0.001", sentimentEngine, 0.2)
-			sentimentSized := strategydemo.NewPortfolioSizer(sentimentBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, sentimentSized)
+		if isActive("sentiment_aware") {
+			for _, symbol := range cfg.Risk.AllowedSymbols {
+				sentimentBase := strategydemo.NewSentimentAwareStrategy(accountID, symbol, "0.001", sentimentEngine, 0.2)
+				sentimentSized := strategydemo.NewPortfolioSizer(sentimentBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, sentimentSized)
+			}
 		}
 
 		// ── Time-Based Cycle Strategies ──────────────
 		for _, symbol := range cfg.Risk.AllowedSymbols {
 			// Weekly Cycle: Buy Monday dip, sell Sunday peak
-			weeklyCycleBase := strategydemo.NewWeeklyCycleStrategy(accountID, symbol, "0.001")
-			weeklyCycleSized := strategydemo.NewPortfolioSizer(weeklyCycleBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, weeklyCycleSized)
+			if isActive("weekly_cycle") {
+				weeklyCycleBase := strategydemo.NewWeeklyCycleStrategy(accountID, symbol, "0.001")
+				weeklyCycleSized := strategydemo.NewPortfolioSizer(weeklyCycleBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, weeklyCycleSized)
+			}
 
 			// China Session: Buy pre-Asia quiet, sell Asia volatility spike
-			chinaSessionBase := strategydemo.NewChinaSessionStrategy(accountID, symbol, "0.001")
-			chinaSessionSized := strategydemo.NewPortfolioSizer(chinaSessionBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, chinaSessionSized)
+			if isActive("china_session") {
+				chinaSessionBase := strategydemo.NewChinaSessionStrategy(accountID, symbol, "0.001")
+				chinaSessionSized := strategydemo.NewPortfolioSizer(chinaSessionBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, chinaSessionSized)
+			}
 
 			// Whale Alert: Trade based on large whale movements
-			whaleAlertBase := strategydemo.NewWhaleAlertStrategy(accountID, symbol, "0.001")
-			whaleAlertSized := strategydemo.NewPortfolioSizer(whaleAlertBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, whaleAlertSized)
+			if isActive("whale_alert") {
+				whaleAlertBase := strategydemo.NewWhaleAlertStrategy(accountID, symbol, "0.001")
+				whaleAlertSized := strategydemo.NewPortfolioSizer(whaleAlertBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, whaleAlertSized)
+			}
 		}
 
 	case "candle-stream":
@@ -671,7 +685,7 @@ func (a *App) Start(ctx context.Context) error {
 		"metrics":        a.metricsTracker.Snapshot(),
 		"guards":         a.pipeline.Names(),
 		"signal_count":   a.signalLog.Count(),
-		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
+		"usdt_balance":   a.balanceReader.USDTBalance(),
 		"market_data":    a.config.MarketData.Source,
 		"strategy":       a.config.Strategy,
 	}

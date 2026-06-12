@@ -50,8 +50,7 @@ func (r *BinanceBalanceReader) SetPriceQuerier(q PriceQuerier) {
 	r.cachedAt = time.Time{} // force refresh
 }
 
-// USDTBalance returns the total portfolio value in USDT terms.
-// Includes USDT balance plus USDT-equivalent of all crypto holdings.
+// USDTBalance returns the available USDT cash balance.
 func (r *BinanceBalanceReader) USDTBalance() float64 {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -76,16 +75,6 @@ func (r *BinanceBalanceReader) USDTBalance() float64 {
 		}
 		if b.Asset == "USDT" || b.Asset == "BUSD" || b.Asset == "USD" {
 			totalUSDT += free
-		} else if r.feed != nil {
-			// Get USDT price for this asset
-			symbol := b.Asset + "USDT"
-			priceStr, err := r.feed.GetTickerPrice(ctx, symbol)
-			if err == nil {
-				price, _ := strconv.ParseFloat(priceStr, 64)
-				if price > 0 {
-					totalUSDT += free * price
-				}
-			}
 		}
 	}
 

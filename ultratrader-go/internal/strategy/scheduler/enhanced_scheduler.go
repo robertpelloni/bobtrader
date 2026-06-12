@@ -3,6 +3,7 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
@@ -17,6 +18,7 @@ type EnhancedScheduler struct {
 	portfolio PositionChecker
 	feed      marketdata.Feed
 	signalLog *strategy.SignalLog
+	mu        sync.RWMutex
 }
 
 // NewEnhanced creates a scheduler that logs signals and respects positions.
@@ -36,8 +38,19 @@ func NewEnhanced(
 	}
 }
 
+// SetRuntime dynamically updates the strategy runtime in a thread-safe manner.
+func (s *EnhancedScheduler) SetRuntime(runtime *strategy.Runtime) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.runtime = runtime
+}
+
 func (s *EnhancedScheduler) RunOnce(ctx context.Context) error {
-	signals, err := s.runtime.Tick(ctx)
+	s.mu.RLock()
+	runtime := s.runtime
+	s.mu.RUnlock()
+
+	signals, err := runtime.Tick(ctx)
 	if err != nil {
 		return fmt.Errorf("runtime tick: %w", err)
 	}
@@ -46,7 +59,11 @@ func (s *EnhancedScheduler) RunOnce(ctx context.Context) error {
 }
 
 func (s *EnhancedScheduler) RunTick(ctx context.Context, tick marketdata.Tick) error {
-	signals, err := s.runtime.TickEvent(ctx, tick)
+	s.mu.RLock()
+	runtime := s.runtime
+	s.mu.RUnlock()
+
+	signals, err := runtime.TickEvent(ctx, tick)
 	if err != nil {
 		return fmt.Errorf("runtime tick event: %w", err)
 	}
@@ -55,7 +72,11 @@ func (s *EnhancedScheduler) RunTick(ctx context.Context, tick marketdata.Tick) e
 }
 
 func (s *EnhancedScheduler) RunCandle(ctx context.Context, candle marketdata.Candle) error {
-	signals, err := s.runtime.CandleEvent(ctx, candle)
+	s.mu.RLock()
+	runtime := s.runtime
+	s.mu.RUnlock()
+
+	signals, err := runtime.CandleEvent(ctx, candle)
 	if err != nil {
 		return fmt.Errorf("runtime candle event: %w", err)
 	}

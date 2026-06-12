@@ -40,6 +40,33 @@ func (f *Feed) LatestCandle(_ context.Context, symbol, interval string) (marketd
 	return marketdata.Candle{Symbol: symbol, Interval: interval, Open: price, High: price, Low: price, Close: price, Volume: "1000", Timestamp: time.Now().UTC()}, nil
 }
 
+func (f *Feed) CandleHistory(_ context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	price, ok := defaultPrices()[symbol]
+	if !ok {
+		seq, exists := streamPrices()[symbol]
+		if exists && len(seq) > 0 {
+			price = seq[0]
+		} else {
+			price = "1.00"
+		}
+	}
+	candles := make([]marketdata.Candle, limit)
+	now := time.Now().UTC()
+	for i := 0; i < limit; i++ {
+		candles[i] = marketdata.Candle{
+			Symbol:    symbol,
+			Interval:  interval,
+			Open:      price,
+			High:      price,
+			Low:       price,
+			Close:     price,
+			Volume:    "1000",
+			Timestamp: now.Add(-time.Duration(limit-1-i) * 15 * time.Minute),
+		}
+	}
+	return candles, nil
+}
+
 func (f *Feed) SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) marketdata.TickSubscription {
 	ch := make(chan marketdata.Tick, 1)
 	if interval <= 0 {

@@ -59,14 +59,28 @@ func (p *CryptoNewsProvider) FetchSentiment(ctx context.Context, symbol string) 
 	}
 	p.mu.RUnlock()
 
+	// If no API key, return neutral sentiment immediately without making request
+	if p.apiKey == "" {
+		return Signal{
+			Source:    p.name,
+			Symbol:    symbol,
+			Score:     0.0,
+			Timestamp: time.Now(),
+		}, nil
+	}
+
 	// Fetch from CryptoPanic API
-	// Free tier: no API key needed for basic access
 	url := fmt.Sprintf("%s/posts/?auth_token=%s&currencies=%s&kind=news&filter=hot",
 		p.baseURL, p.apiKey, strings.TrimSuffix(symbol, "USDT"))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return Signal{}, fmt.Errorf("create request: %w", err)
+		return Signal{
+			Source:    p.name,
+			Symbol:    symbol,
+			Score:     0.0,
+			Timestamp: time.Now(),
+		}, nil
 	}
 
 	resp, err := p.client.Do(req)
@@ -81,6 +95,19 @@ func (p *CryptoNewsProvider) FetchSentiment(ctx context.Context, symbol string) 
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		p.logger.Info("CryptoPanic API returned non-OK status", map[string]any{
+			"status": resp.Status,
+			"symbol": symbol,
+		})
+		return Signal{
+			Source:    p.name,
+			Symbol:    symbol,
+			Score:     0.0,
+			Timestamp: time.Now(),
+		}, nil
+	}
+
 	var result struct {
 		Results []struct {
 			Title     string `json:"title"`
@@ -92,7 +119,16 @@ func (p *CryptoNewsProvider) FetchSentiment(ctx context.Context, symbol string) 
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return Signal{}, fmt.Errorf("decode response: %w", err)
+		p.logger.Info("failed to decode CryptoPanic response", map[string]any{
+			"error":  err.Error(),
+			"symbol": symbol,
+		})
+		return Signal{
+			Source:    p.name,
+			Symbol:    symbol,
+			Score:     0.0,
+			Timestamp: time.Now(),
+		}, nil
 	}
 
 	// Calculate sentiment from vote ratios
@@ -174,7 +210,7 @@ func (p *FearGreedProvider) FetchSentiment(ctx context.Context, symbol string) (
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "https://api.alternative.me/fng/?limit=1", nil)
 	if err != nil {
-		return Signal{}, err
+		return Signal{Source: p.name, Symbol: symbol, Score: 0, Timestamp: time.Now()}, nil
 	}
 
 	resp, err := p.client.Do(req)
@@ -182,6 +218,13 @@ func (p *FearGreedProvider) FetchSentiment(ctx context.Context, symbol string) (
 		return Signal{Source: p.name, Symbol: symbol, Score: 0, Timestamp: time.Now()}, nil
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		p.logger.Info("FearGreed API returned non-OK status", map[string]any{
+			"status": resp.Status,
+		})
+		return Signal{Source: p.name, Symbol: symbol, Score: 0, Timestamp: time.Now()}, nil
+	}
 
 	var result struct {
 		Data []struct {
@@ -191,7 +234,10 @@ func (p *FearGreedProvider) FetchSentiment(ctx context.Context, symbol string) (
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return Signal{}, err
+		p.logger.Info("failed to decode FearGreed response", map[string]any{
+			"error": err.Error(),
+		})
+		return Signal{Source: p.name, Symbol: symbol, Score: 0, Timestamp: time.Now()}, nil
 	}
 
 	if len(result.Data) == 0 {

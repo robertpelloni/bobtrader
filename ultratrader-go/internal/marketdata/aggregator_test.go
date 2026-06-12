@@ -24,6 +24,10 @@ func (m *mockFeed) LatestCandle(ctx context.Context, symbol, interval string) (m
 	return marketdata.Candle{}, nil
 }
 
+func (m *mockFeed) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	return nil, nil
+}
+
 func TestAggregator_AveragePrice(t *testing.T) {
 	agg := marketdata.NewAggregator(marketdata.AveragePrice, nil)
 

@@ -85,6 +85,9 @@ func (f *simpleFeed) LatestTick(_ context.Context, symbol string) (marketdata.Ti
 func (f *simpleFeed) LatestCandle(_ context.Context, symbol, interval string) (marketdata.Candle, error) {
 	return marketdata.Candle{}, fmt.Errorf("not implemented in backtest")
 }
+func (f *simpleFeed) CandleHistory(_ context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	return nil, fmt.Errorf("not implemented in backtest")
+}
 
 // RunTicks executes the simulation over the provided tick history.
 func (e *Engine) RunTicks(ctx context.Context, h HistoryProvider) (Result, error) {

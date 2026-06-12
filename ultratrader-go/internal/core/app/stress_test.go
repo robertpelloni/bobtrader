@@ -45,11 +45,13 @@ func TestPerformanceStress(t *testing.T) {
 
 	// Create high-frequency noise for multiple symbols
 	// interval=1 means signal on every tick
-	application.strategyRuntime = strategy.NewRuntime(
+	newRuntime := strategy.NewRuntime(
 		strategydemo.NewNoisyStrategy("stress-account", "BTCUSDT", 1),
 		strategydemo.NewNoisyStrategy("stress-account", "ETHUSDT", 1),
 		strategydemo.NewNoisyStrategy("stress-account", "SOLUSDT", 1),
 	)
+	application.strategyRuntime = newRuntime
+	application.scheduler.SetRuntime(newRuntime)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 70*time.Second)
 	defer cancel()
@@ -63,6 +65,9 @@ func TestPerformanceStress(t *testing.T) {
 	// Stress for 60 seconds
 	time.Sleep(60 * time.Second)
 	duration := time.Since(start)
+
+	cancel()                           // Stop background stream services
+	time.Sleep(100 * time.Millisecond) // Wait for worker loops to exit
 
 	t.Log("Shutting down stress test...")
 	if err := application.Shutdown(context.Background()); err != nil {
@@ -83,4 +88,8 @@ func TestPerformanceStress(t *testing.T) {
 	if execCount < 5 {
 		t.Errorf("Low execution count (%d), expected high throughput stress", execCount)
 	}
+
+	// Explicitly close application and logs to ensure file handles are released
+	application.Close()
+	time.Sleep(100 * time.Millisecond) // Give OS a moment to release handles
 }

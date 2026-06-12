@@ -31,7 +31,7 @@ func (f *Feed) LatestTick(ctx context.Context, symbol string) (marketdata.Tick, 
 			Symbol:    symbol,
 			Price:     k.Close,
 			Source:    "binance-kline",
-			Timestamp: time.Now().UTC(),
+			Timestamp: time.UnixMilli(k.OpenTime).UTC(),
 		}, nil
 	}
 	// Fallback to ticker price
@@ -66,6 +66,27 @@ func (f *Feed) LatestCandle(ctx context.Context, symbol, interval string) (marke
 		Volume:    k.Volume,
 		Timestamp: time.UnixMilli(k.OpenTime).UTC(),
 	}, nil
+}
+
+func (f *Feed) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	klines, err := f.adapter.GetKlines(ctx, symbol, interval, limit)
+	if err != nil {
+		return nil, err
+	}
+	candles := make([]marketdata.Candle, len(klines))
+	for i, k := range klines {
+		candles[i] = marketdata.Candle{
+			Symbol:    symbol,
+			Interval:  interval,
+			Open:      k.Open,
+			High:      k.High,
+			Low:       k.Low,
+			Close:     k.Close,
+			Volume:    k.Volume,
+			Timestamp: time.UnixMilli(k.OpenTime).UTC(),
+		}
+	}
+	return candles, nil
 }
 
 func (f *Feed) SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) marketdata.TickSubscription {

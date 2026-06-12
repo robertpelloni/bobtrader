@@ -29,6 +29,9 @@ func (m *mockFeed) Unsubscribe(ctx context.Context, symbol string) error { retur
 func (m *mockFeed) LatestCandle(ctx context.Context, symbol, interval string) (marketdata.Candle, error) {
 	return marketdata.Candle{}, nil
 }
+func (m *mockFeed) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	return nil, nil
+}
 
 func TestRebalancer_CheckDrift(t *testing.T) {
 	tracker := portfolio.NewTracker()

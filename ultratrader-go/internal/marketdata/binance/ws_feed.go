@@ -52,6 +52,27 @@ func (f *StreamFeed) LatestCandle(ctx context.Context, symbol, interval string) 
 	return marketdata.Candle{}, fmt.Errorf("use REST feed for historical candles")
 }
 
+func (f *StreamFeed) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	klines, err := f.adapter.GetKlines(ctx, symbol, interval, limit)
+	if err != nil {
+		return nil, err
+	}
+	candles := make([]marketdata.Candle, len(klines))
+	for i, k := range klines {
+		candles[i] = marketdata.Candle{
+			Symbol:    symbol,
+			Interval:  interval,
+			Open:      k.Open,
+			High:      k.High,
+			Low:       k.Low,
+			Close:     k.Close,
+			Volume:    k.Volume,
+			Timestamp: time.UnixMilli(k.OpenTime).UTC(),
+		}
+	}
+	return candles, nil
+}
+
 func (f *StreamFeed) SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) marketdata.TickSubscription {
 	ch := make(chan marketdata.Tick, 10)
 	streamPath := fmt.Sprintf("%s/%s@ticker", f.baseURL, strings.ToLower(symbol))
