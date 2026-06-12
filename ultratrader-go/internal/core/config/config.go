@@ -66,6 +66,7 @@ type RiskConfig struct {
 }
 
 type StrategyConfig struct {
+	ActiveStrategies       []string `json:"active_strategies"`
 	RiskPct                float64 `json:"risk_pct"`
 	MaxNotional            float64 `json:"max_notional"`
 	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
@@ -124,6 +125,7 @@ func Default() Config {
 			MaxConcentrationPct:  0,
 		},
 		Strategy: StrategyConfig{
+			ActiveStrategies:       []string{"rsi_reversion"},
 			RiskPct:                2.0,
 			MaxNotional:            1000,
 			TrailingActivatePct:    1.0,
@@ -202,6 +204,9 @@ func Load(path string) (Config, error) {
 		cfg.Accounts = defaults.Accounts
 	}
 	// Strategy defaults
+	if len(cfg.Strategy.ActiveStrategies) == 0 {
+		cfg.Strategy.ActiveStrategies = defaults.Strategy.ActiveStrategies
+	}
 	if cfg.Strategy.RiskPct == 0 {
 		cfg.Strategy.RiskPct = defaults.Strategy.RiskPct
 	}

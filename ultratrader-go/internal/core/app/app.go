@@ -434,24 +434,49 @@ func buildAutonomousStrategyRuntime(
 
 	var strategies []strategy.Strategy
 
+	isActive := func(name string) bool {
+		if len(cfg.Strategy.ActiveStrategies) == 0 {
+			return true
+		}
+		for _, s := range cfg.Strategy.ActiveStrategies {
+			if s == name {
+				return true
+			}
+		}
+		return false
+	}
+
 	switch cfg.Scheduler.Mode {
 	case "stream", "":
 		// Default to stream for autonomous trading
 		for _, symbol := range symbols {
 			// ── Entry Strategy 1: EMA Crossover ──────────
-			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
-			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, emaSized)
+			if isActive("ema_tick_crossover") {
+				emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
+				emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, emaSized)
+			}
 
 			// ── Entry Strategy 2: Bollinger Band Reversion ──
-			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
-			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, bbSized)
+			if isActive("bollinger_tick_reversion") {
+				bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
+				bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, bbSized)
+			}
 
 			// ── Entry Strategy 3: RSI Reversion ──────────
-			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
-			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, rsiSized)
+			if isActive("rsi_reversion") {
+				rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
+				rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, rsiSized)
+			}
+
+			// ── Entry Strategy 4: RSI Bollinger Composite ──
+			if isActive("rsi_bollinger_composite") {
+				compBase := strategydemo.NewRSIBollingerComposite(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought, sc.BollingerPeriod, sc.BollingerStdDev)
+				compSized := strategydemo.NewPortfolioSizer(compBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, compSized)
+			}
 
 			// ── Exit Strategy: Trailing Take Profit ──────
 			trailingTP := strategydemo.NewTrailingTakeProfit(
@@ -465,25 +490,33 @@ func buildAutonomousStrategyRuntime(
 			)
 			strategies = append(strategies, trailingTP)
 
-			// ── Entry Strategy 4: Tick Momentum Burst ────
-			momentumBase := strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.15, 0.15)
-			momentumSized := strategydemo.NewPortfolioSizer(momentumBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, momentumSized)
+			// ── Entry Strategy 5: Tick Momentum Burst ────
+			if isActive("tick_momentum_burst") {
+				momentumBase := strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.15, 0.15)
+				momentumSized := strategydemo.NewPortfolioSizer(momentumBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, momentumSized)
+			}
 
-			// ── Entry Strategy 5: Tick Mean Reversion ────
-			meanRevBase := strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.10, 0.10)
-			meanRevSized := strategydemo.NewPortfolioSizer(meanRevBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, meanRevSized)
+			// ── Entry Strategy 6: Tick Mean Reversion ────
+			if isActive("tick_mean_reversion") {
+				meanRevBase := strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.10, 0.10)
+				meanRevSized := strategydemo.NewPortfolioSizer(meanRevBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, meanRevSized)
+			}
 
-			// ── Entry Strategy 6: Double EMA Trend ─────
-			doubleEMABase := strategydemo.NewDoubleEMATrendStrategy(accountID, symbol, "0.001", 5, 13, 50)
-			doubleEMASized := strategydemo.NewPortfolioSizer(doubleEMABase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, doubleEMASized)
+			// ── Entry Strategy 7: Double EMA Trend ─────
+			if isActive("double_ema_trend") {
+				doubleEMABase := strategydemo.NewDoubleEMATrendStrategy(accountID, symbol, "0.001", 5, 13, 50)
+				doubleEMASized := strategydemo.NewPortfolioSizer(doubleEMABase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, doubleEMASized)
+			}
 
-			// ── Entry Strategy 7: Tick Price Threshold ──
+			// ── Entry Strategy 8: Tick Price Threshold ──
 			// Buy when price drops below a dynamic threshold
-			priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
-			strategies = append(strategies, priceThresholdBase)
+			if isActive("tick_price_threshold") {
+				priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
+				strategies = append(strategies, priceThresholdBase)
+			}
 		}
 
 		// ── USDT Stablecoin Scalp Strategy ──────────
