@@ -133,5 +133,5 @@ func (s *PortfolioSizer) sizeBuy(ctx context.Context, tick marketdata.Tick) stri
 		return "0"
 	}
 
-	return formatQuantity(quantity)
+	return formatQuantity(s.symbol, quantity)
 }

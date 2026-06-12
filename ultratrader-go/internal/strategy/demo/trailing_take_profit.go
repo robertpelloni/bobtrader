@@ -3,6 +3,8 @@ package demo
 import (
 	"context"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
@@ -143,7 +145,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		held := time.Since(s.positionStart)
 		if held >= s.maxHold {
 			heldQty := s.portfolio.PositionQuantity(s.symbol)
-			qty := formatQuantity(heldQty)
+			qty := formatQuantity(s.symbol, heldQty)
 			if heldQty <= 0 {
 				qty = s.quantity
 			}
@@ -176,7 +178,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		lossPct := ((s.entryPrice - price) / s.entryPrice) * 100
 		if lossPct >= s.stopLossPct {
 			heldQty := s.portfolio.PositionQuantity(s.symbol)
-			qty := formatQuantity(heldQty)
+			qty := formatQuantity(s.symbol, heldQty)
 			if heldQty <= 0 {
 				qty = s.quantity
 			}
@@ -209,7 +211,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 	trailStop := s.highWaterMark * (1 - s.trailPct/100)
 	if price <= trailStop {
 		heldQty := s.portfolio.PositionQuantity(s.symbol)
-		qty := formatQuantity(heldQty)
+		qty := formatQuantity(s.symbol, heldQty)
 		if heldQty <= 0 {
 			qty = s.quantity
 		}
@@ -236,13 +238,39 @@ func (s *TrailingTakeProfit) resetState() {
 	s.positionStart = time.Time{}
 }
 
-// formatQuantity formats a float64 quantity to a string with appropriate precision.
-func formatQuantity(qty float64) string {
-	if qty >= 1 {
-		return fmt.Sprintf("%.4f", qty)
+// formatQuantity formats a float64 quantity to a string with appropriate precision for the symbol.
+func formatQuantity(symbol string, qty float64) string {
+	precision := 4 // default fallback to 4 decimals (e.g. ETHUSDT)
+	upperSymbol := strings.ToUpper(symbol)
+
+	if strings.Contains(upperSymbol, "BTC") {
+		precision = 5
+	} else if strings.Contains(upperSymbol, "ETH") {
+		precision = 4
+	} else if strings.Contains(upperSymbol, "BNB") {
+		precision = 3
+	} else if strings.Contains(upperSymbol, "SOL") {
+		precision = 3
+	} else if strings.Contains(upperSymbol, "XRP") {
+		precision = 1
+	} else if strings.Contains(upperSymbol, "ADA") {
+		precision = 1
+	} else if strings.Contains(upperSymbol, "DOGE") {
+		precision = 0
+	} else {
+		// General fallback based on quantity range if unknown
+		if qty >= 1 {
+			precision = 4
+		} else if qty >= 0.01 {
+			precision = 6
+		} else {
+			precision = 8
+		}
 	}
-	if qty >= 0.01 {
-		return fmt.Sprintf("%.6f", qty)
-	}
-	return fmt.Sprintf("%.8f", qty)
+
+	pow := math.Pow(10, float64(precision))
+	// Add a tiny epsilon (1e-9) to prevent float64 representation precision loss from truncating down a value like 0.0297 to 0.0296.
+	truncatedQty := math.Floor(qty*pow + 1e-9) / pow
+
+	return fmt.Sprintf("%.*f", precision, truncatedQty)
 }
