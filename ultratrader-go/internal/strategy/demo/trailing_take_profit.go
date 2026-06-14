@@ -143,7 +143,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		held := time.Since(s.positionStart)
 		if held >= s.maxHold {
 			heldQty := s.portfolio.PositionQuantity(s.symbol)
-			qty := formatQuantity(heldQty)
+			qty := formatQuantity(s.symbol, heldQty)
 			if heldQty <= 0 {
 				qty = s.quantity
 			}
@@ -176,7 +176,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 		lossPct := ((s.entryPrice - price) / s.entryPrice) * 100
 		if lossPct >= s.stopLossPct {
 			heldQty := s.portfolio.PositionQuantity(s.symbol)
-			qty := formatQuantity(heldQty)
+			qty := formatQuantity(s.symbol, heldQty)
 			if heldQty <= 0 {
 				qty = s.quantity
 			}
@@ -209,7 +209,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 	trailStop := s.highWaterMark * (1 - s.trailPct/100)
 	if price <= trailStop {
 		heldQty := s.portfolio.PositionQuantity(s.symbol)
-		qty := formatQuantity(heldQty)
+		qty := formatQuantity(s.symbol, heldQty)
 		if heldQty <= 0 {
 			qty = s.quantity
 		}
@@ -236,13 +236,7 @@ func (s *TrailingTakeProfit) resetState() {
 	s.positionStart = time.Time{}
 }
 
-// formatQuantity formats a float64 quantity to a string with appropriate precision.
-func formatQuantity(qty float64) string {
-	if qty >= 1 {
-		return fmt.Sprintf("%.4f", qty)
-	}
-	if qty >= 0.01 {
-		return fmt.Sprintf("%.6f", qty)
-	}
-	return fmt.Sprintf("%.8f", qty)
+// formatQuantity formats a float64 quantity to a string with appropriate precision for the symbol.
+func formatQuantity(symbol string, qty float64) string {
+	return utils.FormatQuantity(symbol, qty)
 }

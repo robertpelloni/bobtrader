@@ -81,6 +81,12 @@ func (s *ATRSizing) OnMarketCandle(ctx context.Context, candle marketdata.Candle
 		quantity = (s.riskPerTrade * closePrice) / atrVal
 		// Floor at a minimum
 		quantity = math.Max(quantity, 0.001)
+		// Cap at a maximum of 10x the base quantity to prevent oversized positions
+		maxQty := baseQty * 10.0
+		if maxQty <= 0 {
+			maxQty = 0.01 // absolute fallback cap
+		}
+		quantity = math.Min(quantity, maxQty)
 	}
 
 	qtyStr := fmt.Sprintf("%.6f", quantity)

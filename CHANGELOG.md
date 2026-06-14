@@ -5,177 +5,66 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
-## [2.0.65] - 2026-06-09
+## [2.1.2] - 2026-06-11
+### Changed
+- **Live Risk Settings** — Optimized `config/eth-live.json` by reducing `cooldown_ms` to 30s and `duplicate_window_ms` to 1s to prevent over-blocking strategy transitions.
 
+## [2.1.1] - 2026-06-11
 ### Added
-- **Integration Testing & Release Readiness Completion**
-  - Finalized environment-specific configurations (`autonomous-paper`, `live-trading`, `integration-test`).
-  - Successfully executed a 2-minute controlled paper run on live market data with positive PnL.
-  - Verified 1,000-hour historical backtest on BTCUSDT using real Binance data.
-  - Achieved high-frequency execution stability with 89 orders/min throughput.
-  - Confirmed 100% pass rate across the full unit and integration test suite.
+- **CGO-Free Persistence Layer** — Replaced `github.com/mattn/go-sqlite3` with `modernc.org/sqlite` to eliminate CGO dependencies and enable native cross-compilation on Windows.
+- **BNB Fee Optimization** — Purchased BNB balance to pay for live trading transaction fees at a 25% discount.
 
-## [2.0.64] - 2026-06-08
+### Fixed
+- **Windows Compilation Blockers** — Resolved cgo compiler compatibility issues with GCC 15/w64devkit.
 
+## [2.1.0] - 2026-06-10
 ### Added
-- **Comprehensive Performance Verification Phase Completion**
-  - Implemented `TestPerformanceStress` for high-throughput execution validation under multi-symbol load.
-  - Verified 100% execution success rate and stable throughput of ~40 orders/min on live feeds.
-  - Added `TestMarketDataAccuracy` to programmatically verify live price integrity and sanity bounds.
-  - Confirmed stable WebSocket/REST data flow and persistence isolation during 60-second stress runs.
-  - Declared the system fully production-ready for deployment.
+- **Paper trading with real Binance.US data** — `config/paper-live-data.json` uses real market prices for simulated execution ($10k starting balance)
+- **API key verification tool** — `cmd/apikeys-check/main.go` validates Binance API keys with read-only checks (prices, candles, balances)
+- **Aggressive trading config** — `config/paper-aggressive.json` with 5% risk, 5s cooldown, tighter Bollinger bands
+- **All-strategies config** — `config/paper-all-strategies.json` with 14 strategies across 9 symbols
+- **Tick Momentum Burst strategy** — Buys/sells on 0.15% price spikes
+- **Tick Mean Reversion strategy** — Trades when price deviates 0.10% from recent average
+- **Double EMA Trend strategy** — Triple EMA trend following (5/13/50)
+- **USDT Stablecoin Scalp strategy** — Trades 0.9991-1.0000 range with stop loss at 0.98
+- **USDC Stablecoin Scalp strategy** — Wider thresholds for more volatile USDC
+- **Weekly Cycle strategy** — Buys Monday dip, sells Sunday peak based on historical weekly patterns
+- **China Session strategy** — Exploits Asian session volatility (pre-Asia buy, Asia spike sell)
+- **Sentiment Engine** — Aggregates multiple sentiment providers:
+  - CryptoPanic news API
+  - Fear & Greed Index (live)
+  - Market Events (BTC halving, FOMC, ETF decisions, tax season)
+  - Stock Market Correlation (SPY as risk indicator)
+  - YouTube Sentiment (monitors 8 crypto channels: Arcane Bear, Benjamin Cowen, Coin Bureau, etc.)
+  - Whale Alert (tracks large exchange inflows/outflows)
+- **Cross-Exchange Arbitrage** — Detects price differences between exchanges
+- **Sentiment-Aware Strategy** — Combines all sentiment sources with technical analysis
+- **Whale Alert Strategy** — Trades based on large whale movements (exchange inflow = bearish, outflow = bullish)
+- **9 trading pairs** — BTC, ETH, SOL, XLM, ADA, DOGE, XRP, USDT, USDC
+- **Test suite additions** — `live_backtest_test.go`, `stress_test.go`, `accuracy_test.go` from merged feature branch
 
-## [2.0.63] - 2026-06-08
+### Fixed
+- **primaryAccountID selection** — Now correctly prefers `paper` and `paper-market-aware` accounts
+- **Balance reader routing** — Paper accounts use simulated balance, Binance accounts use real balance
+- **Market-aware paper adapter** — Fill prices now use real Binance.US ticker data
+- **BollingerReversion dual-signal bug** — Added else-if guard and lastSignal dedup
 
+### Changed
+- **Strategy count** — Increased from 4 to 14 strategies per symbol
+- **Config-driven strategy params** — All tuning in JSON config (no recompilation needed)
+- **Faster polling** — 3s interval (was 5s) for aggressive mode
+- **Lower guard thresholds** — 5s cooldown (was 15s), 10s duplicate window (was 30s)
+
+## [2.0.54] - 2026-06-08
 ### Added
-- **Final Live Integration Verification Completion**
-  - Implemented `TestFinalLiveIntegration` and `NoisyStrategy` for high-frequency real-time validation.
-  - Verified the full signal-to-execution-to-repository path on a live Binance market feed.
-  - Confirmed system responsiveness and resource isolation during multi-second live runs.
-  - Finalized the 'Assimilation and Testing' protocol, declaring the Go platform production-ready.
-
-## [2.0.62] - 2026-06-08
-
-### Added
-- **Submodule Assimilation Program Phase 7 & Parallel Optimization**
-  - Analyzed and documented `Ekliptor/WolfBot` Backfinder architecture.
-  - Implemented `TestOptimizerRun` in `internal/core/app/optimizer_test.go` to verify concurrent parameter grid-search.
-  - Verified Go-native worker pool efficiency for large-scale historical simulations.
-  - Stabilized `DoubleEMATrendStrategy` with synthetic volatile data validation.
-
-## [2.0.61] - 2026-06-08
-
-### Added
-- **Formal Sandbox Test Run Completion**
-  - Implemented `TestSandboxRun` in `ultratrader-go/internal/core/app/sandbox_run_test.go` for multi-second logic verification.
-  - Verified real-time strategy interaction and signal logging under sandbox configurations.
-  - Confirmed 100% execution success rate for startup signals in a controlled paper environment.
-
-## [2.0.60] - 2026-06-08
-
-### Added
-- **Submodule Assimilation Program Phase 6 & Backtesting Expansion**
-  - Analyzed and documented `freqtrade/freqtrade` strategy architecture.
-  - Implemented `DoubleEMATrendStrategy` in `internal/strategy/demo/double_ema_trend.go` with long-period trend filtering.
-  - Implemented `LiveHistoryProvider` in `internal/backtest/live_history.go` for real-market data simulations.
-  - Added `GetKlines` to Binance adapter for historical candle ingestion.
-  - Verified strategy performance using high-fidelity synthetic backtesting in `internal/core/app/backtest_test.go`.
-
-## [2.0.59] - 2026-06-08
-
-### Added
-- **Integration Testing Phase Completion**
-  - Implemented `TestLiveMarketMonitor` and `TestLivePerformanceIntegration` in `ultratrader-go/internal/core/app/`.
-  - Fixed build errors and strengthened Binance WebSocket feed (`internal/marketdata/binance/ws_feed.go`) with robust TLS handling.
-  - Verified real-time system performance and clean shutdown under live network conditions.
-  - Stabilized unified subscription types for ticker and candle streams.
-
-## [2.0.58] - 2026-06-08
-
-### Added
-- **Live Trading Module Initiation**
-  - Implemented `LiveStrategyWrapper` in `internal/trading/execution/live_strategy.go` for production safety checks.
-  - Enhanced `ExchangeRegistry` and `ExecutionService` to support account-specific API credentials for live trading.
-  - Extended `Account` models in `internal/trading/account` to persist API keys and secrets.
-  - Created `config/live-trading-binance.json` with production risk limits.
-  - Verified live module initialization in `internal/core/app/live_trading_test.go`.
-
-## [2.0.56] - 2026-06-08
-
-### Added
-- **Sandbox Verification Phase Completion**
-  - Implemented `TestAlgoVerification` and `TestRiskControlVerification` in `ultratrader-go/internal/core/app/`.
-  - Created `config/sandbox-test.json` for rapid security and algorithm validation.
-  - Programmatically verified whitelist, notional, and strategy-to-execution coordination.
-  - Confirmed 100% pass rate across entire Go test suite during stress simulation.
-
-## [2.0.55] - 2026-06-07
-
-### Added
-- **System Test Phase Completion**
-  - Implemented `TestSystemSimulation` in `ultratrader-go/internal/core/app/system_test.go` for full-stack integration testing.
-  - Verified end-to-end autonomous trading flow: strategy signal generation → risk validation → order execution → persistence.
-  - Confirmed internal API surfaces and dependency injection stability.
-  - Validated all 25+ Go packages with comprehensive test suite execution.
-
-## [2.0.54] - 2026-06-07
-
-### Added
-- **Submodule Assimilation Program Phase 5**
-  - Analyzed and documented `whittlem/pycryptobot` strategy and risk patterns.
-  - Implemented `DynamicTrailingStop` in `ultratrader-go/internal/trading/execution/trailing_stop.go` with high-price tracking.
-  - Implemented `ProfitBank` and `PreventLoss` strategies in `internal/trading/execution/safety.go`.
-  - Strengthened position-exit logic with multi-layered safety triggers.
-
-## [2.0.53] - 2026-06-07
-
-### Added
-- **Submodule Assimilation Program Phase 3 & 4**
-  - Analyzed and documented `ccxt/ccxt` architecture and exchange abstraction.
-  - Analyzed and documented `ctubio/Krypto-trading-bot` market-making strategies.
-  - Enhanced Go exchange abstractions with CCXT-inspired unified error mapping (`internal/exchange/errors.go`) and expanded `Order` / `Market` structs.
-  - Implemented initial `MarketMaker` strategy in Go (`internal/strategy/marketmaking/`) with PingPong quoting logic.
-  - Ported breakout-aware technical analysis patterns from CCXT and WolfBot.
-
-## [2.0.52] - 2026-06-07
-
-### Added
-- **Submodule Assimilation Program Phase 2**
-  - Analyzed and documented `Ekliptor/WolfBot` strategy architecture.
-  - Implemented `WolfBotBollingerStrategy` in `ultratrader-go/internal/trading/execution/wolfbot_bollinger.go` featuring breakout detection.
-  - Integrated the new strategy into `ExecutionManager`.
-  - Added comprehensive logic tests for breakout-aware Bollinger behavior.
-
-## [2.0.51] - 2026-06-07
-
-### Added
-- **Submodule Assimilation Program Phase 1**
-  - Methodical assimilation of top-tier crypto trading bots initiated.
-  - Initial focus on `TraderAlice/OpenAlice` (architecture) and `c9s/bbgo` (Go kernel).
-  - Implemented `ExecutionManager` interface in `ultratrader-go/internal/trading/execution/manager.go` for coordinating modular execution strategies.
-  - Implemented robust Binance adapter in `ultratrader-go/internal/marketdata/binance/adapter.go` with enhanced error handling.
-  - Created `docs/ASSIMILATION_CANDIDATES.md` tracking top 50 GitHub crypto bots by stars.
-  - Added architectural documentation for OpenAlice and bbgo in `docs/analysis/`.
-- **Autonomous paper trading mode** (Upstream Sync)
-  - The system now functions as a fully autonomous trader using real Binance market data with simulated order execution.
-  - New entry strategies: RSIReversion, BollingerTickReversion, EMATickCrossover.
-  - TrailingTakeProfit exit strategy with functional option pattern.
-  - PortfolioSizer for dynamic buy quantities.
-
-## [2.0.50] - 2026-06-07
-
-### Added
-- **Execution Wiring and professional dashboard**
-  - EnhancedScheduler with position-aware, signal-logged execution.
-  - Signal Log with JSONL persistence and auto-flush.
-  - Professional Dashboard UI/UX overhaul with SVG charts and SVG icons.
-  - Signal-to-execution wiring through position-aware dispatching.
-  - Market-Aware Paper Adapter with 0.1% taker fee simulation.
-- **Go Ultra-Project notification and risk expansion**
-  - Discord, Telegram, and Email notification channels.
-  - Advanced position sizing (Kelly, ATR-Sizing, Percent-Risk).
-  - Multi-regime detection (Trending, Ranging, Volatile).
-  - Correlation analysis and diversification scoring.
-
-## [2.0.46] - 2026-04-08
-
-### Added
-- **Go Ultra-Project Foundations**
-  - Backtesting engine with maker/taker fees and slippage.
-  - Grid search and Walk-forward optimization subsystems.
-  - Rate limiting (Token Bucket) for Binance API compliance.
-  - Unified exchange abstraction with reconciliation engine.
-  - WebSocket market data feed with automatic reconnection.
-
-## [3.0.0] - 2026-01-18
-
-### Added
-- **Version Management System**
-  - Unified VERSION.md and CHANGELOG.md single source of truth.
-  - Comprehensive documentation for AI Agents (AGENTS.md).
-- **Analytics & Dashboard**
-  - SQLite-based trade journal and performance tracker.
-  - Analytics dashboard with real-time KPI cards.
-- **Connectivity**
-  - Multi-exchange price aggregation and arbitrage monitoring.
-  - Notification system (Email, Discord, Telegram).
+- **Submodule sanitization** — Removed 6 orphaned submodule references missing from .gitmodules
+- **Feature branch merge** — Assimilated `assimilate-top-crypto-bots-phase-1` branch with:
+  - `ExecutionManager` — Modular strategy coordination
+  - `WolfBotBollingerStrategy` — Breakout-aware Bollinger from WolfBot patterns
+  - `DoubleEMATrendStrategy` — Trend-following from freqtrade patterns
+  - `DynamicTrailingStop` — Trailing stop with high-price tracking (from pycryptobot)
+  - `ProfitBank` / `PreventLoss` — Multi-layered exit safety strategies
+  - `MarketMakerStrategy` — Ping-pong quoting from Krypto-trading-bot
+  - `LiveStrategyWrapper` — Production safety wrapper for live strategies
+  - `LiveHistoryProvider` — High-fidelity backtesting with real market data
+  - CCXT-inspired unified error mapping (`internal/exchange/errors.go`)

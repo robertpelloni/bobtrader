@@ -1,0 +1,53 @@
+{
+  "environment": "eth-live-breakout",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8300"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 5000
+  },
+  "risk": {
+    "max_notional": 50,
+    "max_notional_per_symbol": 50,
+    "allowed_symbols": ["SOLUSDT", "DOGEUSDT", "PEPEUSDT", "WIFUSDT", "XRPUSDT"],
+    "cooldown_ms": 30000,
+    "duplicate_window_ms": 60000,
+    "duplicate_side_window_ms": 30000,
+    "max_open_positions": 2,
+    "max_concentration_pct": 100
+  },
+  "strategy": {
+    "active_strategies": ["rsi_bollinger_composite", "sentiment_aware"],
+    "risk_pct": 50.0,
+    "max_notional": 50,
+    "trailing_activate_pct": 2.0,
+    "trailing_gap_pct": 1.0,
+    "trailing_stop_loss_pct": 5.0,
+    "trailing_max_hold_minutes": 240,
+    "bollinger_period": 15,
+    "bollinger_std_dev": 1.5,
+    "rsi_period": 10,
+    "rsi_oversold": 20,
+    "rsi_overbought": 70,
+    "ema_fast": 5,
+    "ema_slow": 13
+  },
+  "market_data": {
+    "source": "rest",
+    "initial_balance": 50
+  },
+  "accounts": [
+    {
+      "id": "binance-eth-live",
+      "name": "Binance ETH Live (Breakout)",
+      "enabled": true,
+      "exchange": "binance",
+      "secrets_file": "config/secrets/binance-production.json",
+      "testnet": false,
+      "capabilities": ["spot", "balances", "orders", "candles", "tickers"]
+    }
+  ]
+}

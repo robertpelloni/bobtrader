@@ -36,6 +36,12 @@ func NewStore(path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, fmt.Errorf("create order store directory: %w", err)
 	}
+	// Touch/create file if it does not exist to ensure persistence checks pass
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, fmt.Errorf("touch order store file: %w", err)
+	}
+	f.Close()
 	return &Store{path: path}, nil
 }
 

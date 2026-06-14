@@ -1,49 +1,110 @@
-# Handoff - Bobtrader Integration & Release Phase Completion
+# Handoff
 
-## Overview
-Successfully completed the Bobtrader autonomous bot integration testing phase. The system has been validated across synthetic simulations, controlled live paper runs, and high-fidelity historical backtests.
+## Current State: v2.1.0 — Full Strategy Arsenal & Sentiment Intelligence
 
-## Current State: v2.0.65 — Release Ready
+The system runs as a fully autonomous paper trader using real-time Binance.US market data with **14 strategies** across **9 trading pairs**. All strategy parameters are configurable via JSON — no recompilation needed.
 
-The Bobtrader autonomous trading bot is now fully operational and ready for deployment.
+### v2.1.0 — Major Feature Release
 
-### Final Verification Summary
+**14 Active Strategies per Symbol:**
+| # | Strategy | Type | Source |
+|---|----------|------|--------|
+| 1 | EMA Crossover (5/13) | Technical | Original |
+| 2 | Bollinger Tick (15, 1.5σ) | Technical | Original |
+| 3 | RSI Reversion (10) | Technical | Original |
+| 4 | Trailing Take Profit | Exit | Original |
+| 5 | Tick Momentum Burst | Technical | Original |
+| 6 | Tick Mean Reversion | Technical | Original |
+| 7 | Double EMA Trend | Technical | freqtrade |
+| 8 | Tick Price Threshold | Technical | Original |
+| 9 | Sentiment-Aware | Sentiment | NEW |
+| 10 | USDT Stablecoin Scalp | Stablecoin | NEW |
+| 11 | USDC Stablecoin Scalp | Stablecoin | NEW |
+| 12 | Weekly Cycle | Time-based | NEW |
+| 13 | China Session | Time-based | NEW |
+| 14 | Whale Alert | On-chain | NEW |
 
-| Phase | Metric | Result |
-|-------|--------|--------|
-| **Unit Testing** | Pass Rate | **100%** (Indicator, Risk, Strategy, Persistence) |
-| **System Simulation** | End-to-End | **SUCCESS** (Signal -> Execution -> Persistence) |
-| **Performance Stress** | Throughput | **89 orders/min** (Stable on live feed) |
-| **Controlled Paper Run** | 2m Live PnL | **+0.0112** (Positive expectancy verified) |
-| **Historical Backtest** | 1000h BTCUSDT | **66 Trades** (Pipeline validated) |
-| **Market Data Accuracy** | Sanity Range | **VERIFIED** (BTC/ETH prices in range) |
+**9 Trading Pairs:**
+BTC, ETH, SOL, XLM, ADA, DOGE, XRP, USDT, USDC
 
-### Key Accomplishments
-- **Modular Integration:** Successfully merged architectural patterns from OpenAlice, bbgo, WolfBot, and freqtrade into a unified Go workspace.
-- **Autonomous Execution:** Implemented a position-aware scheduler and execution manager with persistence-backed signal logging.
-- **Safety & Risk:** Wired a robust multi-layered guard pipeline (whitelist, notional, concentration, cooldown).
-- **Production Configs:** Finalized JSON configurations for `autonomous-paper`, `integration-test`, and `live-trading`.
+**Sentiment Intelligence Layer:**
+- Fear & Greed Index (live, free API)
+- Market Events (BTC halving, FOMC, ETF decisions, tax season)
+- CryptoPanic News (needs free API key)
+- YouTube Sentiment (monitors 8 channels: Arcane Bear, Benjamin Cowen, Coin Bureau, etc.)
+- Stock Market Correlation (SPY as risk indicator)
+- Whale Alert (tracks large exchange inflows/outflows)
 
-### Architecture
+**Time-Based Strategies:**
+- Weekly Cycle: Buy Monday dip, sell Sunday peak
+- China Session: Buy pre-Asia 00:00-01:00 UTC, sell Asia spike 01:30-03:00 UTC
 
+**Stablecoin Strategies:**
+- USDT Scalp: Buy 0.9992, sell 0.9999, stop 0.98
+- USDC Scalp: Buy 0.9985, sell 0.9998, stop 0.97
+
+### Config Files
+| Config | Purpose |
+|--------|---------|
+| `config/paper-live-data.json` | Conservative: real prices, paper execution |
+| `config/paper-aggressive.json` | Aggressive: 5% risk, 5s cooldown, tight Bollinger |
+| `config/paper-all-strategies.json` | Full arsenal: 14 strategies, 9 symbols |
+| `config/autonomous-paper.json` | Original autonomous paper trading |
+
+### How to Run
+```bash
+cd ultratrader-go
+
+# Full strategy arsenal (recommended)
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-all-strategies.json
+
+# Conservative paper trading
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-live-data.json
+
+# Aggressive mode
+go run -buildvcs=false ./cmd/ultratrader --config config/paper-aggressive.json
 ```
-Binance (US/Global) → MarketDataFeed → Strategy Runtime → Risk Pipeline → Execution Manager
-      (REST/WS)         (Real-time)    (EnhancedScheduler)   (8 guards)    (Live/Paper)
-```
 
-### Active Components
+Dashboard: http://127.0.0.1:8300/
 
-- **Strategies:** Bollinger Breakout, Double EMA Trend, Market Maker, RSI Reversion.
-- **Indicators:** SMA, EMA, RSI, MACD, Bollinger Bands, ATR, VWAP, OBV, MFI.
-- **Persistence:** JSONL-based Event Log, Order Journal, Signal Log, and Report Store.
+### Key Files Modified (v2.1.0)
+- `internal/strategy/demo/sentiment_aware.go` — Sentiment-aware strategy
+- `internal/strategy/demo/usdt_stablecoin_scalp.go` — USDT/USDC stablecoin scalping
+- `internal/strategy/demo/weekly_cycle.go` — Weekly cycle (Sunday peak pattern)
+- `internal/strategy/demo/china_session.go` — China session (1AM UTC volatility)
+- `internal/strategy/demo/whale_alert_strategy.go` — Whale alert trading
+- `internal/strategy/demo/cross_exchange_arbitrage.go` — Cross-exchange arbitrage
+- `internal/strategy/demo/tick_momentum_burst.go` — Momentum burst signals
+- `internal/strategy/demo/tick_mean_reversion.go` — Mean reversion signals
+- `internal/analytics/sentiment/providers.go` — Fear/Greed, Market Events, Stock Correlation
+- `internal/analytics/sentiment/youtube.go` — YouTube channel sentiment analysis
+- `internal/analytics/sentiment/whale_alert.go` — Whale Alert API integration
+- `internal/core/app/app.go` — All strategies wired into runtime
+- `config/paper-all-strategies.json` — 9 symbols, 14 strategies
 
-### Next Steps for Users
+### Data Files
+| File | Description |
+|------|-------------|
+| `data/signals/signals.jsonl` | All strategy signals with outcomes, PnL |
+| `data/orders/orders.jsonl` | All executed orders |
+| `data/reports/runtime.jsonl` | Periodic metrics/valuation snapshots |
+| `data/eventlog/events.jsonl` | Application lifecycle events |
+| `data/logs/app.jsonl` | Structured application log |
 
-1. **Launch Paper Session:** `go run ./cmd/ultratrader --config config/autonomous-paper.json`
-2. **Observe Dashboard:** Access the professional SVG-driven dashboard at the bound HTTP address.
-3. **Configure Live Trading:** Provide API credentials in `config/live-trading-binance.json` and set `enabled: true`.
+### API Keys (Optional — unlocks full functionality)
+| Service | Key | Free Tier |
+|---------|-----|-----------|
+| CryptoPanic | https://cryptopanic.com/developers/api/ | Yes |
+| YouTube Data | https://console.cloud.google.com | Yes |
+| Alpha Vantage | https://www.alphavantage.co/support/#api-key | Yes |
+| Whale Alert | https://whale-alert.io/ | 10 req/min |
 
-## Technical Notes
-- **Go Version:** 1.24.3 (Standardized in `go.mod`).
-- **Endpoint Routing:** Automatic routing to `api.binance.us` in restricted environments.
-- **Graceful Shutdown:** Implemented clean termination with final signal log flushes.
+### Next Steps
+1. **Add more exchange adapters** — Coinbase, Kraken, KuCoin for cross-exchange arbitrage
+2. **WebSocket feed debugging** — WS connects but goroutine output doesn't reach channel
+3. **Position sizing optimization** — Kelly criterion or volatility-adjusted sizing
+4. **Strategy parameter optimization** — Walk-forward on historical data
+5. **React/Vite dashboard** — Replace server-rendered HTML with SPA
+6. **More candle-based strategies** — MACD, ATR sizing in stream mode
+7. **Trade journal analytics** — Query persisted signals for long-term performance
+8. **API key integration** — Add CryptoPanic, YouTube, Whale Alert keys for full sentiment

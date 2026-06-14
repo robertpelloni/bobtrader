@@ -1,6 +1,34 @@
 # TODO
 
-## Immediate Priorities for the Go Ultra-Project
+## Current Sprint (v2.1.x)
+
+### WebSocket Feed
+- [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
+- [ ] Add auto-reconnection with exponential backoff verification
+- [ ] Add WebSocket health monitoring endpoint
+- [ ] Switch default from REST to WS once stable
+
+### Strategy Enhancement
+- [ ] Kelly criterion / volatility-adjusted position sizing
+- [ ] Walk-forward parameter optimization on historical data
+- [ ] MACD strategy in stream mode
+- [ ] ATR-based dynamic sizing
+
+### Real Exchange Integration
+- [ ] Wire execution to real Binance spot API
+- [ ] Order reconciliation service
+- [ ] Trade history sync from exchange
+- [ ] Circuit breaker for API resilience
+
+### Dashboard
+- [ ] React/Vite SPA dashboard
+- [ ] Real-time WebSocket streaming to frontend
+- [ ] Interactive charts (TradingView lightweight)
+- [ ] Strategy parameter tuning UI
+
+---
+
+## Completed (v2.0.54 and earlier)
 
 ### Runtime control and diagnostics
 - [x] Add richer guard diagnostics beyond guard names
@@ -61,28 +89,54 @@
 - [x] Add UI/dashboard layer for Go runtime
 - [x] Add deployment packaging and environment profiles
 
-## Legacy PowerTrader AI Documentation / Cleanup
-- [x] Reconcile stale roadmap/module inventory docs with actual repo state
-- [x] Add clearer distinction between legacy Python runtime and Go ultra-project workstream
-- [x] Audit and document partially integrated Python features more systematically
+### Autonomous Paper Trading (v2.0.50–v2.0.53)
+- [x] Signal-to-execution pipeline with real Binance.US data
+- [x] Config-driven strategy params (no recompilation)
+- [x] TrailingTakeProfit with functional option pattern
+- [x] PortfolioSizer for risk-adjusted position sizing
+- [x] Sell-aware risk pipeline (guards exempt sell orders)
+- [x] Fee-corrected paper execution (0.1% taker fee)
+- [x] Duplicate-sell prevention (dust threshold, position re-check)
+- [x] Signal log persistence (JSONL, auto-flush)
+- [x] Verified 20-min live test: 47 trades, 80% WR
 
-## Repo-wide Documentation
-- [x] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
-- [x] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas
+### Assimilation Program (v2.0.51–v2.0.54)
 - [x] Assimilate `TraderAlice/OpenAlice` architectural patterns (ExecutionManager)
 - [x] Assimilate `c9s/bbgo` exchange abstractions (Binance Adapter)
 - [x] Assimilate `Ekliptor/WolfBot` advanced features (WolfBotBollingerStrategy)
 - [x] Assimilate `ccxt/ccxt` exchange abstraction realism (TypedError mapping)
 - [x] Assimilate `ctubio/Krypto-trading-bot` market-making (initial MarketMaker)
 - [x] Assimilate `whittlem/pycryptobot` risk management (DynamicTSL, ProfitBank)
+- [x] Assimilate `freqtrade/freqtrade` strategy patterns (DoubleEMATrend)
 - [x] Execute System Test Phase and verify trading functionality
 - [x] Execute Sandbox Test Phase and verify risk controls
 - [x] Integrate and verify live market feed performance
-- [x] Initiate live trading module and verify initialization
 - [x] Execute Integration Test Phase and verify market data/execution
-- [x] Perform back-test of strategies using live market data (Phase 6)
-- [x] Initiate and complete formal sandbox test run
-- [x] Implement and verify parallel strategy optimization (Phase 7)
 - [x] Conduct final live integration test and verify real-time performance
-- [ ] Deploy to live market conditions (Phase 6: Final Validation)
+
+### Repository Maintenance (v2.0.54)
+- [x] Remove 6 orphaned submodule references from git index
+- [x] Merge assimilation feature branch into main
+- [x] Update build/start scripts for Go-first workflow
+- [x] Update .gitignore for build artifacts and orphaned dirs
+- [x] Reconcile ROADMAP.md and TODO.md with actual project state
+
+### Legacy PowerTrader AI Documentation / Cleanup
+- [x] Reconcile stale roadmap/module inventory docs with actual repo state
+- [x] Add clearer distinction between legacy Python runtime and Go ultra-project workstream
+- [x] Audit and document partially integrated Python features more systematically
+
+### Repo-wide Documentation
+- [x] Keep `VISION.md`, `MEMORY.md`, `DEPLOY.md`, `ROADMAP.md`, `TODO.md`, `HANDOFF.md`, `CHANGELOG.md`, `VERSION.md` synchronized
+- [x] Continue expanding submodule/reference documentation as the Go runtime assimilates new ideas
+
+---
+
+## Remaining Backlog
+
+- [ ] Deploy to live market conditions (real capital, not paper)
 - [ ] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`
+- [ ] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
+- [ ] Portfolio rebalancer with wash-sale prevention
+- [ ] Drawdown monitoring with auto-shutdown
+- [ ] Compliance reporting (risk flags, recommendations)

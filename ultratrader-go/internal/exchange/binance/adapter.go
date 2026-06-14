@@ -337,7 +337,7 @@ func (a *Adapter) doRequest(ctx context.Context, method, path string, params url
 
 	if signed {
 		params.Set("timestamp", strconv.FormatInt(time.Now().UnixMilli(), 10))
-		params.Set("recvWindow", "5000")
+		params.Set("recvWindow", "60000")
 		signature := a.sign(params.Encode())
 		params.Set("signature", signature)
 	}

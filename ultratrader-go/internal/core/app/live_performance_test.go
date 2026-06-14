@@ -57,6 +57,9 @@ func TestLivePerformanceIntegration(t *testing.T) {
 	// Monitor for 20 seconds
 	time.Sleep(20 * time.Second)
 
+	cancel()                           // Stop background stream services
+	time.Sleep(100 * time.Millisecond) // Wait for worker loops to exit
+
 	t.Log("Shutting down live integration test...")
 	if err := application.Shutdown(context.Background()); err != nil {
 		t.Errorf("Shutdown failed: %v", err)

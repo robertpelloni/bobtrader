@@ -62,9 +62,6 @@ func (pa *PriceAggregator) Register(provider PriceProvider) {
 
 // GetPrice fetches prices from all registered exchanges and aggregates.
 func (pa *PriceAggregator) GetPrice(ctx context.Context, symbol string, method AggregationMethod) (float64, error) {
-	pa.mu.RLock()
-	defer pa.mu.RUnlock()
-
 	quotes := pa.fetchQuotes(ctx, symbol)
 	if len(quotes) == 0 {
 		return 0, nil
@@ -86,8 +83,6 @@ func (pa *PriceAggregator) GetPrice(ctx context.Context, symbol string, method A
 
 // GetAllQuotes fetches quotes from all exchanges.
 func (pa *PriceAggregator) GetAllQuotes(ctx context.Context, symbol string) []PriceQuote {
-	pa.mu.RLock()
-	defer pa.mu.RUnlock()
 	return pa.fetchQuotes(ctx, symbol)
 }
 
@@ -152,41 +147,55 @@ type ArbitrageOpportunity struct {
 }
 
 func (pa *PriceAggregator) fetchQuotes(ctx context.Context, symbol string) []PriceQuote {
+	pa.mu.RLock()
+	providers := make(map[string]PriceProvider, len(pa.exchanges))
+	for name, provider := range pa.exchanges {
+		providers[name] = provider
+	}
+	pa.mu.RUnlock()
+
+	if len(providers) == 0 {
+		return nil
+	}
+
 	type result struct {
+		name  string
 		quote PriceQuote
 		err   error
 	}
 
-	ch := make(chan result, len(pa.exchanges))
-	for name, provider := range pa.exchanges {
+	ch := make(chan result, len(providers))
+	for name, provider := range providers {
 		go func(name string, provider PriceProvider) {
 			priceStr, err := provider.GetTickerPrice(ctx, symbol)
 			if err != nil {
-				pa.mu.Lock()
-				pa.health[name] = false
-				pa.mu.Unlock()
-				ch <- result{err: err}
+				ch <- result{name: name, err: err}
 				return
 			}
 			price := utils.ParseFloat(priceStr)
-			pa.mu.Lock()
-			pa.health[name] = true
-			pa.mu.Unlock()
-			ch <- result{quote: PriceQuote{
-				Exchange: name,
-				Symbol:   symbol,
-				Price:    price,
-				Time:     time.Now().UTC(),
-			}}
+			ch <- result{
+				name: name,
+				quote: PriceQuote{
+					Exchange: name,
+					Symbol:   symbol,
+					Price:    price,
+					Time:     time.Now().UTC(),
+				},
+			}
 		}(name, provider)
 	}
 
 	var quotes []PriceQuote
-	for i := 0; i < len(pa.exchanges); i++ {
+	for i := 0; i < len(providers); i++ {
 		r := <-ch
-		if r.err == nil {
+		pa.mu.Lock()
+		if r.err != nil {
+			pa.health[r.name] = false
+		} else {
+			pa.health[r.name] = true
 			quotes = append(quotes, r.quote)
 		}
+		pa.mu.Unlock()
 	}
 	return quotes
 }

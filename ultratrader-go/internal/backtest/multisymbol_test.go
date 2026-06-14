@@ -22,6 +22,10 @@ func (m *mockHistoricalFeed) LatestCandle(ctx context.Context, symbol, interval 
 	return marketdata.Candle{}, nil
 }
 
+func (m *mockHistoricalFeed) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+	return m.HistoricalCandles(ctx, symbol, interval, limit)
+}
+
 func (m *mockHistoricalFeed) HistoricalCandles(ctx context.Context, symbol string, interval string, limit int) ([]marketdata.Candle, error) {
 	if m.err != nil {
 		return nil, m.err

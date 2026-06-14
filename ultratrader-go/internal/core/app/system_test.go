@@ -52,6 +52,9 @@ func TestSystemSimulation(t *testing.T) {
 	// Wait for several scheduler cycles
 	time.Sleep(1500 * time.Millisecond)
 
+	cancel()                           // Stop background stream services
+	time.Sleep(100 * time.Millisecond) // Wait for worker loops to exit
+
 	t.Log("Stopping system simulation...")
 	if err := application.Shutdown(context.Background()); err != nil {
 		t.Errorf("App failed to shutdown cleanly: %v", err)

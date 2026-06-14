@@ -1,0 +1,63 @@
+{
+  "environment": "dual-eth-ada-live",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8300"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 5000
+  },
+  "risk": {
+    "max_notional": 25,
+    "max_notional_per_symbol": 25,
+    "allowed_symbols": ["ETHUSDT", "ADAUSDT"],
+    "cooldown_ms": 60000,
+    "duplicate_window_ms": 120000,
+    "duplicate_side_window_ms": 60000,
+    "max_open_positions": 2,
+    "max_concentration_pct": 100
+  },
+  "strategy": {
+    "risk_pct": 50.0,
+    "max_notional": 25,
+    "trailing_activate_pct": 1.5,
+    "trailing_gap_pct": 0.8,
+    "trailing_stop_loss_pct": 3.0,
+    "trailing_max_hold_minutes": 240,
+    "bollinger_period": 15,
+    "bollinger_std_dev": 1.5,
+    "rsi_period": 10,
+    "rsi_oversold": 30,
+    "rsi_overbought": 70,
+    "ema_fast": 5,
+    "ema_slow": 13,
+    "active_strategies": [
+      "ema_tick_crossover",
+      "bollinger_tick_reversion",
+      "rsi_reversion",
+      "rsi_bollinger_composite",
+      "tick_momentum_burst",
+      "tick_mean_reversion",
+      "double_ema_trend",
+      "tick_price_threshold",
+      "trailing_take_profit"
+    ]
+  },
+  "market_data": {
+    "source": "rest",
+    "initial_balance": 50
+  },
+  "accounts": [
+    {
+      "id": "binance-dual-live",
+      "name": "Binance Dual ETH+ADA Live (Conservative)",
+      "enabled": true,
+      "exchange": "binance",
+      "secrets_file": "config/secrets/binance-production.json",
+      "testnet": false,
+      "capabilities": ["spot", "balances", "orders", "candles", "tickers"]
+    }
+  ]
+}

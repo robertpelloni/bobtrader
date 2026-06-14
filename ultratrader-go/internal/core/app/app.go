@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
@@ -25,6 +27,7 @@ import (
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
+	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -36,30 +39,31 @@ type starter interface{ Start(context.Context) }
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
-	config            config.Config
-	logger            *logging.Logger
-	eventLog          *eventlog.Log
-	snapshotStore     *snapshot.Store
-	orderStore        *orders.Store
-	reportStore       *reports.Store
-	accountService    *account.Service
-	exchangeRegistry  *exchange.Registry
-	marketDataFeed    marketdata.StreamFeed
-	metricsTracker    *metrics.Tracker
-	executionRepo     *execution.Repository
-	portfolioTracker  *portfolio.Tracker
-	executionService  *execution.Service
-	executionManager  *execution.Manager
-	strategyRuntime   *strategy.Runtime
-	scheduler         *strategyscheduler.EnhancedScheduler
-	schedulerService  starter
-	cycleRunner       cycleRunner
-	pipeline          *risk.Pipeline
-	signalLog         *strategy.SignalLog
-	signalLogStop     func()
-	marketAwarePaper  *exchangepaper.MarketAwareAdapter
-	httpHandler       http.Handler
-	httpRuntime       *httpapi.Runtime
+	config                  config.Config
+	logger                  *logging.Logger
+	eventLog                *eventlog.Log
+	snapshotStore           *snapshot.Store
+	orderStore              *orders.Store
+	reportStore             *reports.Store
+	accountService          *account.Service
+	exchangeRegistry        *exchange.Registry
+	marketDataFeed          marketdata.StreamFeed
+	metricsTracker          *metrics.Tracker
+	executionRepo           *execution.Repository
+	portfolioTracker        *portfolio.Tracker
+	executionService        *execution.Service
+	executionManager        *execution.Manager
+	strategyRuntime         *strategy.Runtime
+	scheduler               *strategyscheduler.EnhancedScheduler
+	schedulerService        starter
+	cycleRunner             cycleRunner
+	pipeline                *risk.Pipeline
+	signalLog               *strategy.SignalLog
+	signalLogStop           func()
+	marketAwarePaper        *exchangepaper.MarketAwareAdapter
+	balanceReader           strategydemo.BalanceReader
+	httpHandler             http.Handler
+	httpRuntime             *httpapi.Runtime
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -149,13 +153,26 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 	)
 
-	// Determine the primary account ID for strategy signals
-	primaryAccountID := "paper-main"
+	// Determine the primary account ID for strategy signals.
+	// Prefer paper accounts when available (safe default for paper-trading mode).
+	// If no paper account exists, use the first enabled account.
+	primaryAccountID := ""
 	for _, acct := range cfg.Accounts {
-		if acct.Enabled {
+		if acct.Enabled && (acct.Exchange == "paper" || acct.Exchange == "paper-market-aware") {
 			primaryAccountID = acct.ID
 			break
 		}
+	}
+	if primaryAccountID == "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled {
+				primaryAccountID = acct.ID
+				break
+			}
+		}
+	}
+	if primaryAccountID == "" {
+		primaryAccountID = "paper-main" // ultimate fallback
 	}
 
 	// ── Strategy Signal Log ────────────────────────────────────
@@ -177,9 +194,28 @@ func New(cfg config.Config) (*App, error) {
 	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
 	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
+	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
+	// Use paper balance (simulated) when trading on paper account.
+	// Use real Binance balance only when the primary account is a real Binance account.
+	var balanceReader strategydemo.BalanceReader = marketAwarePaper
+	if primaryAccountID != "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
+				binanceAdapter := binance.New(binance.Config{
+					APIKey:   acct.APIKey,
+					SecretKey: acct.SecretKey,
+					Testnet:  acct.Testnet,
+				})
+				balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
+				balanceReader.(*strategydemo.BinanceBalanceReader).SetPriceQuerier(binanceAdapter)
+				break
+			}
+		}
+	}
+
 	// ── Strategy Runtime ───────────────────────────────────────
 	strategyRuntime := buildAutonomousStrategyRuntime(
-		cfg, primaryAccountID, marketDataFeed, portfolioTracker, marketAwarePaper,
+		cfg, primaryAccountID, marketDataFeed, portfolioTracker, balanceReader,
 	)
 
 	// ── Enhanced Scheduler (position-aware, signal-logged) ─────
@@ -196,7 +232,7 @@ func New(cfg config.Config) (*App, error) {
 				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
 				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
 				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
-				"usdt_balance":    marketAwarePaper.USDTBalance(),
+				"usdt_balance":    balanceReader.USDTBalance(),
 			}},
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 			{Type: "strategy-signals", Payload: map[string]any{
@@ -343,6 +379,7 @@ func New(cfg config.Config) (*App, error) {
 		signalLog:        signalLog,
 		signalLogStop:   signalLogStop,
 		marketAwarePaper: marketAwarePaper,
+		balanceReader:    balanceReader,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
 	}, nil
@@ -354,7 +391,7 @@ func New(cfg config.Config) (*App, error) {
 func buildMarketDataFeed(cfg config.Config, logger *logging.Logger) marketdata.StreamFeed {
 	for _, acct := range cfg.Accounts {
 		if acct.Exchange == "binance" || acct.Exchange == "paper-market-aware" {
-			adapter := binance.New(binance.Config{Testnet: acct.Testnet})
+			adapter := binance.New(binance.Config{APIKey: acct.APIKey, SecretKey: acct.SecretKey, Testnet: acct.Testnet})
 
 			switch cfg.MarketData.Source {
 			case "websocket", "ws":
@@ -384,7 +421,7 @@ func buildAutonomousStrategyRuntime(
 	accountID string,
 	feed marketdata.Feed,
 	portfolioTracker *portfolio.Tracker,
-	marketAwarePaper *exchangepaper.MarketAwareAdapter,
+	balanceReader strategydemo.BalanceReader,
 ) *strategy.Runtime {
 	symbols := cfg.Risk.AllowedSymbols
 	if len(symbols) == 0 {
@@ -399,24 +436,49 @@ func buildAutonomousStrategyRuntime(
 
 	var strategies []strategy.Strategy
 
+	isActive := func(name string) bool {
+		if len(cfg.Strategy.ActiveStrategies) == 0 {
+			return true
+		}
+		for _, s := range cfg.Strategy.ActiveStrategies {
+			if s == name {
+				return true
+			}
+		}
+		return false
+	}
+
 	switch cfg.Scheduler.Mode {
 	case "stream", "":
 		// Default to stream for autonomous trading
 		for _, symbol := range symbols {
 			// ── Entry Strategy 1: EMA Crossover ──────────
-			emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
-			emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, emaSized)
+			if isActive("ema_tick_crossover") {
+				emaBase := strategydemo.NewEMATickCrossover(accountID, symbol, "0.001", sc.EMAFast, sc.EMASlow)
+				emaSized := strategydemo.NewPortfolioSizer(emaBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, emaSized)
+			}
 
 			// ── Entry Strategy 2: Bollinger Band Reversion ──
-			bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
-			bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, bbSized)
+			if isActive("bollinger_tick_reversion") {
+				bbBase := strategydemo.NewBollingerTickReversion(accountID, symbol, "0.001", sc.BollingerPeriod, sc.BollingerStdDev)
+				bbSized := strategydemo.NewPortfolioSizer(bbBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, bbSized)
+			}
 
 			// ── Entry Strategy 3: RSI Reversion ──────────
-			rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
-			rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, marketAwarePaper, feed, sc.RiskPct, maxNotional)
-			strategies = append(strategies, rsiSized)
+			if isActive("rsi_reversion") {
+				rsiBase := strategydemo.NewRSIReversion(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought)
+				rsiSized := strategydemo.NewPortfolioSizer(rsiBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, rsiSized)
+			}
+
+			// ── Entry Strategy 4: RSI Bollinger Composite ──
+			if isActive("rsi_bollinger_composite") {
+				compBase := strategydemo.NewRSIBollingerComposite(accountID, symbol, "0.001", sc.RSIPeriod, sc.RSIOversold, sc.RSIOverbought, sc.BollingerPeriod, sc.BollingerStdDev, feed)
+				compSized := strategydemo.NewPortfolioSizer(compBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, compSized)
+			}
 
 			// ── Exit Strategy: Trailing Take Profit ──────
 			trailingTP := strategydemo.NewTrailingTakeProfit(
@@ -429,6 +491,105 @@ func buildAutonomousStrategyRuntime(
 				strategydemo.WithFeed(feed),
 			)
 			strategies = append(strategies, trailingTP)
+
+			// ── Entry Strategy 5: Tick Momentum Burst ────
+			if isActive("tick_momentum_burst") {
+				momentumBase := strategydemo.NewTickMomentumBurst(accountID, symbol, "0.001", 10, 0.15, 0.15)
+				momentumSized := strategydemo.NewPortfolioSizer(momentumBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, momentumSized)
+			}
+
+			// ── Entry Strategy 6: Tick Mean Reversion ────
+			if isActive("tick_mean_reversion") {
+				meanRevBase := strategydemo.NewTickMeanReversion(accountID, symbol, "0.001", 20, 0.10, 0.10)
+				meanRevSized := strategydemo.NewPortfolioSizer(meanRevBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, meanRevSized)
+			}
+
+			// ── Entry Strategy 7: Double EMA Trend ─────
+			if isActive("double_ema_trend") {
+				doubleEMABase := strategydemo.NewDoubleEMATrendStrategy(accountID, symbol, "0.001", 5, 13, 50)
+				doubleEMASized := strategydemo.NewPortfolioSizer(doubleEMABase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, doubleEMASized)
+			}
+
+			// ── Entry Strategy 8: Tick Price Threshold ──
+			// Buy when price drops below a dynamic threshold
+			if isActive("tick_price_threshold") {
+				priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
+				strategies = append(strategies, priceThresholdBase)
+			}
+		}
+
+		// ── USDT Stablecoin Scalp Strategy ──────────
+		// Trades USDT fluctuations around $1.00 peg
+		// Buy at 0.9992, sell at 0.9999, stop loss at 0.98
+		if isActive("usdt_scalp") {
+			usdtScalp := strategydemo.NewUSDTStablecoinScalp(
+				accountID, "USDTUSD", "100",
+				0.9992, 0.9999, 0.9800, 500.0,
+			)
+			strategies = append(strategies, usdtScalp)
+		}
+
+		// ── USDC Stablecoin Scalp Strategy ──────────
+		// USDC is more volatile than USDT — wider thresholds
+		// Buy at 0.9985, sell at 0.9998, stop loss at 0.97
+		if isActive("usdc_scalp") {
+			usdcScalp := strategydemo.NewUSDTStablecoinScalp(
+				accountID, "USDCUSD", "100",
+				0.9985, 0.9998, 0.9700, 500.0,
+			)
+			strategies = append(strategies, usdcScalp)
+		}
+
+		// ── Sentiment Engine Setup ───────────────────
+		// Aggregates sentiment from multiple sources:
+		// - CryptoPanic news API
+		// - Fear & Greed Index
+		// - Market events (halving, FOMC, ETF decisions)
+		// - Stock market correlation (SPY)
+		sentLogger, _ := logging.New(logging.Config{Stdout: false})
+		sentimentEngine := sentimentsentiment.NewEngine(sentLogger)
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewFearGreedProvider(sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewMarketEventsProvider(sentLogger))
+		// CryptoNews and YouTube providers need API keys — register with empty key for now
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewCryptoNewsProvider("", sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewStockMarketCorrelation("", sentLogger))
+		sentimentEngine.RegisterProvider(sentimentsentiment.NewWhaleAlertProvider("", 500000, sentLogger))
+
+		// ── Sentiment-Aware Strategy ─────────────────
+		// Combines all sentiment sources with technical analysis
+		if isActive("sentiment_aware") {
+			for _, symbol := range cfg.Risk.AllowedSymbols {
+				sentimentBase := strategydemo.NewSentimentAwareStrategy(accountID, symbol, "0.001", sentimentEngine, 0.2)
+				sentimentSized := strategydemo.NewPortfolioSizer(sentimentBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, sentimentSized)
+			}
+		}
+
+		// ── Time-Based Cycle Strategies ──────────────
+		for _, symbol := range cfg.Risk.AllowedSymbols {
+			// Weekly Cycle: Buy Monday dip, sell Sunday peak
+			if isActive("weekly_cycle") {
+				weeklyCycleBase := strategydemo.NewWeeklyCycleStrategy(accountID, symbol, "0.001")
+				weeklyCycleSized := strategydemo.NewPortfolioSizer(weeklyCycleBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, weeklyCycleSized)
+			}
+
+			// China Session: Buy pre-Asia quiet, sell Asia volatility spike
+			if isActive("china_session") {
+				chinaSessionBase := strategydemo.NewChinaSessionStrategy(accountID, symbol, "0.001")
+				chinaSessionSized := strategydemo.NewPortfolioSizer(chinaSessionBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, chinaSessionSized)
+			}
+
+			// Whale Alert: Trade based on large whale movements
+			if isActive("whale_alert") {
+				whaleAlertBase := strategydemo.NewWhaleAlertStrategy(accountID, symbol, "0.001")
+				whaleAlertSized := strategydemo.NewPortfolioSizer(whaleAlertBase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
+				strategies = append(strategies, whaleAlertSized)
+			}
 		}
 
 	case "candle-stream":
@@ -501,6 +662,9 @@ func (a *App) Start(ctx context.Context) error {
 		a.logger.Info("http runtime started", map[string]any{"address": a.httpRuntime.Address()})
 	}
 
+	// Reconcile portfolio from exchange balances before starting scheduler
+	a.reconcilePortfolioFromExchange(ctx)
+
 	if a.config.Scheduler.Enabled {
 		a.schedulerService.Start(ctx)
 		a.logger.Info("scheduler service started", map[string]any{
@@ -521,7 +685,7 @@ func (a *App) Start(ctx context.Context) error {
 		"metrics":        a.metricsTracker.Snapshot(),
 		"guards":         a.pipeline.Names(),
 		"signal_count":   a.signalLog.Count(),
-		"usdt_balance":   a.marketAwarePaper.USDTBalance(),
+		"usdt_balance":   a.balanceReader.USDTBalance(),
 		"market_data":    a.config.MarketData.Source,
 		"strategy":       a.config.Strategy,
 	}
@@ -563,4 +727,83 @@ func (a *App) Address() string {
 		return a.httpRuntime.Address()
 	}
 	return ""
+}
+
+func (a *App) reconcilePortfolioFromExchange(ctx context.Context) {
+	// Find enabled real exchange accounts in config
+	for _, acct := range a.config.Accounts {
+		if !acct.Enabled || acct.Exchange != "binance" {
+			continue
+		}
+
+		// Create exchange adapter using the account config
+		adapter := binance.New(binance.Config{
+			APIKey:    acct.APIKey,
+			SecretKey: acct.SecretKey,
+			Testnet:   acct.Testnet,
+		})
+
+		// Fetch balances from exchange
+		balances, err := adapter.Balances(ctx)
+		if err != nil {
+			a.logger.Error("failed to fetch balances for portfolio reconciliation", map[string]any{"error": err.Error(), "account": acct.ID})
+			continue
+		}
+
+		// Map base assets of allowed symbols
+		allowedSymbols := a.config.Risk.AllowedSymbols
+		if len(allowedSymbols) == 0 {
+			allowedSymbols = []string{"BTCUSDT", "ETHUSDT"}
+		}
+
+		for _, symbol := range allowedSymbols {
+			// Find the base asset (e.g. "ETH" for "ETHUSDT")
+			baseAsset := symbol
+			if strings.HasSuffix(symbol, "USDT") {
+				baseAsset = strings.TrimSuffix(symbol, "USDT")
+			} else if strings.HasSuffix(symbol, "USD") {
+				baseAsset = strings.TrimSuffix(symbol, "USD")
+			}
+
+			// Find matching asset balance
+			for _, bal := range balances {
+				if strings.ToUpper(bal.Asset) == strings.ToUpper(baseAsset) {
+					freeVal := utils.ParseFloat(bal.Free)
+					lockedVal := utils.ParseFloat(bal.Locked)
+					qty := freeVal + lockedVal
+
+					// Skip dust/tiny balances (e.g. less than 0.0001 ETH)
+					minQty := 0.0001
+					if strings.Contains(symbol, "BTC") {
+						minQty = 0.00001
+					} else if strings.Contains(symbol, "XRP") {
+						minQty = 0.1
+					}
+
+					if qty >= minQty {
+						// Fetch current market price to establish a cost basis
+						priceStr, err := adapter.GetTickerPrice(ctx, symbol)
+						if err != nil {
+							priceStr = "0.0"
+						}
+
+						// Apply the existing position to tracker
+						a.portfolioTracker.Apply(exchange.Order{
+							Symbol:   symbol,
+							Side:     exchange.Buy,
+							Quantity: fmt.Sprintf("%f", qty),
+							Price:    priceStr,
+						})
+
+						a.logger.Info("reconciled open position from exchange balance", map[string]any{
+							"symbol":   symbol,
+							"quantity": qty,
+							"price":    priceStr,
+							"account":  acct.ID,
+						})
+					}
+				}
+			}
+		}
+	}
 }

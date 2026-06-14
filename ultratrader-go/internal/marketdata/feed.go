@@ -8,6 +8,7 @@ import (
 type Feed interface {
 	LatestTick(ctx context.Context, symbol string) (Tick, error)
 	LatestCandle(ctx context.Context, symbol, interval string) (Candle, error)
+	CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]Candle, error)
 }
 
 type TickSubscription interface {

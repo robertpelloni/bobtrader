@@ -111,15 +111,7 @@ func extractStrategyName(reason string) string {
 	return name
 }
 
-func formatDispQuantity(qty float64) string {
-	if qty >= 1 {
-		return fmt.Sprintf("%.4f", qty)
-	}
-	if qty >= 0.01 {
-		return fmt.Sprintf("%.6f", qty)
-	}
-	return fmt.Sprintf("%.8f", qty)
-}
+
 
 func riskSide(action string) risk.OrderSide {
 	switch strings.ToLower(action) {
@@ -142,9 +134,11 @@ type entryPriceReader interface {
 func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService *execution.Service, portfolio PositionChecker, feed marketdata.Feed, signalLog *strategy.SignalLog) {
 	for _, signal := range signals {
 		// Position awareness: check portfolio state before each signal
+		var hasPosition bool
+		var heldQty float64
 		if portfolio != nil {
-			hasPosition := portfolio.HasOpenPosition(signal.Symbol)
-			heldQty := portfolio.PositionQuantity(signal.Symbol)
+			hasPosition = portfolio.HasOpenPosition(signal.Symbol)
+			heldQty = portfolio.PositionQuantity(signal.Symbol)
 
 			if strings.EqualFold(signal.Action, "buy") && hasPosition && heldQty > 0.00001 {
 				recordSignal(signal, strategy.OutcomeSkipped, "already-in-position", "", "", 0, 0, feed, signalLog)
@@ -156,8 +150,6 @@ func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService 
 					recordSignal(signal, strategy.OutcomeSkipped, "no-position-to-sell", "", "", 0, 0, feed, signalLog)
 					continue
 				}
-				// Override quantity with full held quantity
-				signal.Quantity = formatDispQuantity(heldQty)
 			}
 		}
 
@@ -168,6 +160,17 @@ func ExecuteSignals(ctx context.Context, signals []strategy.Signal, execService 
 			if err == nil && tick.Price != "" {
 				price = utils.ParseFloat(tick.Price)
 			}
+		}
+
+		// Dust position checking on sells
+		if strings.EqualFold(signal.Action, "sell") && portfolio != nil {
+			notionalVal := price * heldQty
+			if notionalVal < 1.01 {
+				recordSignal(signal, strategy.OutcomeSkipped, "dust-position-ignored", "", "", 0, 0, feed, signalLog)
+				continue
+			}
+			// Override quantity with full held quantity, properly formatted
+			signal.Quantity = utils.FormatQuantity(signal.Symbol, heldQty)
 		}
 
 		// Build order request with real price

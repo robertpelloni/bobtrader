@@ -66,6 +66,7 @@ type RiskConfig struct {
 }
 
 type StrategyConfig struct {
+	ActiveStrategies       []string `json:"active_strategies"`
 	RiskPct                float64 `json:"risk_pct"`
 	MaxNotional            float64 `json:"max_notional"`
 	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
@@ -95,6 +96,12 @@ type AccountConfig struct {
 	APIKey       string   `json:"api_key"`
 	SecretKey    string   `json:"secret_key"`
 	Testnet      bool     `json:"testnet"`
+	SecretsFile   string   `json:"secrets_file"` // path to JSON file with api_key/secret_key
+}
+
+type secretsFile struct {
+	APIKey    string `json:"api_key"`
+	SecretKey string `json:"secret_key"`
 }
 
 func Default() Config {
@@ -118,6 +125,7 @@ func Default() Config {
 			MaxConcentrationPct:  0,
 		},
 		Strategy: StrategyConfig{
+			ActiveStrategies:       []string{"rsi_reversion"},
 			RiskPct:                2.0,
 			MaxNotional:            1000,
 			TrailingActivatePct:    1.0,
@@ -196,6 +204,9 @@ func Load(path string) (Config, error) {
 		cfg.Accounts = defaults.Accounts
 	}
 	// Strategy defaults
+	if len(cfg.Strategy.ActiveStrategies) == 0 {
+		cfg.Strategy.ActiveStrategies = defaults.Strategy.ActiveStrategies
+	}
 	if cfg.Strategy.RiskPct == 0 {
 		cfg.Strategy.RiskPct = defaults.Strategy.RiskPct
 	}
@@ -242,5 +253,26 @@ func Load(path string) (Config, error) {
 	if cfg.MarketData.InitialBalance == 0 {
 		cfg.MarketData.InitialBalance = defaults.MarketData.InitialBalance
 	}
+	// Load secrets from separate files if specified
+	for i := range cfg.Accounts {
+		acct := &cfg.Accounts[i]
+		if acct.SecretsFile != "" {
+			secData, err := os.ReadFile(acct.SecretsFile)
+			if err != nil {
+				return Config{}, fmt.Errorf("read secrets file %s: %w", acct.SecretsFile, err)
+			}
+			var sec secretsFile
+			if err := json.Unmarshal(secData, &sec); err != nil {
+				return Config{}, fmt.Errorf("unmarshal secrets file %s: %w", acct.SecretsFile, err)
+			}
+			if sec.APIKey != "" {
+				acct.APIKey = sec.APIKey
+			}
+			if sec.SecretKey != "" {
+				acct.SecretKey = sec.SecretKey
+			}
+		}
+	}
+
 	return cfg, nil
 }

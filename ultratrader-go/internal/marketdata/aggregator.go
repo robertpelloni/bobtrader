@@ -152,3 +152,24 @@ func (a *Aggregator) LatestCandle(ctx context.Context, symbol, interval string) 
 	// Aggregating OHLC is complex because timestamps might not perfectly align
 	return candles[0], nil
 }
+
+func (a *Aggregator) CandleHistory(ctx context.Context, symbol, interval string, limit int) ([]Candle, error) {
+	a.mu.RLock()
+	feeds := make([]Feed, 0, len(a.feeds))
+	for _, f := range a.feeds {
+		feeds = append(feeds, f)
+	}
+	a.mu.RUnlock()
+
+	if len(feeds) == 0 {
+		return nil, fmt.Errorf("no feeds available")
+	}
+
+	for _, feed := range feeds {
+		if history, err := feed.CandleHistory(ctx, symbol, interval, limit); err == nil && len(history) > 0 {
+			return history, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no valid candle history found for symbol %q", symbol)
+}

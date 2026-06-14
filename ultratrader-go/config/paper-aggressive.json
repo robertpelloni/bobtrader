@@ -1,0 +1,51 @@
+{
+  "environment": "paper-trading-aggressive",
+  "server": {
+    "enabled": true,
+    "address": "0.0.0.0:8301"
+  },
+  "scheduler": {
+    "enabled": true,
+    "mode": "stream",
+    "interval_ms": 3000
+  },
+  "risk": {
+    "max_notional": 5000,
+    "max_notional_per_symbol": 5000,
+    "allowed_symbols": ["SOLUSDT", "DOGEUSDT", "PEPEUSDT", "WIFUSDT", "XRPUSDT"],
+    "cooldown_ms": 5000,
+    "duplicate_window_ms": 10000,
+    "duplicate_side_window_ms": 5000,
+    "max_open_positions": 2,
+    "max_concentration_pct": 90
+  },
+  "strategy": {
+    "active_strategies": ["rsi_bollinger_composite", "sentiment_aware"],
+    "risk_pct": 50.0,
+    "max_notional": 5000,
+    "trailing_activate_pct": 0.5,
+    "trailing_gap_pct": 0.2,
+    "trailing_stop_loss_pct": 2.0,
+    "trailing_max_hold_minutes": 15,
+    "bollinger_period": 15,
+    "bollinger_std_dev": 1.5,
+    "rsi_period": 10,
+    "rsi_oversold": 20,
+    "rsi_overbought": 70,
+    "ema_fast": 5,
+    "ema_slow": 13
+  },
+  "market_data": {
+    "source": "rest",
+    "initial_balance": 10000
+  },
+  "accounts": [
+    {
+      "id": "paper-main",
+      "name": "Paper Trading Aggressive (Real Binance.US Prices)",
+      "enabled": true,
+      "exchange": "paper-market-aware",
+      "capabilities": ["spot", "paper", "candles", "balances", "orders"]
+    }
+  ]
+}
