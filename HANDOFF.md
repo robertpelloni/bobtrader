@@ -1,6 +1,28 @@
 # Handoff
 
+## System Evolution: bobtrader → fully_automated_gay_luxuxy_communism
+
+> **CRITICAL PARADIGM SHIFT:** This repository is now absorbed into the
+> `fully_automated_gay_luxuxy_communism` autonomous system. Both the Python
+> legacy stack AND the Go ultra-project run simultaneously with live Binance
+> capital, competing head-to-head on profitability.
+>
+> See [`AUTONOMOUS_DUAL_BOT_STRATEGY.md`](AUTONOMOUS_DUAL_BOT_STRATEGY.md) for the
+> complete specification.
+
 ## Current State: v2.1.0 — Full Strategy Arsenal & Sentiment Intelligence
+
+### ⚠️ Autonomous Dual-Bot Operation Active
+
+| Component | Allocation | Status |
+|-----------|-----------|--------|
+| **Python Bot** | 25% of portfolio | Legacy PowerTrader AI |
+| **Go Bot** | 25% of portfolio | UltraTrader Go (14 strategies) |
+| **Reserve** | 50% of portfolio | Held as USDT |
+
+**Supervisor:** An AI agent monitors both bots, modifies source, rebuilds,
+restarts, and rebalances capital based on comparative performance. See
+`AUTONOMOUS_DUAL_BOT_STRATEGY.md` for full protocol.
 
 The system runs as a fully autonomous paper trader using real-time Binance.US market data with **14 strategies** across **9 trading pairs**. All strategy parameters are configurable via JSON — no recompilation needed.
 

@@ -6,7 +6,7 @@
 
 **Parent Document:** [UNIVERSAL_LLM_INSTRUCTIONS.md](UNIVERSAL_LLM_INSTRUCTIONS.md)
 
-> **Always read `UNIVERSAL_LLM_INSTRUCTIONS.md` first.** Then consult `VISION.md`, `MEMORY.md`, `ROADMAP.md`, `TODO.md`, `DEPLOY.md`, and `HANDOFF.md` before major implementation sessions.
+> **Always read `UNIVERSAL_LLM_INSTRUCTIONS.md` first.** Then consult `VISION.md`, `MEMORY.md`, `ROADMAP.md`, `TODO.md`, `DEPLOY.md`, `HANDOFF.md`, and [`AUTONOMOUS_DUAL_BOT_STRATEGY.md`](AUTONOMOUS_DUAL_BOT_STRATEGY.md) before major implementation sessions.
 
 ---
 
