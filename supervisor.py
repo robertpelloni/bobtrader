@@ -67,6 +67,7 @@ DEFAULT_CONFIG: dict = {
 #  Data Models
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 @dataclass
 class BotState:
     name: str
@@ -100,6 +101,7 @@ class ComparisonSnapshot:
 #  Supervisor Engine
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 class Supervisor:
     """Manages both bots, monitors performance, rebalances capital."""
 
@@ -115,6 +117,8 @@ class Supervisor:
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
         self.history: list[ComparisonSnapshot] = []
+        self.last_rebalance_ts: float = 0.0
+        self.rebalance_interval_s: float = 3600.0
         self._load_state()
 
     # ── Process Management ────────────────────────────────────────────────────
@@ -136,8 +140,11 @@ class Supervisor:
             log.info(f"Starting {bot.name} bot: {' '.join(cmd)} (cwd={cwd})")
             try:
                 proc = subprocess.Popen(
-                    cmd, cwd=cwd, stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE, text=True,
+                    cmd,
+                    cwd=cwd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
                 )
                 bot.process = proc
                 bot.pid = proc.pid
@@ -189,9 +196,15 @@ class Supervisor:
         self.stop_bot(bot)
         time.sleep(2)
         ok = self.start_bot(bot)
-        self._log_event("restart", bot.name, {
-            "pid_before": pid_before, "pid_after": bot.pid, "success": ok,
-        })
+        self._log_event(
+            "restart",
+            bot.name,
+            {
+                "pid_before": pid_before,
+                "pid_after": bot.pid,
+                "success": ok,
+            },
+        )
         return ok
 
     def start_all(self):
@@ -216,10 +229,14 @@ class Supervisor:
         log.warning("EMERGENCY HALT — stopping both bots")
         self.stop_all(force=True)
         self.running = False
-        self._log_event("emergency_halt", "both", {
-            "python_pnl": self.python.total_pnl,
-            "go_pnl": self.go.total_pnl,
-        })
+        self._log_event(
+            "emergency_halt",
+            "both",
+            {
+                "python_pnl": self.python.total_pnl,
+                "go_pnl": self.go.total_pnl,
+            },
+        )
         self._save_state()
 
     # ── Health Checks ─────────────────────────────────────────────────────────
@@ -227,6 +244,7 @@ class Supervisor:
     def check_health(self, bot: BotState) -> str:
         """Check if a bot's health endpoint responds."""
         import http.client
+
         try:
             conn = http.client.HTTPConnection("127.0.0.1", bot.port, timeout=5)
             conn.request("GET", "/health")
@@ -240,15 +258,23 @@ class Supervisor:
                     data = json.loads(body)
                     for k in ("total_pnl", "win_rate", "trade_count", "drawdown"):
                         if k in data:
-                            setattr(bot, k, float(data[k]) if k != "trade_count" else int(data[k]))
+                            setattr(
+                                bot,
+                                k,
+                                float(data[k]) if k != "trade_count" else int(data[k]),
+                            )
                 except (json.JSONDecodeError, ValueError):
                     pass
             else:
                 bot.health_status = "degraded"
                 bot.consecutive_failures += 1
             conn.close()
-        except (ConnectionRefusedError, TimeoutError, OSError,
-                http.client.HTTPException):
+        except (
+            ConnectionRefusedError,
+            TimeoutError,
+            OSError,
+            http.client.HTTPException,
+        ):
             if bot.process and bot.process.poll() is not None:
                 bot.health_status = "down"
                 bot.consecutive_failures += 1
@@ -256,7 +282,9 @@ class Supervisor:
                 bot.health_status = "starting"
 
         if bot.consecutive_failures >= 3 and bot.health_status == "down":
-            log.warning(f"{bot.name} down for {bot.consecutive_failures} checks — restarting")
+            log.warning(
+                f"{bot.name} down for {bot.consecutive_failures} checks — restarting"
+            )
             self.restart_bot(bot)
         bot.last_health_check = time.time()
         return bot.health_status
@@ -343,8 +371,7 @@ class Supervisor:
             winner=winner,
             allocation=alloc,
             recommendation=(
-                f"{winner} is winning — consider rebalancing"
-                if winner != "tie" else ""
+                f"{winner} is winning — consider rebalancing" if winner != "tie" else ""
             ),
         )
 
@@ -356,9 +383,57 @@ class Supervisor:
             if dd >= self.cfg["max_drawdown_pct"]:
                 log.error(f"{bot.name} exceeded max drawdown ({dd:.1f}%) — halting")
                 self.stop_bot(bot)
-                self._log_event("drawdown_halt", bot.name, {
-                    "drawdown": dd, "limit": self.cfg["max_drawdown_pct"],
-                })
+                self._log_event(
+                    "drawdown_halt",
+                    bot.name,
+                    {
+                        "drawdown": dd,
+                        "limit": self.cfg["max_drawdown_pct"],
+                    },
+                )
+
+    def _maybe_rebalance(self, snapshot: Optional[ComparisonSnapshot] = None):
+        """Rebalance capital from reserve to the winning bot if conditions are met."""
+        now = time.time()
+        # Enforce minimum interval between rebalances (1 hour default)
+        if now - self.last_rebalance_ts < self.rebalance_interval_s:
+            return
+        if snapshot is None:
+            snapshot = self._build_snapshot()
+        # Only rebalance if there's a clear winner
+        if snapshot.winner == "tie":
+            return
+        # Only rebalance if reserve is available
+        if self.reserve_value <= 0:
+            return
+        # Transfer 5% of reserve to the winning bot
+        transfer = min(self.reserve_value * 0.05, 10.0)  # cap at $10 per rebalance
+        if transfer <= 0:
+            return
+        self.reserve_value -= transfer
+        if snapshot.winner == "python":
+            self.python.allocation += transfer
+            winner_name = "Python"
+        else:
+            self.go.allocation += transfer
+            winner_name = "Go"
+        # Update totals
+        self.total_portfolio = (
+            self.python.allocation + self.go.allocation + self.reserve_value
+        )
+        self.last_rebalance_ts = now
+        self._log_event(
+            "rebalance",
+            snapshot.winner,
+            {
+                "transfer_amount": round(transfer, 4),
+                "new_reserve": round(self.reserve_value, 4),
+                "reason": f"{winner_name} winning",
+            },
+        )
+        log.info(
+            f"Rebalanced: transferred ${transfer:.2f} from reserve to {winner_name} bot"
+        )
 
     # ── Dashboard HTTP Server ────────────────────────────────────────────────
 
@@ -374,11 +449,19 @@ class Supervisor:
                 elif self.path == "/api/history":
                     self._json([asdict(s) for s in self.sup.history[-100:]])
                 elif self.path == "/api/status":
-                    self._json({
-                        "running": self.sup.running,
-                        "python": {"health": self.sup.python.health_status, "pid": self.sup.python.pid},
-                        "go": {"health": self.sup.go.health_status, "pid": self.sup.go.pid},
-                    })
+                    self._json(
+                        {
+                            "running": self.sup.running,
+                            "python": {
+                                "health": self.sup.python.health_status,
+                                "pid": self.sup.python.pid,
+                            },
+                            "go": {
+                                "health": self.sup.go.health_status,
+                                "pid": self.sup.go.pid,
+                            },
+                        }
+                    )
                 elif self.path == "/halt":
                     self.sup.halt_emergency()
                     self._text("Emergency halt initiated")
@@ -392,6 +475,9 @@ class Supervisor:
                         self._text("Use ?bot=python or ?bot=go")
                 elif self.path in ("/", "/dashboard"):
                     self._html()
+                elif self.path == "/rebalance":
+                    self.sup._maybe_rebalance()
+                    self._text("Rebalance triggered")
                 else:
                     self.send_response(404)
                     self.end_headers()
@@ -400,7 +486,7 @@ class Supervisor:
             def _json(self, data):
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Access-Control-Allow-Origin", "http://127.0.0.1")
                 self.end_headers()
                 self.wfile.write(json.dumps(data, default=str, indent=2).encode())
 
@@ -412,6 +498,7 @@ class Supervisor:
 
             def _get_param(self, name):
                 from urllib.parse import urlparse, parse_qs
+
                 qs = parse_qs(urlparse(self.path).query)
                 return (qs.get(name) or [None])[0]
 
@@ -445,39 +532,41 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
 .alloc-bar .py {{ background:#0055FF; }} .alloc-bar .go {{ background:#00FF66; }} .alloc-bar .res {{ background:#243044; }}
 .controls a {{ display:inline-block; padding:6px 14px; margin:4px; border-radius:4px; text-decoration:none; font-size:0.8em; background:#243044; color:#C7D1DB; border:1px solid #535B63; }}
 .halt {{ background:#FF3355; color:white; border:none; }}
+.rebalance {{ background:#00AA33; color:white; border:none; }}
 .footer {{ font-size:0.7em; color:#535B63; margin-top:16px; border-top:1px solid #243044; padding-top:12px; }}
 </style>
 </head>
 <body>
-<h1>Dual-Bot Supervisor <span style="font-size:0.6em;color:#8B949E;">port {s.cfg['supervisor_port']}</span></h1>
+<h1>Dual-Bot Supervisor <span style="font-size:0.6em;color:#8B949E;">port {s.cfg["supervisor_port"]}</span></h1>
 <div class="card">
-  <h2>Allocation (Python: {a['python_pct']}% | Go: {a['go_pct']}% | Reserve: {a['reserve_pct']}%)</h2>
+  <h2>Allocation (Python: {a["python_pct"]}% | Go: {a["go_pct"]}% | Reserve: {a["reserve_pct"]}%)</h2>
   <div class="alloc-bar">
-    <div class="py" style="width:{a['python_pct']}%"></div>
-    <div class="go" style="width:{a['go_pct']}%"></div>
-    <div class="res" style="width:{a['reserve_pct']}%"></div>
+    <div class="py" style="width:{a["python_pct"]}%"></div>
+    <div class="go" style="width:{a["go_pct"]}%"></div>
+    <div class="res" style="width:{a["reserve_pct"]}%"></div>
   </div>
-  <div class="kpi"><span class="label">Total Portfolio:</span><span class="value green">${a['total']:.2f}</span></div>
+  <div class="kpi"><span class="label">Total Portfolio:</span><span class="value green">${a["total"]:.2f}</span></div>
 </div>
 <div class="grid">
   <div class="card">
-    <h2>Python Bot <span class="badge {py['health']}">{py['health']}</span></h2>
-    <div class="kpi"><span class="label">PnL:</span><span class="value {'green' if py['pnl']>=0 else 'red'}">${py['pnl']:.4f}</span></div>
-    <div class="kpi"><span class="label">Win Rate:</span><span class="value">{py['win_rate']*100:.1f}%</span></div>
-    <div class="kpi"><span class="label">Trades:</span><span class="value">{py['trades']}</span></div>
-    <div class="kpi"><span class="label">Drawdown:</span><span class="value {'red' if py['drawdown']>15 else 'yellow'}">{py['drawdown']:.1f}%</span></div>
-    <div class="kpi"><span class="label">PID:</span><span class="value">{py['pid'] or '-'}</span></div>
+    <h2>Python Bot <span class="badge {py["health"]}">{py["health"]}</span></h2>
+    <div class="kpi"><span class="label">PnL:</span><span class="value {"green" if py["pnl"] >= 0 else "red"}">${py["pnl"]:.4f}</span></div>
+    <div class="kpi"><span class="label">Win Rate:</span><span class="value">{py["win_rate"] * 100:.1f}%</span></div>
+    <div class="kpi"><span class="label">Trades:</span><span class="value">{py["trades"]}</span></div>
+    <div class="kpi"><span class="label">Drawdown:</span><span class="value {"red" if py["drawdown"] > 15 else "yellow"}">{py["drawdown"]:.1f}%</span></div>
+    <div class="kpi"><span class="label">PID:</span><span class="value">{py["pid"] or "-"}</span></div>
   </div>
   <div class="card">
-    <h2>Go Bot <span class="badge {go_['health']}">{go_['health']}</span></h2>
-    <div class="kpi"><span class="label">PnL:</span><span class="value {'green' if go_['pnl']>=0 else 'red'}">${go_['pnl']:.4f}</span></div>
-    <div class="kpi"><span class="label">Win Rate:</span><span class="value">{go_['win_rate']*100:.1f}%</span></div>
-    <div class="kpi"><span class="label">Trades:</span><span class="value">{go_['trades']}</span></div>
-    <div class="kpi"><span class="label">Drawdown:</span><span class="value {'red' if go_['drawdown']>15 else 'yellow'}">{go_['drawdown']:.1f}%</span></div>
-    <div class="kpi"><span class="label">PID:</span><span class="value">{go_['pid'] or '-'}</span></div>
+    <h2>Go Bot <span class="badge {go_["health"]}">{go_["health"]}</span></h2>
+    <div class="kpi"><span class="label">PnL:</span><span class="value {"green" if go_["pnl"] >= 0 else "red"}">${go_["pnl"]:.4f}</span></div>
+    <div class="kpi"><span class="label">Win Rate:</span><span class="value">{go_["win_rate"] * 100:.1f}%</span></div>
+    <div class="kpi"><span class="label">Trades:</span><span class="value">{go_["trades"]}</span></div>
+    <div class="kpi"><span class="label">Drawdown:</span><span class="value {"red" if go_["drawdown"] > 15 else "yellow"}">{go_["drawdown"]:.1f}%</span></div>
+    <div class="kpi"><span class="label">PID:</span><span class="value">{go_["pid"] or "-"}</span></div>
   </div>
 </div>
 <div class="controls">
+  <a href="/rebalance" class="rebalance">🔄 Rebalance now</a>
   <a href="/halt" class="halt">EMERGENCY HALT</a>
   <a href="/restart?bot=python">Restart Python</a>
   <a href="/restart?bot=go">Restart Go</a>
@@ -485,7 +574,7 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
 </div>
 <div class="footer">
   fully_automated_gay_luxuxy_communism | {snap.timestamp[:19]}
-  <br>Recommendation: {snap.recommendation or 'No action needed'}
+  <br>Recommendation: {snap.recommendation or "No action needed"}
 </div>
 <script>setTimeout(()=>location.reload(),30000)</script>
 </body>
@@ -498,8 +587,11 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
         Handler.sup = self
         try:
             self._httpd = http.server.HTTPServer(
-                ("0.0.0.0", self.cfg["supervisor_port"]), Handler)
-            self._thread = threading.Thread(target=self._httpd.serve_forever, daemon=True)
+                ("0.0.0.0", self.cfg["supervisor_port"]), Handler
+            )
+            self._thread = threading.Thread(
+                target=self._httpd.serve_forever, daemon=True
+            )
             self._thread.start()
             log.info(f"Dashboard: http://127.0.0.1:{self.cfg['supervisor_port']}/")
         except OSError as e:
@@ -542,15 +634,26 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
     def _save_state(self):
         state = {
             "running": self.running,
-            "python": {"pid": self.python.pid, "health": self.python.health_status,
-                       "pnl": self.python.total_pnl, "win_rate": self.python.win_rate,
-                       "trades": self.python.trade_count, "drawdown": self.python.drawdown,
-                       "allocation": self.python.allocation},
-            "go": {"pid": self.go.pid, "health": self.go.health_status,
-                   "pnl": self.go.total_pnl, "win_rate": self.go.win_rate,
-                   "trades": self.go.trade_count, "drawdown": self.go.drawdown,
-                   "allocation": self.go.allocation},
-            "reserve": self.reserve_value, "total": self.total_portfolio,
+            "python": {
+                "pid": self.python.pid,
+                "health": self.python.health_status,
+                "pnl": self.python.total_pnl,
+                "win_rate": self.python.win_rate,
+                "trades": self.python.trade_count,
+                "drawdown": self.python.drawdown,
+                "allocation": self.python.allocation,
+            },
+            "go": {
+                "pid": self.go.pid,
+                "health": self.go.health_status,
+                "pnl": self.go.total_pnl,
+                "win_rate": self.go.win_rate,
+                "trades": self.go.trade_count,
+                "drawdown": self.go.drawdown,
+                "allocation": self.go.allocation,
+            },
+            "reserve": self.reserve_value,
+            "total": self.total_portfolio,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
         STATUS_FILE.write_text(json.dumps(state, indent=2))
@@ -574,8 +677,12 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
                 log.warning(f"Could not load state: {e}")
 
     def _log_event(self, event_type: str, bot: str, details: dict):
-        entry = {"timestamp": datetime.now(timezone.utc).isoformat(),
-                 "event": event_type, "bot": bot, **details}
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": event_type,
+            "bot": bot,
+            **details,
+        }
         self._append_jsonl(DECISIONS_FILE, entry)
 
     @staticmethod
@@ -588,16 +695,30 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
 #  CLI
 # ═══════════════════════════════════════════════════════════════════════════════
 
+
 def main():
     parser = argparse.ArgumentParser(
-        description="fully_automated_gay_luxuxy_communism — Supervisor Agent")
-    parser.add_argument("action", nargs="?", default="run",
-                        choices=["run", "start", "stop", "restart", "status", "halt"],
-                        help="Action to perform")
-    parser.add_argument("--port", type=int, default=DEFAULT_CONFIG["supervisor_port"],
-                        help=f"Dashboard port (default: {DEFAULT_CONFIG['supervisor_port']})")
-    parser.add_argument("--poll", type=int, default=DEFAULT_CONFIG["poll_interval_s"],
-                        help=f"Poll interval in seconds (default: {DEFAULT_CONFIG['poll_interval_s']})")
+        description="fully_automated_gay_luxuxy_communism — Supervisor Agent"
+    )
+    parser.add_argument(
+        "action",
+        nargs="?",
+        default="run",
+        choices=["run", "start", "stop", "restart", "status", "halt"],
+        help="Action to perform",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=DEFAULT_CONFIG["supervisor_port"],
+        help=f"Dashboard port (default: {DEFAULT_CONFIG['supervisor_port']})",
+    )
+    parser.add_argument(
+        "--poll",
+        type=int,
+        default=DEFAULT_CONFIG["poll_interval_s"],
+        help=f"Poll interval in seconds (default: {DEFAULT_CONFIG['poll_interval_s']})",
+    )
     parser.add_argument("--config", type=str, help="Path to config JSON file")
     args = parser.parse_args()
 
