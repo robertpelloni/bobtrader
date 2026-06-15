@@ -46,6 +46,7 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [x] Implement ML-Aware Strategy with Ensemble Predictor (v2.1.5)
 - [x] Implement Adaptive Kelly Criterion Sizer (v2.1.6)
 - [x] Implement Diversified Siphoning & Orderflow Edge (v2.1.7)
+- [x] Implement Statistical Arbitrage & Whale-Flow Alpha (v2.1.8)
 
 ### 2. WebSocket Feed Hardening
 - [ ] Debug goroutine-to-channel delivery in WS feed
