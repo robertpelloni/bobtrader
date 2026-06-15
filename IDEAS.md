@@ -1,5 +1,11 @@
 # Ideas for Improvement: PowerTrader AI (bobtrader)
 
+## Aggressive Expansion Ideas
+- **Micro-to-Macro Siphoning:** Automatically redirect a portion of realized profits from high-frequency scalping into long-term macro trend positions (e.g., BTC/ETH cold storage).
+- **Multi-Agent Strategy Voting:** Use LLM agents to evaluate macro news sentiment and "vote" on the current regime, influencing the technical strategy runtime.
+- **Genetic Algorithm Optimization:** Evolve strategy parameters continuously in the background using a local worker pool.
+
+
 Based on a deep analysis of the PowerTrader AI project structure and design philosophy, here are several transformative ideas to evolve this automated trading framework:
 
 ## 1. Radical Refactoring & Modularization

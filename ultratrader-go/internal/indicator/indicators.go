@@ -335,3 +335,69 @@ func (a *ATR) Last() float64 {
 	}
 	return a.atr
 }
+
+// ADX (Average Directional Index) measures trend strength.
+type ADX struct {
+	period  int
+	atr     *ATR
+	prevH   float64
+	prevL   float64
+	plusDI  float64
+	minusDI float64
+	dx      *EMA
+	init    bool
+}
+
+func NewADX(period int) *ADX {
+	return &ADX{
+		period: period,
+		atr:    NewATR(period),
+		dx:     NewEMA(period),
+	}
+}
+
+func (a *ADX) Update(high, low, close float64) float64 {
+	if !a.init {
+		a.prevH = high
+		a.prevL = low
+		a.init = true
+		a.atr.Update(high, low, close)
+		return 0
+	}
+
+	atrVal := a.atr.Update(high, low, close)
+	if atrVal == 0 {
+		return 0
+	}
+
+	upMove := high - a.prevH
+	downMove := a.prevL - low
+	a.prevH = high
+	a.prevL = low
+
+	plusDM := 0.0
+	if upMove > downMove && upMove > 0 {
+		plusDM = upMove
+	}
+
+	minusDM := 0.0
+	if downMove > upMove && downMove > 0 {
+		minusDM = downMove
+	}
+
+	// Simple smoothing for DI
+	a.plusDI = (a.plusDI*float64(a.period-1) + (100 * plusDM / atrVal)) / float64(a.period)
+	a.minusDI = (a.minusDI*float64(a.period-1) + (100 * minusDM / atrVal)) / float64(a.period)
+
+	diSum := a.plusDI + a.minusDI
+	if diSum == 0 {
+		return a.dx.Update(0)
+	}
+
+	dxVal := 100 * math.Abs(a.plusDI-a.minusDI) / diSum
+	return a.dx.Update(dxVal)
+}
+
+func (a *ADX) Last() float64 {
+	return a.dx.Last()
+}
