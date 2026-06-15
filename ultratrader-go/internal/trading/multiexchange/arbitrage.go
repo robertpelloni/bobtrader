@@ -1,8 +1,12 @@
 package multiexchange
 
 import (
+	"context"
+	"fmt"
 	"math"
 	"time"
+
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 )
 
 // ArbitrageOpportunity represents a detected cross-exchange spread.
@@ -25,6 +29,28 @@ type ArbitrageExecutor struct {
 	minSpreadPct  float64
 	executed      []map[string]interface{}
 }
+
+// OnTick implements the strategy.Strategy interface.
+func (a *ArbitrageExecutor) OnTick(ctx context.Context) ([]strategy.Signal, error) {
+	// For demo, we use a fixed set of coins to scan
+	coins := []string{"BTC", "ETH", "SOL", "XRP"}
+	opps := a.Scan(coins)
+
+	var signals []strategy.Signal
+	for _, opp := range opps {
+		if opp.EstimatedProfit > 5.0 { // Min $5 profit to trigger signal
+			signals = append(signals, strategy.Signal{
+				Symbol:   opp.Coin + "USDT",
+				Action:   "buy",
+				Quantity: fmt.Sprintf("%.6f", opp.MaxQuantity),
+				Reason:   fmt.Sprintf("Arbitrage: buy on %s, sell on %s (spread %.2f%%)", opp.BuyExchange, opp.SellExchange, opp.SpreadPct),
+			})
+		}
+	}
+	return signals, nil
+}
+
+func (a *ArbitrageExecutor) Name() string { return "multi-exchange-arbitrage" }
 
 // NewArbitrageExecutor creates a new ArbitrageExecutor.
 func NewArbitrageExecutor(manager ExchangeManager, fees map[string]float64, minSpreadPct float64) *ArbitrageExecutor {
