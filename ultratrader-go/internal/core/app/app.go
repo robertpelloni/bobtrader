@@ -189,6 +189,13 @@ func New(cfg config.Config) (*App, error) {
 		orderStore, executionRepo, portfolioTracker, logger, metricsTracker,
 	)
 
+	// ── Siphoning Manager ──────────────────────────────────────
+	// Siphons 10% of realized profits into BTCUSDT macro positions
+	siphoningManager := execution.NewSiphoningManager(
+		portfolioTracker, marketDataFeed, executionService, primaryAccountID, "BTCUSDT", 0.10,
+	)
+	executionService.SetSiphoningManager(siphoningManager)
+
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
 	paperAdapter := exchangepaper.New()
