@@ -693,8 +693,8 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
     <div class="chart-grid">
       <div class="chart-box">
-        <div class="chart-header">Concentration Drift</div>
-        <div class="chart-canvas" id="concentration-trend-chart"></div>
+        <div class="chart-header">Siphoned Wealth Trend</div>
+        <div class="chart-canvas" id="siphoned-trend-chart"></div>
       </div>
       <div class="chart-box">
         <div class="chart-header">Realized PnL Trend</div>
@@ -1221,6 +1221,7 @@ async function refreshDashboard() {
       r => { const vals = Object.values(r.payload?.concentration || {}); return vals.length ? Math.max(...vals) * 100 : 0; },
       '#b388ff', '%');
     renderLineChart('blocked-trend-chart', metricsHist, r => Number(r.payload?.metrics?.execution_blocked ?? 0), '#ff5252');
+    renderLineChart('siphoned-trend-chart', valuationHist, r => Number(r.payload?.total_siphoned ?? 0), '#b388ff', '$');
     renderLineChart('pnl-trend-chart', valuationHist, r => Number(r.payload?.realized_pnl ?? 0), '#00e676', '$');
 
     const concEntries = Object.entries(ed.concentration || {}).map(([label, value]) => ({

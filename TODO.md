@@ -2,8 +2,8 @@
 
 ## Current Sprint (v2.1.x)
 
-### Hierarchical Strategies (v2.1.8)
-- [x] Bump version to 2.1.8
+### Hierarchical Strategies (v2.2.0)
+- [x] Bump version to 2.2.0
 - [x] Implement ADX indicator for trend strength
 - [x] Implement MacroRegime strategy (EMA + ADX)
 - [x] Implement MicroScalper (Tick-volatility)
@@ -24,6 +24,9 @@
 - [x] Implement StatisticalArbitrage strategy (Pairs trading)
 - [x] Implement WhaleFlow macro strategy
 - [x] Integrate Rebalancer into Siphoning flow
+- [x] Implement GeneticOptimizer for evolutionary tuning
+- [x] Implement RLFilter for reinforcement learning entries
+- [x] Add Siphoning Trend charts to Dashboard
 
 ### WebSocket Feed
 - [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
