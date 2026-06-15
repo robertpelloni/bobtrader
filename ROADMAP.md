@@ -34,7 +34,15 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 
 ## Near-Term Roadmap (v2.1.x)
 
-### 1. WebSocket Feed Hardening
+### 1. Hierarchical Strategy Suite (The "Best Suite" Initiative)
+- [x] Implement Macro Regime Filter (Trend/Vol/Range detection)
+- [x] Implement Micro Volatility Scalper (Tick-level capture)
+- [x] Implement Micro-to-Macro Profit Siphoning logic
+- [x] ATR-based dynamic sizing for all strategies
+- [x] Implement Drawdown Monitoring with auto-shutdown (v2.1.4)
+- [x] Implement Grid and Golden Cross strategies (v2.1.4)
+
+### 2. WebSocket Feed Hardening
 - [ ] Debug goroutine-to-channel delivery in WS feed
 - [ ] Add auto-reconnection with exponential backoff
 - [ ] Add WebSocket health monitoring endpoint

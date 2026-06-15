@@ -152,6 +152,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewDuplicateSideGuard(executionRepo, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
+		risk.NewDrawdownGuard(portfolioTracker, marketDataFeed, 0.20), // Default 20% DD limit
 	)
 
 	// Determine the primary account ID for strategy signals.

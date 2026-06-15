@@ -81,6 +81,7 @@ func (m *SiphoningManager) OnTradeExit(ctx context.Context, symbol string, pnl f
 		Side:      risk.BuySide,
 		Notional:  siphonAmount,
 		IsExit:    false,
+		Metadata:  map[string]any{"source": "siphoning"},
 	}
 
 	_, err = m.service.Execute(ctx, m.accountID, req, intent)

@@ -13,6 +13,7 @@ type OrderIntent struct {
 	Side      OrderSide
 	Notional  float64
 	IsExit    bool // true for position-closing orders (exits bypass some guards)
+	Metadata  map[string]any
 }
 
 type OrderSide string
