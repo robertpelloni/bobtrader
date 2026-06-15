@@ -366,6 +366,7 @@ type tickerMessage struct {
 	EventType string `json:"e"`
 	Symbol    string `json:"s"`
 	Price     string `json:"c"`
+	Quantity  string `json:"q"`
 	EventTime int64  `json:"E"`
 }
 
@@ -405,6 +406,7 @@ func parseTickerMessage(data []byte) (marketdata.Tick, bool) {
 	return marketdata.Tick{
 		Symbol:    msg.Symbol,
 		Price:     msg.Price,
+		Quantity:  msg.Quantity,
 		Source:    "binance-ws",
 		Timestamp: time.UnixMilli(msg.EventTime).UTC(),
 	}, true

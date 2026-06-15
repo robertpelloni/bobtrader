@@ -2,8 +2,8 @@
 
 ## Current Sprint (v2.1.x)
 
-### Hierarchical Strategies (v2.1.5)
-- [x] Bump version to 2.1.5
+### Hierarchical Strategies (v2.1.7)
+- [x] Bump version to 2.1.7
 - [x] Implement ADX indicator for trend strength
 - [x] Implement MacroRegime strategy (EMA + ADX)
 - [x] Implement MicroScalper (Tick-volatility)
@@ -17,6 +17,10 @@
 - [x] Implement BollingerBreakout strategy
 - [x] Integrate Arbitrage signals into strategy runtime
 - [x] Implement MLAwareStrategy with kNN Ensemble
+- [x] Implement AdaptiveKellySizer using live strategy stats
+- [x] Implement Diversified Siphoning (Multi-asset accumulation)
+- [x] Implement OrderflowScalper strategy
+- [x] Add "Siphoned Wealth" KPI to dashboard
 
 ### WebSocket Feed
 - [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer

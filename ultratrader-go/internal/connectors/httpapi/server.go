@@ -34,6 +34,7 @@ type PortfolioSummary struct {
 	TotalMarketValue   float64            `json:"total_market_value"`
 	TotalRealizedPnL   float64            `json:"total_realized_pnl"`
 	TotalUnrealizedPnL float64            `json:"total_unrealized_pnl"`
+	TotalSiphoned      float64            `json:"total_siphoned"`
 }
 
 type ExecutionDiagnostics struct {
@@ -80,22 +81,22 @@ type RiskInfo struct {
 }
 
 type StrategyInfo struct {
-	RiskPct                float64 `json:"risk_pct"`
-	MaxNotional            float64 `json:"max_notional"`
-	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
-	TrailingGapPct         float64 `json:"trailing_gap_pct"`
-	TrailingStopLossPct    float64 `json:"trailing_stop_loss_pct"`
-	TrailingMaxHoldMinutes int     `json:"trailing_max_hold_minutes"`
-	BollingerPeriod        int     `json:"bollinger_period"`
-	BollingerStdDev        float64 `json:"bollinger_std_dev"`
-	RSIPeriod              int     `json:"rsi_period"`
-	RSIOversold            float64 `json:"rsi_oversold"`
-	RSIOverbought          float64 `json:"rsi_overbought"`
-	EMAFast                int     `json:"ema_fast"`
-	EMASlow                int     `json:"ema_slow"`
-	SiphoningEnabled       bool    `json:"siphoning_enabled"`
-	SiphoningPct           float64 `json:"siphoning_pct"`
-	SiphoningSymbol        string  `json:"siphoning_symbol"`
+	RiskPct                float64            `json:"risk_pct"`
+	MaxNotional            float64            `json:"max_notional"`
+	TrailingActivatePct    float64            `json:"trailing_activate_pct"`
+	TrailingGapPct         float64            `json:"trailing_gap_pct"`
+	TrailingStopLossPct    float64            `json:"trailing_stop_loss_pct"`
+	TrailingMaxHoldMinutes int                `json:"trailing_max_hold_minutes"`
+	BollingerPeriod        int                `json:"bollinger_period"`
+	BollingerStdDev        float64            `json:"bollinger_std_dev"`
+	RSIPeriod              int                `json:"rsi_period"`
+	RSIOversold            float64            `json:"rsi_oversold"`
+	RSIOverbought          float64            `json:"rsi_overbought"`
+	EMAFast                int                `json:"ema_fast"`
+	EMASlow                int                `json:"ema_slow"`
+	SiphoningEnabled       bool               `json:"siphoning_enabled"`
+	SiphoningPct           float64            `json:"siphoning_pct"`
+	SiphoningWeights       map[string]float64 `json:"siphoning_weights"`
 }
 
 type MarketDataInfo struct {

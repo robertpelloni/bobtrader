@@ -53,6 +53,7 @@ type App struct {
 	executionRepo           *execution.Repository
 	portfolioTracker        *portfolio.Tracker
 	executionService        *execution.Service
+	siphoningManager        *execution.SiphoningManager
 	executionManager        *execution.Manager
 	strategyRuntime         *strategy.Runtime
 	scheduler               *strategyscheduler.EnhancedScheduler
@@ -191,15 +192,16 @@ func New(cfg config.Config) (*App, error) {
 	)
 
 	// ── Siphoning Manager ──────────────────────────────────────
+	var siphoningManager *execution.SiphoningManager
 	if cfg.Strategy.SiphoningEnabled {
-		siphoningManager := execution.NewSiphoningManager(
+		siphoningManager = execution.NewSiphoningManager(
 			portfolioTracker, marketDataFeed, executionService, primaryAccountID,
-			cfg.Strategy.SiphoningSymbol, cfg.Strategy.SiphoningPct,
+			cfg.Strategy.SiphoningWeights, cfg.Strategy.SiphoningPct,
 		)
 		executionService.SetSiphoningManager(siphoningManager)
 		logger.Info("siphoning manager enabled", map[string]any{
-			"symbol": cfg.Strategy.SiphoningSymbol,
-			"pct":    cfg.Strategy.SiphoningPct,
+			"weights": cfg.Strategy.SiphoningWeights,
+			"pct":     cfg.Strategy.SiphoningPct,
 		})
 	}
 
@@ -308,12 +310,17 @@ func New(cfg config.Config) (*App, error) {
 			}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
+			siphoned := 0.0
+			if siphoningManager != nil {
+				siphoned = siphoningManager.Stats()
+			}
 			return httpapi.PortfolioSummary{
 				OpenPositions:     portfolioTracker.OpenPositionCount(),
 				Concentration:     currentConcentration(),
 				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
 				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+				TotalSiphoned:     siphoned,
 			}
 		},
 		OrdersProvider: func() []exchange.Order { return executionRepo.List() },
@@ -343,7 +350,7 @@ func New(cfg config.Config) (*App, error) {
 				Environment: cfg.Environment,
 				Scheduler:   httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
 				Risk:        httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
-				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow, SiphoningEnabled: cfg.Strategy.SiphoningEnabled, SiphoningPct: cfg.Strategy.SiphoningPct, SiphoningSymbol: cfg.Strategy.SiphoningSymbol},
+				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow, SiphoningEnabled: cfg.Strategy.SiphoningEnabled, SiphoningPct: cfg.Strategy.SiphoningPct, SiphoningWeights: cfg.Strategy.SiphoningWeights},
 				MarketData:  httpapi.MarketDataInfo{Source: cfg.MarketData.Source, InitialBalance: cfg.MarketData.InitialBalance},
 			}
 		},
@@ -385,6 +392,7 @@ func New(cfg config.Config) (*App, error) {
 		executionRepo:    executionRepo,
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
+		siphoningManager: siphoningManager,
 		executionManager: executionManager,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,

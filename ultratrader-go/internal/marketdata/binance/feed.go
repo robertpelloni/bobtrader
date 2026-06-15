@@ -30,6 +30,7 @@ func (f *Feed) LatestTick(ctx context.Context, symbol string) (marketdata.Tick, 
 		return marketdata.Tick{
 			Symbol:    symbol,
 			Price:     k.Close,
+			Quantity:  k.Volume, // REST feed mapping
 			Source:    "binance-kline",
 			Timestamp: time.UnixMilli(k.OpenTime).UTC(),
 		}, nil

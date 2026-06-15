@@ -44,6 +44,8 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [x] Implement Bollinger Volatility Breakout (v2.1.5)
 - [x] Integrate Multi-Exchange Arbitrage signals (v2.1.5)
 - [x] Implement ML-Aware Strategy with Ensemble Predictor (v2.1.5)
+- [x] Implement Adaptive Kelly Criterion Sizer (v2.1.6)
+- [x] Implement Diversified Siphoning & Orderflow Edge (v2.1.7)
 
 ### 2. WebSocket Feed Hardening
 - [ ] Debug goroutine-to-channel delivery in WS feed

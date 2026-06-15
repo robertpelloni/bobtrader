@@ -1127,6 +1127,7 @@ async function refreshDashboard() {
         deltaHtml(t.portfolio_value?.latest, t.portfolio_value?.previous)),
       kpi('Realized PnL', '$' + fmt(ps.total_realized_pnl), ps.total_realized_pnl >= 0 ? 'green' : 'red'),
       kpi('Unrealized PnL', '$' + fmt(ps.total_unrealized_pnl), ps.total_unrealized_pnl >= 0 ? 'green' : 'red'),
+      kpi('Siphoned Wealth', '$' + fmt(ps.total_siphoned), 'purple'),
       kpi('Open Positions', String(ps.open_positions || 0), 'blue'),
       kpi('Success Rate', fmtPct(m.success_rate), m.success_rate >= 0.8 ? 'green' : m.success_rate >= 0.5 ? 'orange' : 'red'),
     ].join('');

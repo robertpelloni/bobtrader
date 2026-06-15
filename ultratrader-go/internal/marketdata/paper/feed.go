@@ -29,7 +29,7 @@ func (f *Feed) LatestTick(_ context.Context, symbol string) (marketdata.Tick, er
 	if !ok {
 		return marketdata.Tick{}, fmt.Errorf("unknown symbol %q", symbol)
 	}
-	return marketdata.Tick{Symbol: symbol, Price: price, Source: "paper", Timestamp: time.Now().UTC()}, nil
+	return marketdata.Tick{Symbol: symbol, Price: price, Quantity: "1.0", Source: "paper", Timestamp: time.Now().UTC()}, nil
 }
 
 func (f *Feed) LatestCandle(_ context.Context, symbol, interval string) (marketdata.Candle, error) {
@@ -104,7 +104,7 @@ func (f *Feed) nextStreamTick(symbol string) (marketdata.Tick, error) {
 	}
 	idx := f.indices[symbol] % len(sequence)
 	f.indices[symbol] = f.indices[symbol] + 1
-	return marketdata.Tick{Symbol: symbol, Price: sequence[idx], Source: "paper-stream", Timestamp: time.Now().UTC()}, nil
+	return marketdata.Tick{Symbol: symbol, Price: sequence[idx], Quantity: "1.0", Source: "paper-stream", Timestamp: time.Now().UTC()}, nil
 }
 
 func (f *Feed) SubscribeCandles(ctx context.Context, symbol, interval string) marketdata.CandleSubscription {
