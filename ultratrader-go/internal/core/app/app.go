@@ -371,6 +371,18 @@ func New(cfg config.Config) (*App, error) {
 		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
 		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
 		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
+		MarketDataStatusProvider: func() map[string]any {
+			if ws, ok := marketDataFeed.(interface{ GetStatus() map[string]any }); ok {
+				return ws.GetStatus()
+			}
+			return map[string]any{"source": cfg.MarketData.Source, "status": "polling"}
+		},
+		CandleProvider: func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+			if symbol == "" {
+				symbol = "BTCUSDT"
+			}
+			return marketDataFeed.CandleHistory(ctx, symbol, interval, limit)
+		},
 	})
 
 	var runtime *httpapi.Runtime

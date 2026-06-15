@@ -536,6 +536,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <div class="topbar">
     <span class="topbar-title" id="page-title">Overview</span>
     <div class="topbar-controls">
+      <span id="ws-status" style="font-size:11px; margin-right:10px;">WS: ---</span>
       <span class="live-dot" id="live-dot"></span>
       <span class="muted" id="last-updated">Loading...</span>
       <button class="btn" id="refresh-btn">&#8635; Refresh</button>
@@ -1083,7 +1084,7 @@ function renderConfig() {
 // ─── Main Data Fetch ──────────────────────────────────────────
 async function refreshDashboard() {
   try {
-    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config] = await Promise.all([
+    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config, wsStatus] = await Promise.all([
       fetchJson('/api/status'),
       fetchJson('/api/portfolio'),
       fetchJson('/api/portfolio-summary'),
@@ -1096,14 +1097,27 @@ async function refreshDashboard() {
       fetchJson('/api/runtime-reports/latest'),
       fetchJson('/api/runtime-reports/history?type=metrics-snapshot&limit=20'),
       fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20'),
-      fetchJson('/api/config')
+      fetchJson('/api/config'),
+      fetchJson('/api/health/marketdata')
     ]);
 
     appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist,
- configRisk: config.risk, configScheduler: config.scheduler, configStrategy: config.strategy, configMarketData: config.market_data
+ configRisk: config.risk, configScheduler: config.scheduler, configStrategy: config.strategy, configMarketData: config.market_data, wsStatus
  };
 
     // Status indicator
+    const wsEl = document.getElementById('ws-status');
+    if (wsStatus && wsStatus.connected) {
+      wsEl.textContent = 'WS: Connected';
+      wsEl.style.color = 'var(--green)';
+    } else if (wsStatus && wsStatus.source === 'rest') {
+      wsEl.textContent = 'REST: Polling';
+      wsEl.style.color = 'var(--blue2)';
+    } else {
+      wsEl.textContent = 'WS: Disconnected';
+      wsEl.style.color = 'var(--red)';
+    }
+
     const tag = document.getElementById('status-tag');
     const dot = document.getElementById('live-dot');
     if (status.ready) {

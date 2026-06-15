@@ -50,12 +50,11 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [x] Implement Genetic Parameter Optimizer (v2.2.0)
 - [x] Implement RL-based Entry Filter Strategy (v2.2.0)
 - [x] Refine Dashboard with AI and Siphoning Trends (v2.2.0)
+- [x] Harden WebSocket Feed Reliability & Reconnection (v2.3.0)
+- [x] Implement WebSocket Health Monitoring (v2.3.0)
+- [x] Implement Candle Data API for Charts (v2.3.0)
 
-### 2. WebSocket Feed Hardening
-- [ ] Debug goroutine-to-channel delivery in WS feed
-- [ ] Add auto-reconnection with exponential backoff
-- [ ] Add WebSocket health monitoring endpoint
-- [ ] Switch default from REST to WS once stable
+### 2. Dashboard Modernization
 
 ### 2. Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing

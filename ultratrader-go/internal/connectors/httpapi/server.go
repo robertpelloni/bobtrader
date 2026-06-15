@@ -1,11 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
@@ -121,6 +123,8 @@ type Dependencies struct {
 	ReportTrendsProvider         func() reportinganalysis.RuntimeTrends
 	SignalLogProvider            func() []strategy.LoggedSignal
 	StrategyStatsProvider        func() map[string]strategy.StrategyStats
+	MarketDataStatusProvider     func() map[string]any
+	CandleProvider               func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error)
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -240,6 +244,30 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/strategy-stats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.StrategyStatsProvider())
+	})
+
+	mux.HandleFunc("/api/health/marketdata", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.MarketDataStatusProvider())
+	})
+
+	mux.HandleFunc("/api/marketdata/candles", func(w http.ResponseWriter, r *http.Request) {
+		symbol := r.URL.Query().Get("symbol")
+		interval := r.URL.Query().Get("interval")
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit <= 0 {
+			limit = 100
+		}
+		if interval == "" {
+			interval = "1m"
+		}
+		candles, err := deps.CandleProvider(r.Context(), symbol, interval, limit)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(candles)
 	})
 
 	return mux
