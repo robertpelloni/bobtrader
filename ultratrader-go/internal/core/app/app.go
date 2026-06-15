@@ -15,6 +15,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kucoin"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
@@ -28,6 +29,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/composite"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics"
 	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
@@ -66,6 +68,7 @@ type App struct {
 	balanceReader           strategydemo.BalanceReader
 	httpHandler             http.Handler
 	httpRuntime             *httpapi.Runtime
+	performanceRepo         *analytics.Repository
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -122,6 +125,20 @@ func New(cfg config.Config) (*App, error) {
 		})
 	}); err != nil {
 		return nil, fmt.Errorf("register binance account factory: %w", err)
+	}
+
+	if err := registry.Register("kucoin", func() exchange.Adapter { return kucoin.New(kucoin.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register kucoin exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("kucoin", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		// KuCoin doesn't have a standardized testnet in the same way for this simple config,
+		// but we can extend it later if needed.
+		return kucoin.New(kucoin.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register kucoin account factory: %w", err)
 	}
 
 	// ── Market Data Feed ───────────────────────────────────────
@@ -205,6 +222,12 @@ func New(cfg config.Config) (*App, error) {
 		})
 	}
 
+	// ── Performance Repository ──────────────────────────────────
+	performanceRepo, err := analytics.NewRepository(filepath.Join("data", "analytics", "performance.jsonl"))
+	if err != nil {
+		logger.Info("performance repository failed to initialize", map[string]any{"error": err.Error()})
+	}
+
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
 	paperAdapter := exchangepaper.New()
@@ -242,11 +265,27 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Reporting ──────────────────────────────────────────────
 	reportProvider := func(ctx context.Context) []reports.Report {
+		stats := signalLog.StatsByStrategy()
+		pnl := portfolioTracker.TotalRealizedPnL()
+		siphoned := 0.0
+		if siphoningManager != nil {
+			siphoned = siphoningManager.Stats()
+		}
+
+		if performanceRepo != nil {
+			_ = performanceRepo.Save(ctx, analytics.PerformanceSnapshot{
+				Timestamp:     time.Now(),
+				StrategyStats: stats,
+				TotalPnL:      pnl,
+				Siphoned:      siphoned,
+			})
+		}
+
 		return []reports.Report{
 			{Type: "metrics-snapshot", Payload: map[string]any{"metrics": metricsTracker.Snapshot()}},
 			{Type: "portfolio-valuation", Payload: map[string]any{
 				"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed),
-				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
+				"realized_pnl":    pnl,
 				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
 				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
 				"usdt_balance":    balanceReader.USDTBalance(),
@@ -254,7 +293,7 @@ func New(cfg config.Config) (*App, error) {
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 			{Type: "strategy-signals", Payload: map[string]any{
 				"signal_count":   signalLog.Count(),
-				"strategy_stats": signalLog.StatsByStrategy(),
+				"strategy_stats": stats,
 			}},
 		}
 	}
@@ -417,6 +456,7 @@ func New(cfg config.Config) (*App, error) {
 		balanceReader:    balanceReader,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
+		performanceRepo:  performanceRepo,
 	}, nil
 }
 
