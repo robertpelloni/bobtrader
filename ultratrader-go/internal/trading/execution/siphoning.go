@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
@@ -58,12 +59,20 @@ func (m *SiphoningManager) OnTradeExit(ctx context.Context, symbol string, pnl f
 		return fmt.Errorf("get macro price: %w", err)
 	}
 
+	price := utils.ParseFloat(tick.Price)
+	if price <= 0 {
+		return fmt.Errorf("invalid macro price: %s", tick.Price)
+	}
+
+	// Calculate quantity based on siphoned amount and current price
+	quantity := siphonAmount / price
+
 	// Place a macro buy order using siphoned funds
 	req := exchange.OrderRequest{
 		Symbol:   m.macroSymbol,
 		Side:     exchange.Buy,
 		Type:     exchange.MarketOrder,
-		Quantity: fmt.Sprintf("%.6f", siphonAmount), // Simple siphoning: use amount as quantity (needs proper sizing)
+		Quantity: fmt.Sprintf("%.8f", quantity),
 	}
 
 	intent := risk.OrderIntent{
@@ -71,11 +80,9 @@ func (m *SiphoningManager) OnTradeExit(ctx context.Context, symbol string, pnl f
 		Symbol:    m.macroSymbol,
 		Side:      risk.BuySide,
 		Notional:  siphonAmount,
+		IsExit:    false,
 	}
 
-	// Note: In a real system, we'd calculate quantity correctly based on price.
-	// This is a simplified implementation of the "siphoning" concept.
 	_, err = m.service.Execute(ctx, m.accountID, req, intent)
-	_ = tick // use tick to satisfy compiler for now
 	return err
 }
