@@ -93,7 +93,6 @@ Every meaningful build/session should increment the version and mention the bump
 - Runtime summary persistence is now useful as a bridge between raw journals and future analytics/reporting layers.
 - Report readback (`Latest`, `LatestByType`) is the next key step after simple persistence because it turns durable artifacts into something the runtime and operator APIs can actually consume.
 - Live-valued exposure views are preferable to cost-basis-only exposure estimates when preparing concentration controls.
-- **Hierarchical Strategy Pattern:** Implementing a "Macro governs Micro" pattern where high-level regimes (Trend/Range) filter high-frequency micro-signals.
 
 ## Go Port Architecture (ultratrader-go)
 The Go implementation is highly modular, focusing on interfaces, dependency injection, and concurrency-safe state. Key modules include:

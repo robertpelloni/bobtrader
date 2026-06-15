@@ -27,6 +27,7 @@ import (
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/composite"
 	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
@@ -511,6 +512,14 @@ func buildAutonomousStrategyRuntime(
 				doubleEMABase := strategydemo.NewDoubleEMATrendStrategy(accountID, symbol, "0.001", 5, 13, 50)
 				doubleEMASized := strategydemo.NewPortfolioSizer(doubleEMABase, symbol, balanceReader, feed, sc.RiskPct, maxNotional)
 				strategies = append(strategies, doubleEMASized)
+			}
+
+			// ── Hierarchical Suite: Macro Regime + Micro Scalper ──
+			if isActive("hierarchical_scalper") {
+				macro := strategydemo.NewMacroRegimeStrategy(symbol, 50, 14)
+				micro := strategydemo.NewMicroScalper(accountID, symbol, "0.001", 10, 0.1)
+				filtered := composite.NewRegimeFilter(micro, macro, true)
+				strategies = append(strategies, filtered)
 			}
 
 			// ── Entry Strategy 8: Tick Price Threshold ──

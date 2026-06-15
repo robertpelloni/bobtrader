@@ -9,8 +9,7 @@ This repository is evolving from a single Python trading bot into a **unified tr
 The end state is intended to be a highly capable, modular, observable, and operator-friendly trading platform that combines:
 - robust exchange abstractions (assimilating bbgo patterns),
 - safe execution pipelines (assimilating OpenAlice patterns),
-- strategy runtime composition with hierarchical Micro/Macro coordination,
-- micro-profit siphoning into macro-trend positions,
+- strategy runtime composition,
 - rich analytics and journaling,
 - operator-facing diagnostics and dashboards,
 - long-term AI/research augmentation,
@@ -48,7 +47,6 @@ This means the intended final system should feel like:
 
 ### Runtime safety
 - policy-before-execution
-- hierarchical signal filtering (Regime-aware execution)
 - multiple guard classes
 - account-scoped controls
 - portfolio-aware exposure limits

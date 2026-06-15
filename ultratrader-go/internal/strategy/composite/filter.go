@@ -102,13 +102,6 @@ func (f *RegimeFilter) filter(signals []strategy.Signal) []strategy.Signal {
 
 	var filtered []strategy.Signal
 	for _, s := range signals {
-		// Exit signals (sell to close) are usually allowed regardless of regime for safety
-		if s.Action == "sell" && (regime.Signal == SignalSell || regime.Signal == SignalNone) {
-			// This is a bit ambiguous — usually we want to allow closing positions.
-			// For this implementation, we allow all "sell" actions if they are exits.
-			// But since we don't strictly know if it's an exit here, we'll be conservative.
-		}
-
 		allowed := false
 
 		switch regime.Signal {
@@ -127,7 +120,6 @@ func (f *RegimeFilter) filter(signals []strategy.Signal) []strategy.Signal {
 		}
 
 		// ALWAYS allow sells if they are reasons of "STOP LOSS" or "TAKE PROFIT"
-		// (HACK: checking reason string for now as strategy.Signal is simple)
 		if s.Action == "sell" {
 			allowed = true
 		}
