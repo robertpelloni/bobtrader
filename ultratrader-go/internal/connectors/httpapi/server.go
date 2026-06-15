@@ -93,6 +93,9 @@ type StrategyInfo struct {
 	RSIOverbought          float64 `json:"rsi_overbought"`
 	EMAFast                int     `json:"ema_fast"`
 	EMASlow                int     `json:"ema_slow"`
+	SiphoningEnabled       bool    `json:"siphoning_enabled"`
+	SiphoningPct           float64 `json:"siphoning_pct"`
+	SiphoningSymbol        string  `json:"siphoning_symbol"`
 }
 
 type MarketDataInfo struct {

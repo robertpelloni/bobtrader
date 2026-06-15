@@ -2,6 +2,16 @@
 
 ## Current Sprint (v2.1.x)
 
+### Hierarchical Strategies (v2.1.3)
+- [x] Bump version to 2.1.3
+- [x] Implement ADX indicator for trend strength
+- [x] Implement MacroRegime strategy (EMA + ADX)
+- [x] Implement MicroScalper (Tick-volatility)
+- [x] Implement RegimeFilter (Macro -> Micro signal suppression)
+- [x] Implement ATR reusable sizer
+- [x] Implement SiphoningManager (Micro-to-Macro profit redirection)
+- [x] Wire 'hierarchical_scalper' suite in App container
+
 ### WebSocket Feed
 - [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
 - [ ] Add auto-reconnection with exponential backoff verification

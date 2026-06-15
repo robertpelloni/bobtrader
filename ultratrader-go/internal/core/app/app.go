@@ -190,11 +190,17 @@ func New(cfg config.Config) (*App, error) {
 	)
 
 	// ── Siphoning Manager ──────────────────────────────────────
-	// Siphons 10% of realized profits into BTCUSDT macro positions
-	siphoningManager := execution.NewSiphoningManager(
-		portfolioTracker, marketDataFeed, executionService, primaryAccountID, "BTCUSDT", 0.10,
-	)
-	executionService.SetSiphoningManager(siphoningManager)
+	if cfg.Strategy.SiphoningEnabled {
+		siphoningManager := execution.NewSiphoningManager(
+			portfolioTracker, marketDataFeed, executionService, primaryAccountID,
+			cfg.Strategy.SiphoningSymbol, cfg.Strategy.SiphoningPct,
+		)
+		executionService.SetSiphoningManager(siphoningManager)
+		logger.Info("siphoning manager enabled", map[string]any{
+			"symbol": cfg.Strategy.SiphoningSymbol,
+			"pct":    cfg.Strategy.SiphoningPct,
+		})
+	}
 
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
@@ -336,7 +342,7 @@ func New(cfg config.Config) (*App, error) {
 				Environment: cfg.Environment,
 				Scheduler:   httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
 				Risk:        httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
-				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow},
+				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow, SiphoningEnabled: cfg.Strategy.SiphoningEnabled, SiphoningPct: cfg.Strategy.SiphoningPct, SiphoningSymbol: cfg.Strategy.SiphoningSymbol},
 				MarketData:  httpapi.MarketDataInfo{Source: cfg.MarketData.Source, InitialBalance: cfg.MarketData.InitialBalance},
 			}
 		},
