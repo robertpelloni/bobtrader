@@ -53,6 +53,9 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [x] Harden WebSocket Feed Reliability & Reconnection (v2.3.0)
 - [x] Implement WebSocket Health Monitoring (v2.3.0)
 - [x] Implement Candle Data API for Charts (v2.3.0)
+- [x] Implement Composite Regime Detection (v2.4.0)
+- [x] Implement Regime-Switching Strategy (v2.4.0)
+- [x] Add Sharpe Ratio Performance Metric (v2.4.0)
 
 ### 2. Dashboard Modernization
 

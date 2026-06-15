@@ -2,8 +2,8 @@
 
 ## Current Sprint (v2.1.x)
 
-### Hierarchical Strategies (v2.3.0)
-- [x] Bump version to 2.3.0
+### Hierarchical Strategies (v2.4.0)
+- [x] Bump version to 2.4.0
 - [x] Implement ADX indicator for trend strength
 - [x] Implement MacroRegime strategy (EMA + ADX)
 - [x] Implement MicroScalper (Tick-volatility)
@@ -33,6 +33,9 @@
 - [x] Add auto-reconnection with exponential backoff
 - [x] Add WebSocket health monitoring endpoint
 - [x] Add Candle History API
+- [x] Implement Sharpe Ratio calculation in SignalLog
+- [x] Implement RegimeSwitcher strategy
+- [x] Upgrade MacroRegime with CompositeDetector
 
 ### Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing

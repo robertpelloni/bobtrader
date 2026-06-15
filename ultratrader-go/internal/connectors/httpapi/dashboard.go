@@ -1156,6 +1156,14 @@ async function refreshDashboard() {
       { get: r => (r.unrealized_pnl ? '$' + fmt(r.unrealized_pnl) : '\u2014'), cls: r => pnlClass(r.unrealized_pnl || 0) },
     ]);
 
+    // Strategy Stats with Sharpe
+    const stats = await fetchJson('/api/strategy-stats');
+    if (stats) {
+      document.getElementById('overview-kpis').innerHTML += Object.values(stats).map(s =>
+        kpi(s.name + ' Sharpe', fmt(s.sharpe_ratio, 2), s.sharpe_ratio > 1 ? 'green' : 'blue')
+      ).join('');
+    }
+
     // Overview: Recent orders table
     const recentOrders = (orders || []).slice(-10).reverse();
     fillTable('overview-orders', recentOrders, [

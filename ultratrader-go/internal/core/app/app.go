@@ -550,7 +550,7 @@ func buildAutonomousStrategyRuntime(
 
 			// ── Hierarchical Suite: Macro Regime + Micro Scalper ──
 			if isActive("hierarchical_scalper") {
-				macro := strategydemo.NewMacroRegimeStrategy(symbol, 50, 14)
+				macro := strategydemo.NewMacroRegimeStrategy(symbol)
 				micro := strategydemo.NewMicroScalper(accountID, symbol, "0.001", 10, 0.1)
 				filtered := composite.NewRegimeFilter(micro, macro, true)
 				strategies = append(strategies, filtered)
