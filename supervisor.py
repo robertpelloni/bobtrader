@@ -554,6 +554,7 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
 .controls a {{ display:inline-block; padding:6px 14px; margin:4px; border-radius:4px; text-decoration:none; font-size:0.8em; background:#243044; color:#C7D1DB; border:1px solid #535B63; }}
 .halt {{ background:#FF3355; color:white; border:none; }}
 .rebalance {{ background:#00AA33; color:white; border:none; }}
+.force-close {{ background:#FF6600; color:white; border:none; }}
 .footer {{ font-size:0.7em; color:#535B63; margin-top:16px; border-top:1px solid #243044; padding-top:12px; }}
 </style>
 </head>
@@ -588,6 +589,7 @@ h1 {{ color:#00FF66; font-size:1.4em; margin-bottom:16px; }}
 </div>
 <div class="controls">
   <a href="/rebalance" class="rebalance">🔄 Rebalance now</a>
+  <a href="/force_close_all" class="force-close">⚠️ Force Close All</a>
   <a href="/halt" class="halt">EMERGENCY HALT</a>
   <a href="/restart?bot=python">Restart Python</a>
   <a href="/restart?bot=go">Restart Go</a>
