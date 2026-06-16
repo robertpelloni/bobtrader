@@ -435,6 +435,24 @@ class Supervisor:
             f"Rebalanced: transferred ${transfer:.2f} from reserve to {winner_name} bot"
         )
 
+    def force_close_all(self):
+        """Immediately close all open positions on both bots."""
+        for bot in (self.python, self.go):
+            try:
+                import requests
+
+                # Adjust the endpoint/port if bots expose a different API
+                url = f"http://127.0.0.1:{bot.port}/api/close_all"
+                resp = requests.get(url, timeout=5)
+                if resp.status_code == 200:
+                    log.info(f"All positions closed for {bot.name}")
+                else:
+                    log.warning(
+                        f"Failed to close positions for {bot.name}: {resp.status_code}"
+                    )
+            except Exception as e:
+                log.error(f"Error closing positions for {bot.name}: {e}")
+
     # ── Dashboard HTTP Server ────────────────────────────────────────────────
 
     def start_dashboard(self):
@@ -478,6 +496,9 @@ class Supervisor:
                 elif self.path == "/rebalance":
                     self.sup._maybe_rebalance()
                     self._text("Rebalance triggered")
+                elif self.path == "/force_close_all":
+                    self.sup.force_close_all()
+                    self._text("All open positions have been closed")
                 else:
                     self.send_response(404)
                     self.end_headers()

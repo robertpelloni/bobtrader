@@ -1,41 +1,49 @@
-# BobTrader / PowerTrader-TS Architecture & Memory Summary
+# BobTrader Project Architecture & Implementation Summary
 
-## Overview & Vision
-The project (historically known as `powertrader-ts`, now transitioning into the `BobTrader` / `ultratrader-go` "Ultra-Project") is a comprehensive, multi-exchange cryptocurrency trading bot. The ultimate vision is to consolidate all best-in-class features from various submodules and open-source crypto bots into a single, highly performant, robust, and autonomous Go-based backend with a React/Vite frontend. 
+## 1. Project Evolution & Vision
+BobTrader has evolved from a feature-rich but monolithic Python-based trading bot (**PowerTrader AI**) into a high-performance, modular Go-native trading platform (**Project Ultra** or `ultratrader-go`). 
 
-## Architectural Evolution
-- **Legacy Systems:** Originally built with a Node.js/Express/TypeScript backend and Python microservices (e.g., `pt_rebalancer.py`, `pt_nlp_strategy.py`, `pt_analytics.py`, `pt_thinker.py` for AI predictions). 
-- **The Go Transition:** The system is undergoing a massive port to Go (`ultratrader-go/`). The architecture in Go is heavily modular, emphasizing interfaces, strict dependency injection, and concurrency-safe state management (`sync.Mutex` and `sync.RWMutex`).
+*   **Core Goal:** To build the "Best Crypto Trading Suite" by clean-room assimilating the strongest architectural patterns from leading open-source projects (OpenAlice, bbgo, ccxt, WolfBot, pycryptobot, freqtrade).
+*   **Key Philosophy:** Correctness and safety first, followed by observability, architecture quality, and finally feature breadth.
+*   **Current State (v2.1.5):** A sophisticated hierarchical trading system supporting high-frequency micro-scalping, macro trend following, predictive ML ensembles, and cross-exchange arbitrage.
 
-## Core Modules & Go Port Status
+## 2. Core Go Architecture (`ultratrader-go`)
+The system follows a modular "Kernel" design centered around dependency injection and interface-driven composition.
 
-### 1. Market Data (`internal/marketdata`)
-- **Feeds:** Abstractions for `Tick` and `Candle` streaming (`Feed`, `StreamFeed`).
-- **Exchanges:** Support for Binance (REST & WebSocket) and Paper Trading.
-- **Aggregation:** A multi-exchange `Aggregator` combines feeds using strategies like `AveragePrice`, `MedianPrice`, and `Failover` to ensure high availability and robust pricing.
+### Primary Components:
+*   **App Container (`internal/core/app/app.go`):** The composition root. It manages the lifecycle of all services (HTTP server, Strategy Runtime, Scheduler, Execution Service).
+*   **Exchange Abstraction (`internal/exchange/`):** Inspired by **CCXT**, providing a unified interface for multiple exchanges. It includes a robust **Paper Trading Adapter** that simulates market-aware fills, fees (0.1% taker), and slippage.
+*   **Market Data Feed (`internal/marketdata/`):** Supports both REST polling and high-speed WebSocket streaming. The `marketdata.Tick` struct is volume-aware (includes `Quantity`).
+*   **Risk Pipeline (`internal/risk/`):** A "Policy-Before-Execution" system. Every order must pass through a sequential chain of "Guards" (Whitelist, MaxNotional, Cooldown, Duplicate-Side, MaxConcentration, Drawdown).
 
-### 2. Trading & Execution (`internal/trading`)
-- **Execution Service:** Tightly couples accounts, risk pipelines, exchange registries, and portfolio trackers to execute trades.
-- **Portfolio Tracking:** Concurrency-safe in-memory `Tracker` manages position state, calculates cost basis, and tracks realized/unrealized PnL using real-time market data.
-- **Rebalancing:** `Rebalancer` calculates drift against configured target allocations and generates buy/sell orders automatically, including wash-sale prevention heuristics.
+## 3. Advanced Strategy Patterns
+The system implements a **Hierarchical Strategy Architecture** where macro-level market regimes govern micro-level execution.
 
-### 3. Risk Management (`internal/risk`)
-- A modular pipeline of "guards" evaluates every order intent before execution.
-- Guards include maximum concentration limits, max open positions, duplicate side suppression, and circuit breakers for API resilience.
+### Hierarchical Coordination:
+*   **Regime Filter:** A composite pattern where a `MacroRegimeStrategy` (using EMA and ADX) classifies the market (Trending Bullish/Bearish vs. Ranging).
+*   **Signal Suppression:** High-frequency strategies like `MicroScalper` are wrapped in a `RegimeFilter`, ensuring they only trade in the direction of the macro trend.
 
-### 4. Backtesting & Simulation (`internal/backtest`)
-The Go port features an institutional-grade simulation suite:
-- **Multi-Symbol Synchronization:** `MultiSymbolFeed` handles concurrent data ingestion and chronologically aligns multiple asset timelines into `SyncCandle` snapshots to prevent look-ahead bias.
-- **Walk-Forward Optimization:** Mitigates overfitting by dynamically chunking historical data into sequential In-Sample (training) and Out-Of-Sample (validation) windows.
-- **Parameter Optimization (Grid Search):** Exhaustive, highly concurrent evaluation of parameter grids using worker pools.
-- **Monte Carlo Simulation:** Uses Fisher-Yates shuffling on historical trade sequences to stress-test equity curves, identifying median drawdowns and probabilities of ruin.
+### Profit Siphoning Mechanism:
+*   **`SiphoningManager`:** A strategic component that monitors realized PnL. It automatically "siphons" a configurable percentage (e.g., 10%) of scalp profits into long-term macro trend positions (e.g., BTC/ETH), effectively converting short-term volatility into durable wealth.
 
-### 5. Analytics & AI (`internal/analytics` & `internal/strategy/nlp`)
-- **Sentiment Engine:** Aggregates and clamps sentiment scores from external providers (News, Twitter, Reddit) into a unified signal.
-- **NLP Parsing:** Employs regex heuristics to convert natural language strategy descriptions (e.g., "Buy ETH when RSI drops below 30") into machine-readable `StrategyConfig` structures containing precise entry/exit conditions and risk parameters.
+### Predictive Alpha & ML:
+*   **Ensemble Predictor:** Aggregates signals from multiple ML models.
+*   **KNN Model:** A k-Nearest Neighbors implementation that finds historical market patterns similar to the current feature vector to predict high/low price movements with associated confidence scores.
 
-## Design Patterns & Decisions
-- **Concurrency:** Go routines are heavily utilized for parallel optimization (Grid Search) and concurrent market data fetching. Standard library primitives (`sync.WaitGroup`, channels) orchestrate workloads.
-- **Testing:** Test-driven development is prioritized. The Go implementation relies on mocking core interfaces (e.g., `mockFeed`, `mockOptEvaluator`) to ensure logic like wash-sale prevention and parameter validation works deterministically.
-- **Documentation as State:** The user strictly mandates maintaining specific Markdown files as the ultimate source of truth (`TODO.md`, `ROADMAP.md`, `CHANGELOG.md`, `VERSION.md`, `AGENTS.md`). Automated version bumping and commit hygiene are required.
-- **Robustness over Speed:** While low latency is a goal, the primary directives highlight "extreme reliability, secure, stable, robust" execution, favoring graceful failovers and exhaustive risk checking over raw execution speed.
+## 4. Operational & Diagnostic Features
+*   **Operator Dashboard:** A professional UI served via HTTP API, providing real-time visibility into portfolio valuation, guard status, execution metrics, and strategy statistics.
+*   **Trade Journal:** Persists all signals and execution summaries to JSONL for post-trade analysis and backtesting.
+*   **Resilience:** Includes an API **Circuit Breaker** to prevent cascading failures during exchange outages.
+*   **Dynamic Runtime:** Supports runtime injection of strategies and schedulers, enabling seamless transitions between paper and live trading modes.
+
+## 5. Strategic Development Decisions
+*   **Clean-Room Implementation:** Rather than direct source merges, the project reimplements best-in-class features in Go to ensure license compliance and code quality.
+*   **Environment Profiles:** Managed via JSON configurations (e.g., `autonomous-paper.json`, `live-trading-binance.json`) to separate testing from production.
+*   **Versioning Discipline:** Strict adherence to version tracking in `VERSION.md` with explicit version bumps in commit messages.
+*   **Autonomous Autopilot:** Designed for continuous execution with frequent git syncs and automated repo sanitization (submodule updates).
+
+## 6. Key Interface Definitions
+*   **`strategy.Strategy`:** The base interface for all signal-generating logic.
+*   **`exchange.Adapter`:** Standardizes order placement, balance fetching, and market data across CEXs.
+*   **`risk.Guard`:** Defines the contract for trade-blocking safety logic.
+*   **`ml.Model`:** Enables the plug-and-play addition of new machine learning algorithms.

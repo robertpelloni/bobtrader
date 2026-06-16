@@ -15,9 +15,8 @@ import os
 import json
 import yaml
 import logging
-from typing import Dict, Any, Optional, List, Type, TypeVar, get_type_hints
-from dataclasses import dataclass, asdict, fields
-from datetime import timedelta
+from typing import Dict, Any, Optional, List, TypeVar
+from dataclasses import dataclass, asdict
 from pathlib import Path
 import threading
 import hashlib
@@ -98,7 +97,7 @@ class NotificationConfig:
     onesignal_app_id: Optional[str] = None
     onesignal_rest_api_key: Optional[str] = None
     custom_webhook_url: Optional[str] = None
-    
+
     rate_limit_emails_per_minute: int = 5
     rate_limit_discord_per_minute: int = 10
     rate_limit_telegram_per_minute: int = 10
@@ -107,18 +106,23 @@ class NotificationConfig:
     rate_limit_twilio_per_minute: int = 1
     rate_limit_onesignal_per_minute: int = 10
     rate_limit_webhook_per_minute: int = 10
-    
+
     level_platforms: Dict[str, Dict[str, bool]] = None
 
     def __post_init__(self):
         default_platforms = {
-            "email": True, "discord": True, "telegram": True,
-            "slack": False, "teams": False, "twilio": False,
-            "onesignal": False, "webhook": False
+            "email": True,
+            "discord": True,
+            "telegram": True,
+            "slack": False,
+            "teams": False,
+            "twilio": False,
+            "onesignal": False,
+            "webhook": False,
         }
         if self.platforms is None:
             self.platforms = default_platforms.copy()
-        
+
         if self.level_platforms is None:
             self.level_platforms = {
                 "info": default_platforms.copy(),
@@ -151,7 +155,7 @@ class AnalyticsConfig:
 @dataclass
 class PositionSizingConfig:
     enabled: bool = False
-    default_risk_pct: float = 0.02
+    default_risk_pct: float = 0.01
     min_risk_pct: float = 0.01
     max_risk_pct: float = 0.10
 
@@ -170,9 +174,10 @@ class CorrelationConfig:
 @dataclass
 class RiskManagementConfig:
     enabled: bool = False
-    max_portfolio_drawdown_pct: float = 15.0
+    max_portfolio_drawdown_pct: float = 5.0
     max_coin_concentration_pct: float = 25.0
     min_liquidity_multiplier: float = 3.0
+    stop_loss_pct: float = 2.0
 
 
 @dataclass
@@ -322,8 +327,12 @@ class ConfigValidator:
                         "Teams platform enabled but teams_webhook_url not set"
                     )
             if config.platforms.get("twilio", False):
-                if not config.twilio_account_sid or not config.twilio_auth_token or \
-                   not config.twilio_from_number or not config.twilio_to_number:
+                if (
+                    not config.twilio_account_sid
+                    or not config.twilio_auth_token
+                    or not config.twilio_from_number
+                    or not config.twilio_to_number
+                ):
                     errors.append(
                         "Twilio platform enabled but missing one or more required Twilio credentials"
                     )
@@ -371,11 +380,11 @@ class ConfigValidator:
             errors.append("drift_threshold_pct must be greater than 0")
         if config.rebalance_interval_hours <= 0:
             errors.append("rebalance_interval_hours must be greater than 0")
-        
+
         target_sum = sum(config.target_allocations.values())
         if target_sum > 100.0:
             errors.append(f"target_allocations sum ({target_sum}%) exceeds 100%")
-        
+
         return errors
 
     @staticmethod
@@ -563,13 +572,17 @@ class ConfigManager:
             config_dict["analytics"] = AnalyticsConfig(**data["analytics"])
 
         if "position_sizing" in data and isinstance(data["position_sizing"], dict):
-            config_dict["position_sizing"] = PositionSizingConfig(**data["position_sizing"])
+            config_dict["position_sizing"] = PositionSizingConfig(
+                **data["position_sizing"]
+            )
 
         if "correlation" in data and isinstance(data["correlation"], dict):
             config_dict["correlation"] = CorrelationConfig(**data["correlation"])
 
         if "risk_management" in data and isinstance(data["risk_management"], dict):
-            config_dict["risk_management"] = RiskManagementConfig(**data["risk_management"])
+            config_dict["risk_management"] = RiskManagementConfig(
+                **data["risk_management"]
+            )
 
         if "rebalancing" in data and isinstance(data["rebalancing"], dict):
             config_dict["rebalancing"] = RebalancingConfig(**data["rebalancing"])
@@ -578,7 +591,9 @@ class ConfigManager:
             config_dict["sentiment"] = SentimentConfig(**data["sentiment"])
 
         if "regime_detection" in data and isinstance(data["regime_detection"], dict):
-            config_dict["regime_detection"] = RegimeDetectionConfig(**data["regime_detection"])
+            config_dict["regime_detection"] = RegimeDetectionConfig(
+                **data["regime_detection"]
+            )
 
         if "system" in data and isinstance(data["system"], dict):
             config_dict["system"] = SystemConfig(**data["system"])

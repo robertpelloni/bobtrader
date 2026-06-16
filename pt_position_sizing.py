@@ -15,8 +15,23 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, Optional
 from dataclasses import dataclass
+
+
+def kelly_fraction(win_rate: float, avg_win: float, avg_loss: float) -> float:
+    """
+    Simple Kelly formula.
+    win_rate – proportion of winning trades (0‑1).
+    avg_win – average profit per winning trade (absolute USD).
+    avg_loss – average loss per losing trade (absolute USD, positive number).
+    Returns a fraction of capital to risk; capped at 0.5 (half‑Kelly) and never negative.
+    """
+    if avg_loss == 0:
+        return 0.0
+    b = avg_win / avg_loss
+    f = (b * win_rate - (1 - win_rate)) / b
+    return max(0.0, min(f, 0.5))
 
 
 @dataclass
@@ -250,7 +265,11 @@ class PositionSizer:
         if atr == 0:
             atr = current_price * 0.02
 
+        # Base risk (default 1 % of capital) – may be overridden by risk_pct
         risk_to_use = risk_pct if risk_pct is not None else self.default_risk_pct
+        # Simple Kelly boost (hard‑coded 60 % win‑rate, equal avg win/loss) – capped at half‑Kelly
+        kelly_adj = kelly_fraction(0.60, 1.0, 1.0)
+        risk_to_use = min(risk_to_use * (1 + kelly_adj), self.max_risk_pct)
 
         atr_pct = (atr / current_price) * 100
         volatility_factor = 1.0
@@ -326,7 +345,6 @@ class PositionSizer:
 
 
 def main():
-    import sys
 
     project_dir = os.path.dirname(__file__)
     db_path = os.path.join(project_dir, "hub_data", "trades.db")
