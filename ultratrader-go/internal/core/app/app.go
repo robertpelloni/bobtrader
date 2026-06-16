@@ -17,6 +17,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/aggregator"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/coinbase"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kraken"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kucoin"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
@@ -155,12 +156,25 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("register coinbase account factory: %w", err)
 	}
 
+	if err := registry.Register("kraken", func() exchange.Adapter { return kraken.New(kraken.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register kraken exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("kraken", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return kraken.New(kraken.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register kraken account factory: %w", err)
+	}
+
 	// ── Global Price Aggregator ───────────────────────────────
 	priceAggregator := aggregator.NewPriceAggregator()
 	// Register base adapters for public price fetching
 	priceAggregator.Register(binance.New(binance.Config{Testnet: false}))
 	priceAggregator.Register(kucoin.New(kucoin.Config{}))
 	priceAggregator.Register(coinbase.New(coinbase.Config{}))
+	priceAggregator.Register(kraken.New(kraken.Config{}))
 
 	// ── Market Data Feed ───────────────────────────────────────
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
@@ -292,13 +306,15 @@ func New(cfg config.Config) (*App, error) {
 		if siphoningManager != nil {
 			siphoned = siphoningManager.Stats()
 		}
+		val := portfolioTracker.TotalMarketValue(ctx, marketDataFeed)
 
 		if performanceRepo != nil {
 			_ = performanceRepo.Save(ctx, analytics.PerformanceSnapshot{
-				Timestamp:     time.Now(),
-				StrategyStats: stats,
-				TotalPnL:      pnl,
-				Siphoned:      siphoned,
+				Timestamp:      time.Now(),
+				StrategyStats:   stats,
+				TotalPnL:       pnl,
+				Siphoned:       siphoned,
+				PortfolioValue: val,
 			})
 		}
 

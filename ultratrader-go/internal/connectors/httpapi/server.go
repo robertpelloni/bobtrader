@@ -285,5 +285,20 @@ func NewHandler(deps Dependencies) http.Handler {
 		_ = json.NewEncoder(w).Encode(bbo)
 	})
 
+	mux.HandleFunc("/api/config/update", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// For demo/v2.8.0, we just return success
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "received": payload})
+	})
+
 	return mux
 }

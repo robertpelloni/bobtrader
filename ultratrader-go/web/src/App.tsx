@@ -4,6 +4,7 @@ import { PortfolioOverview } from './components/PortfolioOverview'
 import { RiskGuardStatus } from './components/RiskGuardStatus'
 import { PerformanceChart } from './components/PerformanceChart'
 import { ArbitrageAlerts } from './components/ArbitrageAlerts'
+import { ConfigSettings } from './components/ConfigSettings'
 
 function App() {
   const [symbol] = useState('BTCUSDT')
@@ -13,7 +14,7 @@ function App() {
       <header className="mb-10 flex justify-between items-end border-b border-[#1e3050] pb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-[#18ffff] to-[#b388ff] bg-clip-text text-transparent">UltraTrader Go</h1>
-          <p className="text-[#8ea4c2] mt-1 font-medium italic">v2.7.0 &bull; Triangular Alpha & Multi-Exchange Reach</p>
+          <p className="text-[#8ea4c2] mt-1 font-medium italic">v2.8.0 &bull; Interactive Ops & Kraken Reach</p>
         </div>
         <div className="text-right">
           <div className="text-xs uppercase tracking-widest text-[#5d7490] mb-1">Execution Engine</div>
@@ -40,6 +41,7 @@ function App() {
         </div>
 
         <div className="space-y-8">
+          <ConfigSettings />
           <ArbitrageAlerts />
           <RiskGuardStatus />
 

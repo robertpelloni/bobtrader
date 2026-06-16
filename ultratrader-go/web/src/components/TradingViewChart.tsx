@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { createChart, ColorType, type CandlestickData, type Time } from 'lightweight-charts';
+import { createChart, ColorType, type CandlestickData, type Time, type SeriesMarker } from 'lightweight-charts';
 
 interface ChartProps {
   symbol: string;
@@ -41,10 +41,17 @@ export const TradingViewChart: React.FC<ChartProps> = ({ symbol, interval }) => 
 
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/marketdata/candles?symbol=${symbol}&interval=${interval}&limit=500`);
-        const data = await response.json();
+        const [candleRes, signalRes, orderRes] = await Promise.all([
+          fetch(`/api/marketdata/candles?symbol=${symbol}&interval=${interval}&limit=500`),
+          fetch(`/api/signals`),
+          fetch(`/api/orders`)
+        ]);
 
-        const formattedData: CandlestickData[] = data.map((c: any) => ({
+        const candles = await candleRes.json();
+        const signals = await signalRes.json();
+        const orders = await orderRes.json();
+
+        const formattedData: CandlestickData[] = candles.map((c: any) => ({
           time: (new Date(c.timestamp).getTime() / 1000) as Time,
           open: parseFloat(c.open),
           high: parseFloat(c.high),
@@ -53,8 +60,37 @@ export const TradingViewChart: React.FC<ChartProps> = ({ symbol, interval }) => 
         }));
 
         candlestickSeries.setData(formattedData);
+
+        // Add Markers for Signals & Orders
+        const markers: SeriesMarker<Time>[] = [];
+
+        // Signals (v2.8.0 improvement)
+        signals.filter((s: any) => s.symbol === symbol).forEach((s: any) => {
+          markers.push({
+            time: (new Date(s.timestamp).getTime() / 1000) as Time,
+            position: s.action === 'buy' ? 'belowBar' : 'aboveBar',
+            color: s.action === 'buy' ? '#18ffff' : '#ffab40',
+            shape: s.action === 'buy' ? 'arrowUp' : 'arrowDown',
+            text: s.action.toUpperCase(),
+          });
+        });
+
+        // Orders (Confirmed trades)
+        orders.filter((o: any) => o.Symbol === symbol && o.Status === 'filled').forEach((o: any) => {
+           markers.push({
+            time: (new Date(o.Timestamp).getTime() / 1000) as Time,
+            position: o.Side === 'buy' ? 'belowBar' : 'aboveBar',
+            color: o.Side === 'buy' ? '#00e676' : '#ff5252',
+            shape: 'circle',
+            text: 'FILL',
+          });
+        });
+
+        markers.sort((a,b) => (a.time as number) - (b.time as number));
+        candlestickSeries.setMarkers(markers);
+
       } catch (error) {
-        console.error('Failed to fetch candle data:', error);
+        console.error('Failed to fetch data:', error);
       }
     };
 

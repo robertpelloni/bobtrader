@@ -14,10 +14,11 @@ import (
 
 // PerformanceSnapshot captures the state of a strategy's performance at a point in time.
 type PerformanceSnapshot struct {
-	Timestamp    time.Time                         `json:"timestamp"`
-	StrategyStats map[string]strategy.StrategyStats `json:"strategy_stats"`
-	TotalPnL     float64                           `json:"total_pnl"`
-	Siphoned     float64                           `json:"siphoned"`
+	Timestamp      time.Time                         `json:"timestamp"`
+	StrategyStats   map[string]strategy.StrategyStats `json:"strategy_stats"`
+	TotalPnL       float64                           `json:"total_pnl"`
+	Siphoned       float64                           `json:"siphoned"`
+	PortfolioValue float64                           `json:"portfolio_value"`
 }
 
 // Repository handles persistent storage of performance snapshots.
