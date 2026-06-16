@@ -125,6 +125,7 @@ type Dependencies struct {
 	StrategyStatsProvider        func() map[string]strategy.StrategyStats
 	MarketDataStatusProvider     func() map[string]any
 	CandleProvider               func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error)
+	GlobalBBOProvider            func(ctx context.Context, symbol string) (map[string]any, error)
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -268,6 +269,20 @@ func NewHandler(deps Dependencies) http.Handler {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(candles)
+	})
+
+	mux.HandleFunc("/api/marketdata/global-bbo", func(w http.ResponseWriter, r *http.Request) {
+		symbol := r.URL.Query().Get("symbol")
+		if symbol == "" {
+			symbol = "BTCUSDT"
+		}
+		bbo, err := deps.GlobalBBOProvider(r.Context(), symbol)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(bbo)
 	})
 
 	return mux

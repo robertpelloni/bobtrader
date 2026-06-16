@@ -122,6 +122,19 @@ func (a *Adapter) Balances(ctx context.Context) ([]exchange.Balance, error) {
 	return balances, nil
 }
 
+func (a *Adapter) GetTickerPrice(ctx context.Context, symbol string) (string, error) {
+	var resp struct {
+		Code string `json:"code"`
+		Data struct {
+			Price string `json:"price"`
+		} `json:"data"`
+	}
+	if err := a.publicGet(ctx, "/api/v1/market/orderbook/level1", url.Values{"symbol": {symbol}}, &resp); err != nil {
+		return "", err
+	}
+	return resp.Data.Price, nil
+}
+
 func (a *Adapter) PlaceOrder(ctx context.Context, req exchange.OrderRequest) (exchange.Order, error) {
 	params := map[string]interface{}{
 		"clientOid":   fmt.Sprintf("%d", time.Now().UnixNano()),

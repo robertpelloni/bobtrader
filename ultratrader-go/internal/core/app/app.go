@@ -14,7 +14,9 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/aggregator"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/coinbase"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kucoin"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
@@ -140,6 +142,25 @@ func New(cfg config.Config) (*App, error) {
 	}); err != nil {
 		return nil, fmt.Errorf("register kucoin account factory: %w", err)
 	}
+
+	if err := registry.Register("coinbase", func() exchange.Adapter { return coinbase.New(coinbase.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register coinbase exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("coinbase", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return coinbase.New(coinbase.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register coinbase account factory: %w", err)
+	}
+
+	// ── Global Price Aggregator ───────────────────────────────
+	priceAggregator := aggregator.NewPriceAggregator()
+	// Register base adapters for public price fetching
+	priceAggregator.Register(binance.New(binance.Config{Testnet: false}))
+	priceAggregator.Register(kucoin.New(kucoin.Config{}))
+	priceAggregator.Register(coinbase.New(coinbase.Config{}))
 
 	// ── Market Data Feed ───────────────────────────────────────
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
@@ -422,6 +443,14 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return marketDataFeed.CandleHistory(ctx, symbol, interval, limit)
 		},
+			GlobalBBOProvider: func(ctx context.Context, symbol string) (map[string]any, error) {
+				quotes := priceAggregator.GetAllQuotes(ctx, symbol)
+				return map[string]any{
+					"symbol": symbol,
+					"quotes": quotes,
+					"health": priceAggregator.HealthStatus(),
+				}, nil
+			},
 	})
 
 	var runtime *httpapi.Runtime
