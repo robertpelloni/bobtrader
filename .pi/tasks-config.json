@@ -1,0 +1,6 @@
+{
+  "autoCascade": true,
+  "showAll": true,
+  "sortOrder": "status",
+  "autoClearCompleted": "on_task_complete"
+}

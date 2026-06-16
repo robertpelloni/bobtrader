@@ -1,6 +1,7 @@
 package binance
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -182,9 +183,9 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		return fmt.Errorf("send upgrade: %w", err)
 	}
 
-	// Read HTTP response — same approach as working standalone test
-	buf := make([]byte, 4096)
+	// Read the HTTP upgrade response directly from conn.
 	conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	buf := make([]byte, 4096)
 	n, err := conn.Read(buf)
 	if err != nil {
 		return fmt.Errorf("read upgrade response: %w", err)
@@ -194,18 +195,19 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		return fmt.Errorf("websocket upgrade failed: %s", response[:min(200, len(response))])
 	}
 
-	// Find end of HTTP headers — any data after \r\n\r\n belongs to WS frames
+	// Determine the frame reader: if there's leftover data after the
+	// HTTP \r\n\r\n terminator, combine it with the connection so that
+	// readWSFrame sees contiguous bytes.
+	var frameReader io.Reader = conn
 	headerEnd := strings.Index(response, "\r\n\r\n")
 	if headerEnd >= 0 && headerEnd+4 < n {
-		// There's leftover data after HTTP headers — process it as a WS frame
 		leftover := buf[headerEnd+4 : n]
-		frame, ok := parseWSFrame(leftover)
-		if ok {
-			handler(frame)
+		if len(leftover) > 0 {
+			frameReader = io.MultiReader(bytes.NewReader(leftover), conn)
 		}
 	}
 
-	// Continue reading WebSocket frames directly from conn
+	// Continue reading WebSocket frames from the frame reader.
 	frameCount := 0
 	for {
 		select {
@@ -215,7 +217,7 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		}
 
 		conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-		frame, err := readWSFrameConn(conn)
+		frame, err := readWSFrame(frameReader, conn)
 		if err != nil {
 			return fmt.Errorf("read frame (after %d frames): %w", frameCount, err)
 		}
@@ -226,10 +228,13 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 	}
 }
 
-// readWSFrameConn reads a single WebSocket frame from a net.Conn.
-func readWSFrameConn(conn net.Conn) ([]byte, error) {
+
+
+// readWSFrame reads a single WebSocket frame from an io.Reader.
+// The w io.Writer is used to send pong responses.
+func readWSFrame(r io.Reader, w io.Writer) ([]byte, error) {
 	header := make([]byte, 2)
-	if _, err := io.ReadFull(conn, header); err != nil {
+	if _, err := io.ReadFull(r, header); err != nil {
 		return nil, err
 	}
 
@@ -238,13 +243,13 @@ func readWSFrameConn(conn net.Conn) ([]byte, error) {
 
 	if payloadLen == 126 {
 		ext := make([]byte, 2)
-		if _, err := io.ReadFull(conn, ext); err != nil {
+		if _, err := io.ReadFull(r, ext); err != nil {
 			return nil, err
 		}
 		payloadLen = int(ext[0])<<8 | int(ext[1])
 	} else if payloadLen == 127 {
 		ext := make([]byte, 8)
-		if _, err := io.ReadFull(conn, ext); err != nil {
+		if _, err := io.ReadFull(r, ext); err != nil {
 			return nil, err
 		}
 		payloadLen = 0
@@ -256,13 +261,13 @@ func readWSFrameConn(conn net.Conn) ([]byte, error) {
 	var maskKey []byte
 	if masked {
 		maskKey = make([]byte, 4)
-		if _, err := io.ReadFull(conn, maskKey); err != nil {
+		if _, err := io.ReadFull(r, maskKey); err != nil {
 			return nil, err
 		}
 	}
 
 	payload := make([]byte, payloadLen)
-	if _, err := io.ReadFull(conn, payload); err != nil {
+	if _, err := io.ReadFull(r, payload); err != nil {
 		return nil, err
 	}
 
@@ -281,7 +286,7 @@ func readWSFrameConn(conn net.Conn) ([]byte, error) {
 		pong[0] = 0x8A // fin + pong
 		pong[1] = byte(payloadLen)
 		copy(pong[2:], payload)
-		conn.Write(pong)
+		w.Write(pong)
 		return nil, nil
 	case 0x1: // text
 		return payload, nil
@@ -290,6 +295,11 @@ func readWSFrameConn(conn net.Conn) ([]byte, error) {
 	default:
 		return nil, nil
 	}
+}
+
+// readWSFrameConn reads a single WebSocket frame from a net.Conn (backward-compat wrapper).
+func readWSFrameConn(conn net.Conn) ([]byte, error) {
+	return readWSFrame(conn, conn)
 }
 
 // parseWSFrame parses a WebSocket frame from raw bytes (for leftover data after HTTP upgrade).

@@ -1,7 +1,9 @@
 package binance
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	exchangebinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 )
@@ -93,6 +95,37 @@ func TestNewStreamFeed(t *testing.T) {
 	}
 	if feed.baseURL == "" {
 		t.Errorf("expected non-empty base URL")
+	}
+}
+
+// TestWSFeed_TickReception verifies that the Binance WebSocket feed can
+// successfully deliver at least one ticker tick for a symbol within a short
+// timeout. This reproduces the minimal scenario where the feed is created,
+// a subscription is started, and a tick is received on the channel.
+func TestWSFeed_TickReception(t *testing.T) {
+	adapter := exchangebinance.New(exchangebinance.Config{})
+	feed := NewStreamFeed(adapter)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	sub := feed.SubscribeTicks(ctx, "BTCUSDT", 1*time.Second)
+	ch := sub.Chan()
+
+	select {
+	case tick, ok := <-ch:
+		if !ok {
+			t.Fatalf("tick channel closed unexpectedly")
+		}
+		if tick.Symbol != "BTCUSDT" {
+			t.Fatalf("expected symbol BTCUSDT, got %s", tick.Symbol)
+		}
+		if tick.Price == "" {
+			t.Fatalf("tick price is empty")
+		}
+		t.Logf("received tick: %s %s", tick.Symbol, tick.Price)
+	case <-time.After(15 * time.Second):
+		t.Fatalf("did not receive a tick within timeout")
 	}
 }
 

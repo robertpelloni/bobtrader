@@ -11,7 +11,7 @@
   },
   "risk": {
     "max_notional": 25,
-    "max_notional_per_symbol": 25,
+    "max_notional_per_symbol": 5,
     "allowed_symbols": ["ETHUSDT", "ADAUSDT"],
     "cooldown_ms": 60000,
     "duplicate_window_ms": 120000,
@@ -20,7 +20,7 @@
     "max_concentration_pct": 100
   },
   "strategy": {
-    "risk_pct": 50.0,
+    "risk_pct": 5.0,
     "max_notional": 25,
     "trailing_activate_pct": 1.5,
     "trailing_gap_pct": 0.8,
