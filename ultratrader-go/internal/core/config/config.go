@@ -20,15 +20,6 @@ type Config struct {
 	Strategy    StrategyConfig  `json:"strategy"`
 	MarketData  MarketDataConfig `json:"market_data"`
 	Accounts    []AccountConfig `json:"accounts"`
-	Influx      InfluxConfig    `json:"influx"`
-}
-
-type InfluxConfig struct {
-	Enabled bool   `json:"enabled"`
-	URL     string `json:"url"`
-	Token   string `json:"token"`
-	Org     string `json:"org"`
-	Bucket  string `json:"bucket"`
 }
 
 type EventLogConfig struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/correlation"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/aggregator"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/coinbase"
@@ -195,6 +196,7 @@ func New(cfg config.Config) (*App, error) {
 	executionRepo := execution.NewRepository()
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
+	correlationMatrix := correlation.NewCorrelationMatrix(100)
 
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
@@ -207,6 +209,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
 		risk.NewDrawdownGuard(portfolioTracker, marketDataFeed, 0.20), // Default 20% DD limit
+		risk.NewCorrelationGuard(correlationMatrix, portfolioTracker, 0.85),
 	)
 
 	// Determine the primary account ID for strategy signals.
@@ -305,6 +308,7 @@ func New(cfg config.Config) (*App, error) {
 	scheduler := strategyscheduler.NewEnhanced(
 		strategyRuntime, executionService, portfolioTracker, marketDataFeed, signalLog,
 	)
+	scheduler.SetPriceCollector(correlationMatrix)
 
 	// ── Reporting ──────────────────────────────────────────────
 	reportProvider := func(ctx context.Context) []reports.Report {
@@ -455,6 +459,12 @@ func New(cfg config.Config) (*App, error) {
 		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
 		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
 		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
+		CorrelationProvider: func() any {
+			return map[string]any{
+				"heatmap": correlationMatrix.HeatmapData(),
+				"symbols": correlationMatrix.Symbols(),
+			}
+		},
 		MarketDataStatusProvider: func() map[string]any {
 			if ws, ok := marketDataFeed.(interface{ GetStatus() map[string]any }); ok {
 				return ws.GetStatus()

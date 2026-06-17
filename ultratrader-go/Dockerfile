@@ -1,26 +1,13 @@
-# Build SPA
-FROM node:22 AS frontend-builder
-WORKDIR /web
-COPY web/package*.json ./
-RUN npm install
-COPY web/ ./
-RUN npm run build
-
-# Build Go binary
-FROM golang:1.24 AS go-builder
+FROM golang:1.26 AS builder
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
+COPY go.mod ./
 COPY cmd ./cmd
 COPY internal ./internal
 RUN go build -o /out/ultratrader ./cmd/ultratrader
 
-# Final image
 FROM debian:bookworm-slim
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/*
-COPY --from=go-builder /out/ultratrader /usr/local/bin/ultratrader
-COPY --from=frontend-builder /web/dist ./web/dist
+COPY --from=builder /out/ultratrader /usr/local/bin/ultratrader
 COPY config ./config
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/ultratrader"]
