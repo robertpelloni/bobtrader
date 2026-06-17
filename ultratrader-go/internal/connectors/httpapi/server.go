@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
@@ -131,14 +134,30 @@ type Dependencies struct {
 func NewHandler(deps Dependencies) http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = w.Write([]byte(dashboardHTML))
-	})
+	// Serve React SPA (v3.0.0 Alpha)
+	spaDir := "web/dist"
+	if _, err := os.Stat(spaDir); err == nil {
+		fileServer := http.FileServer(http.Dir(spaDir))
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			// If request is for an API or has an extension, serve normally
+			if strings.HasPrefix(r.URL.Path, "/api") || strings.Contains(r.URL.Path, ".") {
+				fileServer.ServeHTTP(w, r)
+				return
+			}
+			// Otherwise serve index.html for SPA routing
+			http.ServeFile(w, r, filepath.Join(spaDir, "index.html"))
+		})
+	} else {
+		// Fallback to legacy dashboard if SPA not built
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			_, _ = w.Write([]byte(dashboardHTML))
+		})
+	}
 
 	mux.HandleFunc("/dashboard", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
