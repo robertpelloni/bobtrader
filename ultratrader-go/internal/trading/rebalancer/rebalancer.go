@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-	"time"
 )
 
 // Allocation defines a target weight for a symbol.
@@ -40,10 +39,8 @@ type RebalanceResult struct {
 
 // Rebalancer manages portfolio target allocations and drift detection.
 type Rebalancer struct {
-	targets        map[string]float64
-	threshold      float64 // Drift threshold to trigger rebalance (e.g., 0.05 = 5%)
-	lastTrade      map[string]time.Time
-	washSaleWindow time.Duration
+	targets   map[string]float64
+	threshold float64 // Drift threshold to trigger rebalance (e.g., 0.05 = 5%)
 }
 
 // New creates a new rebalancer with target allocations and drift threshold.
@@ -56,24 +53,9 @@ func New(allocations []Allocation, driftThreshold float64) *Rebalancer {
 		driftThreshold = 0.05 // Default 5%
 	}
 	return &Rebalancer{
-		targets:        targets,
-		threshold:      driftThreshold,
-		lastTrade:      make(map[string]time.Time),
-		washSaleWindow: 24 * time.Hour, // Default 24h wash sale window
+		targets:   targets,
+		threshold: driftThreshold,
 	}
-}
-
-// SetWashSaleWindow updates the wash sale prevention window.
-func (r *Rebalancer) SetWashSaleWindow(d time.Duration) {
-	r.washSaleWindow = d
-}
-
-// RecordTrade logs a trade to prevent wash sales.
-func (r *Rebalancer) RecordTrade(symbol string) {
-	if r.lastTrade == nil {
-		r.lastTrade = make(map[string]time.Time)
-	}
-	r.lastTrade[symbol] = time.Now()
 }
 
 // Compute analyzes current holdings and generates rebalance orders.
@@ -118,13 +100,6 @@ func (r *Rebalancer) Compute(holdings []Holding) RebalanceResult {
 		// Only generate orders if drift exceeds threshold
 		if math.Abs(drift) <= r.threshold {
 			continue
-		}
-
-		// Wash-sale prevention (v3.0.0 Alpha)
-		if last, exists := r.lastTrade[symbol]; exists {
-			if time.Since(last) < r.washSaleWindow {
-				continue // Skip this symbol to prevent churn/wash-sales
-			}
 		}
 
 		driftValue := drift * totalValue

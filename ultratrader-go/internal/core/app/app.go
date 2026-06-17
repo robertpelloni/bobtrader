@@ -690,7 +690,6 @@ func buildAutonomousStrategyRuntime(
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewFearGreedProvider(sentLogger))
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewMarketEventsProvider(sentLogger))
 		// CryptoNews and YouTube providers need API keys — register with empty key for now
-		sentimentEngine.RegisterProvider(sentimentsentiment.NewAggregatorProvider(sentLogger))
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewCryptoNewsProvider("", sentLogger))
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewStockMarketCorrelation("", sentLogger))
 		sentimentEngine.RegisterProvider(sentimentsentiment.NewWhaleAlertProvider("", 500000, sentLogger))

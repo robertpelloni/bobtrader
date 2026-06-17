@@ -1,65 +1,64 @@
-package multiexchange
+package multiexchange_test
 
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/multiexchange"
 )
 
-type mockManager struct {
-	prices map[string]map[string]Ticker
-}
+type mockExchangeManager struct{}
 
-func (m *mockManager) GetTicker(coin, exchange string) (Ticker, error) {
-	if exMap, ok := m.prices[coin]; ok {
-		if ticker, ok := exMap[exchange]; ok {
-			return ticker, nil
+func (m *mockExchangeManager) GetTicker(coin, exchange string) (multiexchange.Ticker, error) {
+	if coin == "BTC" {
+		switch exchange {
+		case "binance":
+			return multiexchange.Ticker{Bid: 65000, Ask: 65010}, nil
+		case "coinbase":
+			return multiexchange.Ticker{Bid: 64900, Ask: 65050}, nil
+		case "kucoin":
+			return multiexchange.Ticker{Bid: 65020, Ask: 65040}, nil
 		}
 	}
-	return Ticker{}, fmt.Errorf("not found")
+	return multiexchange.Ticker{}, fmt.Errorf("unknown coin/exchange")
 }
 
-func (m *mockManager) GetExchanges() []string {
-	return []string{"binance", "kucoin", "coinbase", "kraken"}
+func (m *mockExchangeManager) GetExchanges() []string {
+	return []string{"binance", "coinbase", "kucoin"}
 }
 
-func TestSmartRouter_BestExecution(t *testing.T) {
-	prices := map[string]map[string]Ticker{
-		"BTC": {
-			"binance":  {Bid: 49990, Ask: 50010},
-			"kucoin":   {Bid: 49980, Ask: 50005},
-			"coinbase": {Bid: 50000, Ask: 50020},
-			"kraken":   {Bid: 49985, Ask: 50015},
-		},
-	}
-
+func TestSmartRouter_CompareRoutes(t *testing.T) {
+	manager := &mockExchangeManager{}
 	fees := map[string]float64{
-		"binance":  0.1,  // 50010 + 50.01 = 50060.01
-		"kucoin":   0.2,  // 50005 + 100.01 = 50105.01
-		"coinbase": 0.05, // 50020 + 25.01 = 50045.01 (Winner for Buy)
-		"kraken":   0.15, // 50015 + 75.02 = 50090.02
+		"binance":  0.1,
+		"coinbase": 0.5,
+		"kucoin":   0.1,
 	}
 
-	manager := &mockManager{prices: prices}
-	router := NewSmartRouter(manager, fees)
+	router := multiexchange.NewSmartRouter(manager, fees)
 
-	// Test Buy
-	routes, err := router.CompareRoutes("BTC", "buy", 1.0)
-	if err != nil {
-		t.Fatalf("CompareRoutes failed: %v", err)
-	}
+	// Test BUY (looks for lowest Ask)
+	buyRoutes, err := router.CompareRoutes("BTC", "buy", 1.0)
+	assert.NoError(t, err)
+	assert.Len(t, buyRoutes, 3)
 
-	if routes[0].Exchange != "coinbase" {
-		t.Errorf("expected coinbase to be best buy route, got %s (Price: %f, Total: %f)",
-			routes[0].Exchange, routes[0].Price, routes[0].TotalCost)
-	}
+	// Binance Ask is 65010, fee is 0.1% -> 65010 * 1.001 = 65075.01
+	// Kucoin Ask is 65040, fee is 0.1% -> 65040 * 1.001 = 65105.04
+	// Coinbase Ask is 65050, fee is 0.5% -> 65050 * 1.005 = 65375.25
+	assert.Equal(t, "binance", buyRoutes[0].Exchange)
+	assert.Equal(t, "kucoin", buyRoutes[1].Exchange)
+	assert.Equal(t, "coinbase", buyRoutes[2].Exchange)
 
-	// Test Sell
-	// binance: 49990 - 49.99 = 49940.01
-	// kucoin: 49980 - 99.96 = 49880.04
-	// coinbase: 50000 - 25.00 = 49975.00 (Winner for Sell)
-	// kraken: 49985 - 74.98 = 49910.02
-	routes, _ = router.CompareRoutes("BTC", "sell", 1.0)
-	if routes[0].Exchange != "coinbase" {
-		t.Errorf("expected coinbase to be best sell route, got %s", routes[0].Exchange)
-	}
+	// Test SELL (looks for highest Bid)
+	sellRoutes, err := router.CompareRoutes("BTC", "sell", 1.0)
+	assert.NoError(t, err)
+	assert.Len(t, sellRoutes, 3)
+
+	// Kucoin Bid is 65020, fee is 0.1% -> 65020 * 0.999 = 64954.98
+	// Binance Bid is 65000, fee is 0.1% -> 65000 * 0.999 = 64935.00
+	// Coinbase Bid is 64900, fee is 0.5% -> 64900 * 0.995 = 64575.50
+	assert.Equal(t, "kucoin", sellRoutes[0].Exchange)
+	assert.Equal(t, "binance", sellRoutes[1].Exchange)
+	assert.Equal(t, "coinbase", sellRoutes[2].Exchange)
 }

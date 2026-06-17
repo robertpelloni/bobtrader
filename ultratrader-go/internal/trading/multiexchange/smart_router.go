@@ -25,10 +25,12 @@ type SmartRouter struct {
 
 // Route represents a calculated execution route.
 type Route struct {
-	Exchange  string
-	Price     float64
-	FeePct    float64
-	TotalCost float64 // Could be cost (buy) or revenue (sell)
+	Exchange   string
+	Price      float64
+	FeePct     float64
+	TotalCost  float64 // Could be cost (buy) or revenue (sell)
+	Slippage   float64 // Estimated slippage based on liquidity
+	Liquidity  float64 // Available depth at this venue
 }
 
 // NewSmartRouter creates a new SmartRouter.
@@ -45,6 +47,9 @@ func NewSmartRouter(manager ExchangeManager, fees map[string]float64) *SmartRout
 // CompareRoutes returns a sorted list of possible routes for execution.
 // side is either "buy" or "sell".
 func (s *SmartRouter) CompareRoutes(coin, side string, quantity float64) ([]Route, error) {
+	// Upgrade manager to V2 if possible to get order book depth
+	managerV2, hasV2 := s.manager.(ExchangeManagerV2)
+
 	exchanges := s.manager.GetExchanges()
 	if len(exchanges) == 0 {
 		return nil, fmt.Errorf("no exchanges available")
@@ -69,6 +74,47 @@ func (s *SmartRouter) CompareRoutes(coin, side string, quantity float64) ([]Rout
 
 		feeAmt := quantity * price * (feePct / 100.0)
 		total := 0.0
+		slippage := 0.0
+		liquidity := 0.0
+
+		// Enhanced Liquidity-Aware Routing (v3.1.0)
+		if hasV2 {
+			book, err := managerV2.GetOrderBook(coin, ex, 20)
+			if err == nil {
+				// Simple slippage estimation: average price of the depth we need
+				targetQty := quantity
+				weightedPriceSum := 0.0
+				filledQty := 0.0
+
+				levels := book.Asks
+				if side == "sell" {
+					levels = book.Bids
+				}
+
+				for _, level := range levels {
+					take := level[1]
+					if filledQty + take > targetQty {
+						take = targetQty - filledQty
+					}
+					weightedPriceSum += level[0] * take
+					filledQty += take
+					liquidity += level[0] * level[1]
+					if filledQty >= targetQty {
+						break
+					}
+				}
+
+				if filledQty > 0 {
+					avgFillPrice := weightedPriceSum / filledQty
+					slippage = (avgFillPrice - price) / price
+					if side == "sell" {
+						slippage = (price - avgFillPrice) / price
+					}
+					// Update price to estimated fill price
+					price = avgFillPrice
+				}
+			}
+		}
 
 		if side == "buy" {
 			total = (quantity * price) + feeAmt
@@ -77,10 +123,12 @@ func (s *SmartRouter) CompareRoutes(coin, side string, quantity float64) ([]Rout
 		}
 
 		routes = append(routes, Route{
-			Exchange:  ex,
-			Price:     price,
-			FeePct:    feePct,
-			TotalCost: total,
+			Exchange:   ex,
+			Price:      price,
+			FeePct:     feePct,
+			TotalCost:  total,
+			Slippage:   slippage,
+			Liquidity:  liquidity,
 		})
 	}
 
