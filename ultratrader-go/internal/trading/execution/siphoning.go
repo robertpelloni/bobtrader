@@ -9,6 +9,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/notifications"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/rebalancer"
@@ -22,6 +23,7 @@ type SiphoningManager struct {
 	feed             marketdata.Feed
 	service          *Service
 	rebalancer       *rebalancer.Rebalancer
+	notifications    *notifications.Manager
 	siphonPct        float64            // Percentage of profit to siphon (0.1 = 10%)
 	macroWeights     map[string]float64 // Symbol -> Weight (weights should sum to 1.0)
 	accountID        string
@@ -58,6 +60,12 @@ func NewSiphoningManager(
 
 // OnTradeExit is called when a position is closed.
 // It calculates the realized PnL and triggers macro buys according to weights if profit is positive.
+func (m *SiphoningManager) SetNotificationManager(n *notifications.Manager) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.notifications = n
+}
+
 func (m *SiphoningManager) OnTradeExit(ctx context.Context, symbol string, pnl float64) error {
 	if pnl <= 0 {
 		return nil
@@ -70,7 +78,16 @@ func (m *SiphoningManager) OnTradeExit(ctx context.Context, symbol string, pnl f
 
 	m.mu.Lock()
 	m.totalSiphoned += siphonAmount
+	notifManager := m.notifications
 	m.mu.Unlock()
+
+	if notifManager != nil {
+		notifManager.Notify(ctx, notifications.Notification{
+			Level:   notifications.Info,
+			Source:  "SiphoningManager",
+			Message: fmt.Sprintf("Siphoning realized profit: $%.2f (Origin: %s)", siphonAmount, symbol),
+		})
+	}
 
 	// Use rebalancer to determine where the siphon should go based on current drift.
 	// This ensures we always buy the most "underweight" asset first.

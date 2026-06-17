@@ -11,6 +11,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/notifications"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -26,8 +27,9 @@ type Service struct {
 	repository *Repository
 	portfolio  *portfolio.Tracker
 	siphoning  *SiphoningManager
-	logger     *logging.Logger
-	metrics    *metrics.Tracker
+	logger        *logging.Logger
+	metrics       *metrics.Tracker
+	notifications *notifications.Manager
 }
 
 func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log, orderStore *orders.Store, repository *Repository, portfolioTracker *portfolio.Tracker, logger *logging.Logger, metricsTracker *metrics.Tracker) *Service {
@@ -42,6 +44,10 @@ func NewService(accounts *account.Service, registry *exchange.Registry, pipeline
 
 func (s *Service) SetSiphoningManager(m *SiphoningManager) {
 	s.siphoning = m
+}
+
+func (s *Service) SetNotificationManager(m *notifications.Manager) {
+	s.notifications = m
 }
 
 func (s *Service) Execute(ctx context.Context, accountID string, request exchange.OrderRequest, intent risk.OrderIntent) (exchange.Order, error) {
@@ -114,6 +120,14 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		if err := s.orders.Append(ctx, orders.Record{AccountID: acct.ID, Exchange: acct.ExchangeName, OrderID: order.ID, Symbol: order.Symbol, Side: string(order.Side), Type: string(order.Type), Status: string(order.Status), Quantity: order.Quantity, Price: order.Price, Metadata: map[string]any{"account_name": acct.Name, "correlation_id": correlationID}}); err != nil {
 			return exchange.Order{}, fmt.Errorf("append order record: %w", err)
 		}
+	}
+
+	if s.notifications != nil {
+		s.notifications.Notify(ctx, notifications.Notification{
+			Level:   notifications.Trade,
+			Source:  "ExecutionService",
+			Message: fmt.Sprintf("Order executed: %s %s %s @ %s", order.Side, order.Quantity, order.Symbol, order.Price),
+		})
 	}
 	if s.events != nil {
 		_ = s.events.Append(ctx, eventlog.Entry{Type: "execution.order_placed", Source: "execution-service", Payload: map[string]any{"account_id": accountID, "exchange": acct.ExchangeName, "symbol": order.Symbol, "side": order.Side, "type": order.Type, "status": string(order.Status), "order_id": order.ID, "correlation_id": correlationID}})

@@ -23,6 +23,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
 	marketdatapaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/paper"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/notifications"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
@@ -237,11 +238,17 @@ func New(cfg config.Config) (*App, error) {
 	}
 	signalLogStop := signalLog.StartAutoFlush(30 * time.Second)
 
+	// ── Notification Manager ──────────────────────────────────
+	notificationManager := notifications.NewManager()
+	// Optionally register providers from config here
+	// notificationManager.Register(notifications.NewDiscordProvider("URL"))
+
 	// ── Execution Service ──────────────────────────────────────
 	executionService := execution.NewService(
 		accountService, registry, pipeline, eventLog,
 		orderStore, executionRepo, portfolioTracker, logger, metricsTracker,
 	)
+	executionService.SetNotificationManager(notificationManager)
 
 	// ── Siphoning Manager ──────────────────────────────────────
 	var siphoningManager *execution.SiphoningManager
@@ -250,6 +257,7 @@ func New(cfg config.Config) (*App, error) {
 			portfolioTracker, marketDataFeed, executionService, primaryAccountID,
 			cfg.Strategy.SiphoningWeights, cfg.Strategy.SiphoningPct,
 		)
+		siphoningManager.SetNotificationManager(notificationManager)
 		executionService.SetSiphoningManager(siphoningManager)
 		logger.Info("siphoning manager enabled", map[string]any{
 			"weights": cfg.Strategy.SiphoningWeights,
