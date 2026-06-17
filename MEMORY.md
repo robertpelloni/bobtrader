@@ -100,5 +100,7 @@ The Go implementation is highly modular, focusing on interfaces, dependency inje
 - **Trading:** Portfolio tracking with wash-sale prevention (`portfolio.Rebalancer`).
 - **Backtesting:** Advanced simulation suite including `MultiSymbolFeed` for chronological alignment, `WalkForwardOptimizer` for out-of-sample validation, `GridSearchOptimizer` for parameter tuning, and `RunMonteCarlo` for ruin probability calculation.
 - **Analytics:** Sentiment aggregation engine (`sentiment.Engine`) and NLP strategy parsing using regex (`nlp.Parser`).
+- **HFT Core (v3.3.0):** Institutional-grade execution with **VWAP** (Volume Weighted Average Price) slicing and atomic multi-venue arbitrage legs for low-latency market exploitation.
+- **Frontend Dashboard:** React/Vite SPA embedded into the Go binary via `http.FileServer`, providing real-time PnL trends, Arbitrage Scanners, and **Order Book Depth** visualization.
 
-Design patterns emphasize Go routines for parallel evaluation and TDD with comprehensive mocking.
+Design patterns emphasize Go routines for parallel evaluation, interface-driven dependency injection, and TDD with comprehensive mocking.

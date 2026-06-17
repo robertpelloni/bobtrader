@@ -1,9 +1,26 @@
 # Changelog
 
-All notable changes to PowerTrader AI will be documented in this file.
+All notable changes to BobTrader (UltraTrader Go) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
+
+## [3.3.0-alpha] - 2026-06-17
+### Added
+- **VWAP Execution Strategy** — Implemented institutional-grade Volume Weighted Average Price execution in `internal/trading/execution/vwap.go`.
+- **Atomic Multi-Venue Arbitrage** — Coordinated, concurrent execution of cross-exchange trades with `ArbitrageExecutorV2` in `internal/trading/multiexchange/chain_executor.go`.
+- **Liquidity Depth Visualization** — Added `DepthVisualizer` React component and `/api/marketdata/depth` endpoint to visualize global order book liquidity.
+- **Embedded Dashboard serving** — Backend now automatically serves the React production build from `web/dist` with SPA routing support.
+
+### Fixed
+- **CorrelationGuard Build Regression** — Fixed type mismatch in `internal/risk/correlation_guard.go`.
+- **Primary Account Selection** — Improved fallback logic for identifying the main trading account in `App.go`.
+
+## [3.2.0] - 2026-06-15
+### Added
+- **Correlation Guards** — Risk diversification layer to prevent over-concentration in highly correlated assets.
+- **Liquidity-Aware Smart Router** — Selects optimal exchange based on real-time BBO, fees, and depth.
+- **InfluxDB Integration** — High-performance time-series metrics persistence.
 
 ## [2.1.2] - 2026-06-11
 ### Changed

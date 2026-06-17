@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
@@ -13,17 +12,12 @@ import (
 
 // EnhancedScheduler is like Scheduler but adds position awareness, real notional
 // calculation, and signal logging for every generated signal.
-type PriceCollector interface {
-	AddPrice(symbol string, price float64)
-}
-
 type EnhancedScheduler struct {
 	runtime   *strategy.Runtime
 	execution *execution.Service
 	portfolio PositionChecker
 	feed      marketdata.Feed
 	signalLog *strategy.SignalLog
-	collector PriceCollector
 	mu        sync.RWMutex
 }
 
@@ -64,21 +58,10 @@ func (s *EnhancedScheduler) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-func (s *EnhancedScheduler) SetPriceCollector(c PriceCollector) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.collector = c
-}
-
 func (s *EnhancedScheduler) RunTick(ctx context.Context, tick marketdata.Tick) error {
 	s.mu.RLock()
 	runtime := s.runtime
-	collector := s.collector
 	s.mu.RUnlock()
-
-	if collector != nil {
-		collector.AddPrice(tick.Symbol, utils.ParseFloat(tick.Price))
-	}
 
 	signals, err := runtime.TickEvent(ctx, tick)
 	if err != nil {
