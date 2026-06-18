@@ -10,7 +10,7 @@
 > See [`AUTONOMOUS_DUAL_BOT_STRATEGY.md`](AUTONOMOUS_DUAL_BOT_STRATEGY.md) for the
 > complete specification.
 
-## Current State: v3.3.0-Alpha — Liquidity Execution & HFT Core
+## Current State: v3.4.0-Alpha — Triangular & Multi-Hop Arbitrage
 
 ### ⚠️ Autonomous Dual-Bot Operation Active
 
@@ -121,17 +121,19 @@ Dashboard: http://127.0.0.1:8300/
 | Alpha Vantage | https://www.alphavantage.co/support/#api-key | Yes |
 | Whale Alert | https://whale-alert.io/ | 10 req/min |
 
-### v3.3.0-Alpha — Liquidity Execution & HFT Core
-This release focuses on institutional-grade execution and cross-exchange arbitrage.
+### v3.4.0-Alpha — Triangular & Multi-Hop Arbitrage
+This release enables complex, multi-leg arbitrage and live liquidity streaming.
 
-**New Execution Core:**
-- **VWAP Execution:** Implemented Volume Weighted Average Price order slicing in `internal/trading/execution/vwap.go`.
-- **Atomic Arbitrage Leg:** Concurrent execution of multi-venue trades with `ArbitrageExecutorV2`.
-- **Order Book Depth Visualization:** Interactive depth charts in the React dashboard.
+**Advanced HFT Capabilities:**
+- **Triangular Scanner:** Detects single-exchange cycles (e.g., USDT-BTC-ETH-USDT) in `internal/strategy/arbitrage/`.
+- **Multi-Hop Chain Executor:** Upgraded `ArbitrageExecutorV2` to support sequential trade sequences with balance-passing between legs.
+- **Live Depth Streaming:** Unified `SubscribeDepth` interface for Binance (Websocket/REST) and Paper feeds.
+- **Enhanced Visuals:** Dashboard updated with feature-specific badges for cross-venue and triangular ops.
 
-**Integration Success:**
-- **Go Backend serves React SPA:** The backend now serving the production React build from `web/dist`.
-- **System Stability:** Verified with 108s of system simulation and 100% success rate on 26 signals during stress tests.
+**v3.3.0-Alpha Retrospective:**
+- **VWAP Execution:** Order slicing for low impact.
+- **Atomic Arbitrage Leg:** Coordinated concurrent trades.
+- **Order Book Depth:** Visual liquidity walls.
 
 ### Config Files
 | Config | Purpose |

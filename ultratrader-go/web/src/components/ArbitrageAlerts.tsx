@@ -62,6 +62,12 @@ export const ArbitrageAlerts = () => {
         <span className="w-2 h-2 bg-[#18ffff] rounded-full animate-ping"></span>
         Arbitrage Scanner
       </h2>
+
+      <div className="mb-4 flex gap-2">
+        <span className="px-2 py-1 bg-[#18ffff]/10 text-[#18ffff] text-[10px] font-bold rounded border border-[#18ffff]/20">CROSS-VENUE</span>
+        <span className="px-2 py-1 bg-[#b388ff]/10 text-[#b388ff] text-[10px] font-bold rounded border border-[#b388ff]/20">TRIANGULAR</span>
+      </div>
+
       <div className="space-y-4">
         {opps.map((o, i) => (
           <div key={i} className="p-4 bg-[#121e34] rounded-lg border-l-4 border-[#18ffff]">

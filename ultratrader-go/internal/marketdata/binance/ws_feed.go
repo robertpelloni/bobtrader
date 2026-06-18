@@ -112,6 +112,21 @@ func (f *StreamFeed) SubscribeCandles(ctx context.Context, symbol, interval stri
 	return candleSub{ch: ch}
 }
 
+func (f *StreamFeed) SubscribeDepth(ctx context.Context, symbol string) marketdata.DepthSubscription {
+	ch := make(chan marketdata.DepthUpdate, 100)
+	// Using @depth20 for the top 20 levels of the order book
+	streamPath := fmt.Sprintf("%s/%s@depth20", f.baseURL, strings.ToLower(symbol))
+	go f.connectAndStream(ctx, streamPath, func(msg []byte) {
+		if update, ok := parseDepthMessage(msg, symbol); ok {
+			select {
+			case ch <- update:
+			default:
+			}
+		}
+	})
+	return depthSub{ch: ch}
+}
+
 func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler func([]byte)) {
 	backoff := 1 * time.Second
 	maxBackoff := 60 * time.Second
@@ -233,6 +248,10 @@ type candleSub struct{ ch <-chan marketdata.Candle }
 
 func (s candleSub) Chan() <-chan marketdata.Candle { return s.ch }
 
+type depthSub struct{ ch <-chan marketdata.DepthUpdate }
+
+func (s depthSub) Chan() <-chan marketdata.DepthUpdate { return s.ch }
+
 type klineMessage struct {
 	EventType string      `json:"e"`
 	Symbol    string      `json:"s"`
@@ -299,5 +318,24 @@ func parseKlineMessage(data []byte) (marketdata.Candle, bool) {
 		Close:     msg.Kline.Close,
 		Volume:    msg.Kline.Volume,
 		Timestamp: time.UnixMilli(msg.Kline.StartTime).UTC(),
+	}, true
+}
+
+type depthMessage struct {
+	LastUpdateID int64       `json:"lastUpdateId"`
+	Bids         [][2]string `json:"bids"`
+	Asks         [][2]string `json:"asks"`
+}
+
+func parseDepthMessage(data []byte, symbol string) (marketdata.DepthUpdate, bool) {
+	var msg depthMessage
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return marketdata.DepthUpdate{}, false
+	}
+	return marketdata.DepthUpdate{
+		Symbol:    strings.ToUpper(symbol),
+		Bids:      msg.Bids,
+		Asks:      msg.Asks,
+		Timestamp: time.Now().UTC(),
 	}, true
 }

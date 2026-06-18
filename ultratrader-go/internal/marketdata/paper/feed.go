@@ -3,6 +3,7 @@ package paper
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,6 +22,10 @@ func (s tickSubscription) Chan() <-chan marketdata.Tick { return s.ch }
 type candleSubscription struct{ ch <-chan marketdata.Candle }
 
 func (s candleSubscription) Chan() <-chan marketdata.Candle { return s.ch }
+
+type depthSubscription struct{ ch <-chan marketdata.DepthUpdate }
+
+func (s depthSubscription) Chan() <-chan marketdata.DepthUpdate { return s.ch }
 
 func New() *Feed { return &Feed{indices: map[string]int{}} }
 
@@ -134,6 +139,45 @@ func (f *Feed) SubscribeCandles(ctx context.Context, symbol, interval string) ma
 		}
 	}()
 	return candleSubscription{ch: ch}
+}
+
+func (f *Feed) SubscribeDepth(ctx context.Context, symbol string) marketdata.DepthSubscription {
+	ch := make(chan marketdata.DepthUpdate, 1)
+	go func() {
+		defer close(ch)
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				tick, _ := f.LatestTick(ctx, symbol)
+				price := tick.Price
+				if price == "" {
+					price = "100.0"
+				}
+				p := 100.0
+				if pf, err := strconv.ParseFloat(price, 64); err == nil {
+					p = pf
+				}
+
+				ch <- marketdata.DepthUpdate{
+					Symbol: symbol,
+					Bids: [][2]string{
+						{fmt.Sprintf("%.2f", p*0.999), "1.0"},
+						{fmt.Sprintf("%.2f", p*0.998), "2.0"},
+					},
+					Asks: [][2]string{
+						{fmt.Sprintf("%.2f", p*1.001), "1.0"},
+						{fmt.Sprintf("%.2f", p*1.002), "2.0"},
+					},
+					Timestamp: time.Now().UTC(),
+				}
+			}
+		}
+	}()
+	return depthSubscription{ch: ch}
 }
 
 func (f *Feed) nextStreamCandle(symbol, interval string) (marketdata.Candle, error) {

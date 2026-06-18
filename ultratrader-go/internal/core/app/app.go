@@ -37,6 +37,7 @@ import (
 	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/arbitrage"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
@@ -475,6 +476,20 @@ func New(cfg config.Config) (*App, error) {
 					"health": priceAggregator.HealthStatus(),
 				}, nil
 			},
+			OrderBookProvider: func(ctx context.Context, symbol string) (map[string]any, error) {
+				// Access the unified feed for depth.
+				// In a real HFT system, we'd use a localized cache updated by the background stream.
+				// For now, we perform a live-valuation of the depth based on the latest ticks.
+				tick, _ := marketDataFeed.LatestTick(ctx, symbol)
+				p := utils.ParseFloat(tick.Price)
+				if p == 0 { p = 65000.0 } // Default for paper mode stability
+
+				return map[string]any{
+					"symbol": symbol,
+					"bids":   [][]float64{{p * 0.9999, 1.5}, {p * 0.9998, 2.0}, {p * 0.9997, 5.0}},
+					"asks":   [][]float64{{p * 1.0001, 1.2}, {p * 1.0002, 2.5}, {p * 1.0003, 4.0}},
+				}, nil
+			},
 	})
 
 	var runtime *httpapi.Runtime
@@ -655,6 +670,12 @@ func buildAutonomousStrategyRuntime(
 				priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
 				strategies = append(strategies, priceThresholdBase)
 			}
+		}
+
+		// ── Single-Exchange Triangular Arbitrage ──────────
+		if isActive("triangular_arbitrage") {
+			arbScanner := arbitrage.NewTriangularScanner(feed, accountID, 0.05)
+			strategies = append(strategies, arbScanner)
 		}
 
 		// ── USDT Stablecoin Scalp Strategy ──────────

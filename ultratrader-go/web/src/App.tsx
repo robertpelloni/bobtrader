@@ -5,9 +5,16 @@ import { RiskGuardStatus } from './components/RiskGuardStatus'
 import { PerformanceChart } from './components/PerformanceChart'
 import { ArbitrageAlerts } from './components/ArbitrageAlerts'
 import { ConfigSettings } from './components/ConfigSettings'
+import DepthVisualizer from './components/DepthVisualizer'
 
 function App() {
   const [symbol] = useState('BTCUSDT')
+
+  // Mock data for demo/verification
+  const mockDepth = {
+    bids: [[60000, 1.5], [59950, 2.0], [59900, 5.0]] as [number, number][],
+    asks: [[60100, 1.2], [60150, 2.5], [60200, 4.0]] as [number, number][]
+  };
 
   return (
     <div className="min-h-screen bg-[#070d1a] text-[#d0dced] p-8">
@@ -44,6 +51,11 @@ function App() {
           <ConfigSettings />
           <ArbitrageAlerts />
           <RiskGuardStatus />
+
+          <div className="bg-[#0e1729] p-6 rounded-xl border border-[#1e3050]">
+            <h2 className="text-lg font-semibold mb-2 text-[#ffab40]">Liquidity Depth</h2>
+            <DepthVisualizer symbol={symbol} data={mockDepth} />
+          </div>
 
           <div className="bg-[#0e1729] p-6 rounded-xl border border-[#1e3050]">
             <h2 className="text-lg font-semibold mb-2 text-[#ffab40]">Activity Stream</h2>

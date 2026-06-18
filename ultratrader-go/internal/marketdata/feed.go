@@ -19,8 +19,20 @@ type CandleSubscription interface {
 	Chan() <-chan Candle
 }
 
+type DepthSubscription interface {
+	Chan() <-chan DepthUpdate
+}
+
+type DepthUpdate struct {
+	Symbol    string
+	Bids      [][2]string // [price, quantity]
+	Asks      [][2]string
+	Timestamp time.Time
+}
+
 type StreamFeed interface {
 	Feed
 	SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) TickSubscription
 	SubscribeCandles(ctx context.Context, symbol, interval string) CandleSubscription
+	SubscribeDepth(ctx context.Context, symbol string) DepthSubscription
 }

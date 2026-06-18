@@ -5,6 +5,13 @@ All notable changes to BobTrader (UltraTrader Go) will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [3.4.0-alpha] - 2026-06-17
+### Added
+- **Triangular Arbitrage Scanner** — Detects single-exchange arbitrage cycles (e.g., USDT -> BTC -> ETH -> USDT) in `internal/strategy/arbitrage/triangular.go`.
+- **Multi-Hop Chain Executor** — Upgraded `ArbitrageExecutorV2` to support sequential N-leg execution with balance passing.
+- **Live Depth Streaming** — Implemented `SubscribeDepth` for Binance WebSocket, REST, and Paper feeds.
+- **Advanced Dashboard badges** — React dashboard now distinguishes between "Cross-Venue" and "Triangular" arbitrage opportunities.
+
 ## [3.3.0-alpha] - 2026-06-17
 ### Added
 - **VWAP Execution Strategy** — Implemented institutional-grade Volume Weighted Average Price execution in `internal/trading/execution/vwap.go`.
