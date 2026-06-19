@@ -25,9 +25,4 @@ jobs:
       run: cd ultratrader-go && go build -v ./...
 
     - name: Test
-      run: cd ultratrader-go && go test -v -coverprofile=coverage.out ./...
-
-    - name: Check Coverage
-      run: |
-        cd ultratrader-go
-        go tool cover -func=coverage.out
+      run: cd ultratrader-go && go test -v ./...
