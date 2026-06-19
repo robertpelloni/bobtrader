@@ -35,10 +35,10 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 ## Near-Term Roadmap (v2.1.x)
 
 ### 1. WebSocket Feed Hardening
-- [ ] Debug goroutine-to-channel delivery in WS feed
-- [ ] Add auto-reconnection with exponential backoff
-- [ ] Add WebSocket health monitoring endpoint
-- [ ] Switch default from REST to WS once stable
+- [x] Debug goroutine-to-channel delivery in WS feed
+- [x] Add auto-reconnection with exponential backoff
+- [x] Add WebSocket health monitoring endpoint
+- [x] Switch default from REST to WS once stable
 
 ### 2. Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing

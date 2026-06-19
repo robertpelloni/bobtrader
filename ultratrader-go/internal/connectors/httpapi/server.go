@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+    "time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
@@ -100,6 +101,11 @@ type MarketDataInfo struct {
 	InitialBalance float64 `json:"initial_balance"`
 }
 
+type WSHealth struct {
+	Connected       bool      `json:"connected"`
+	LastMessageTime time.Time `json:"last_message_time"`
+	StalenessMS     int64     `json:"staleness_ms"`
+}
 
 type Dependencies struct {
 	StatusProvider               func() Status
@@ -117,6 +123,7 @@ type Dependencies struct {
 	ReportTrendsProvider         func() reportinganalysis.RuntimeTrends
 	SignalLogProvider            func() []strategy.LoggedSignal
 	StrategyStatsProvider        func() map[string]strategy.StrategyStats
+    WSHealthProvider             func() WSHealth
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -236,6 +243,13 @@ func NewHandler(deps Dependencies) http.Handler {
 	mux.HandleFunc("/api/strategy-stats", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(deps.StrategyStatsProvider())
+	})
+
+	mux.HandleFunc("/api/ws-health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+        if deps.WSHealthProvider != nil {
+		    _ = json.NewEncoder(w).Encode(deps.WSHealthProvider())
+        }
 	})
 
 	return mux

@@ -24,3 +24,9 @@ type StreamFeed interface {
 	SubscribeTicks(ctx context.Context, symbol string, interval time.Duration) TickSubscription
 	SubscribeCandles(ctx context.Context, symbol, interval string) CandleSubscription
 }
+
+// StreamHealthProvider provides connectivity status of a stream feed
+type StreamHealthProvider interface {
+	IsConnected() bool
+	LastMessageTime() time.Time
+}

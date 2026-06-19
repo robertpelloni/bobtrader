@@ -250,3 +250,22 @@ func TestDiagnosticsEndpoints(t *testing.T) {
 		t.Fatalf("expected report trends response, got %q", w.Body.String())
 	}
 }
+func TestWSHealthEndpoint(t *testing.T) {
+	deps := makeTestDeps()
+	deps.WSHealthProvider = func() WSHealth {
+		return WSHealth{Connected: true, StalenessMS: 150}
+	}
+	handler := NewHandler(deps)
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	resp, err := http.Get(server.URL + "/api/ws-health")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+}
