@@ -1,2 +1,6 @@
 data/
 *.log
+
+# Build artifacts
+ultratrader
+*.exe
