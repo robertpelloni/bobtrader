@@ -3,28 +3,28 @@
 ## Current Sprint (v2.1.x)
 
 ### WebSocket Feed
-- [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
+- [x] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
 - [x] Add auto-reconnection with exponential backoff verification
 - [x] Add WebSocket health monitoring endpoint
 - [x] Switch default from REST to WS once stable
 
 ### Strategy Enhancement
-- [ ] Kelly criterion / volatility-adjusted position sizing
+- [x] Kelly criterion / volatility-adjusted position sizing
 - [ ] Walk-forward parameter optimization on historical data
 - [ ] MACD strategy in stream mode
-- [ ] ATR-based dynamic sizing
+- [x] ATR-based dynamic sizing
 
 ### Real Exchange Integration
-- [ ] Wire execution to real Binance spot API
-- [ ] Order reconciliation service
-- [ ] Trade history sync from exchange
-- [ ] Circuit breaker for API resilience
+- [x] Wire execution to real Binance spot API
+- [x] Order reconciliation service
+- [x] Trade history sync from exchange
+- [x] Circuit breaker for API resilience
 
 ### Dashboard
-- [ ] React/Vite SPA dashboard
-- [ ] Real-time WebSocket streaming to frontend
-- [ ] Interactive charts (TradingView lightweight)
-- [ ] Strategy parameter tuning UI
+- [x] React/Vite SPA dashboard
+- [x] Real-time WebSocket streaming to frontend
+- [x] Interactive charts (TradingView lightweight)
+- [x] Strategy parameter tuning UI
 
 ---
 
