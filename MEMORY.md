@@ -102,3 +102,9 @@ The Go implementation is highly modular, focusing on interfaces, dependency inje
 - **Analytics:** Sentiment aggregation engine (`sentiment.Engine`) and NLP strategy parsing using regex (`nlp.Parser`).
 
 Design patterns emphasize Go routines for parallel evaluation and TDD with comprehensive mocking.
+
+## Real Exchange Integration (v2.1.4)
+* **Execution Routing:** The `ExecutionManager` now dynamically pulls the live `binance.Adapter` instead of defaulting to paper when production accounts are enabled.
+* **Resilience:** Implemented a new `CircuitBreaker` pattern in `internal/risk/circuitbreaker` wrapping all outbound HTTP calls.
+* **Portfolio Sync:** The `TradeHistoryQuerier` interface was implemented allowing the application to pull the last 100 historical trades on boot to hydrate the internal portfolio state natively.
+* **Order Reconciliation:** The periodic background reconciler loop now actively updates local order discrepancies against the live exchange status.

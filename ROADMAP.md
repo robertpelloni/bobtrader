@@ -48,10 +48,10 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [ ] Strategy backtesting with real market history
 
 ### 3. Real Exchange Integration
-- [ ] Wire execution to real Binance spot API
-- [ ] Order reconciliation service
-- [ ] Trade history sync from exchange
-- [ ] Circuit breaker for API resilience
+- [x] Wire execution to real Binance spot API
+- [x] Order reconciliation service
+- [x] Trade history sync from exchange
+- [x] Circuit breaker for API resilience
 
 ### 4. Dashboard Modernization
 - [ ] React/Vite SPA dashboard

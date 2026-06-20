@@ -5,6 +5,13 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.1.4] - 2026-06-20
+### Added
+- **Real Exchange Execution Wiring** — The `ExecutionManager` and `Reconciler` are now dynamically instantiated with the `binance.Adapter` when live trading accounts are active, correctly routing live execution outside of the paper fallback.
+- **Intelligent Order Reconciliation** — The background order `Reconciler` loop now actively resolves local state drift by updating the `executionRepo` against queried live exchange data.
+- **Trade History Boot-Sync** — On startup, the system now queries the exchange via the new `TradeHistoryQuerier` interface (`/api/v3/myTrades`) to fetch recent trades and perfectly sync the `PortfolioTracker` state.
+- **API Circuit Breaker** — Hardened the Binance adapter with a `circuitbreaker.Breaker` wrapping all HTTP execution pathways to prevent runaway failure loops during exchange instability.
+
 ## [2.1.3] - 2026-06-18
 ### Added
 - **WebSocket Feed Hardening** — Fixed goroutine-to-channel delivery bugs in the Binance WebSocket stream feed caused by json parsing of large numbers, added auto-reconnection with exponential backoff on disconnects.
