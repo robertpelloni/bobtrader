@@ -33,6 +33,7 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/reconciliation"
 )
 
 type starter interface{ Start(context.Context) }
@@ -53,6 +54,8 @@ type App struct {
 	portfolioTracker *portfolio.Tracker
 	executionService *execution.Service
 	executionManager *execution.Manager
+	reconciler       *reconciliation.Reconciler
+	reconcilerStop   func()
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.EnhancedScheduler
 	schedulerService starter
@@ -141,6 +144,10 @@ func New(cfg config.Config) (*App, error) {
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
+	// Create reconciler using the paper adapter (which doesn't implement OrderQuerier yet, but falls back gracefully)
+
+	reconciler := reconciliation.NewReconciler(marketAwarePaper)
+
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
@@ -190,9 +197,39 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
-	paperAdapter := exchangepaper.New()
-	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
-	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
+
+	// Determine which adapter to use for the execution manager strategies based on primary account
+	var execAdapter exchange.Adapter = exchangepaper.New()
+	if primaryAccountID != "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
+				execAdapter = binance.New(binance.Config{
+					APIKey:    acct.APIKey,
+					SecretKey: acct.SecretKey,
+					Testnet:   acct.Testnet,
+				})
+				break
+			}
+		}
+	}
+
+	executionManager.Register(execution.NewMarketStrategy(execAdapter))
+	executionManager.Register(execution.NewWolfBotBollingerStrategy(execAdapter, 3))
+
+	// Trade History Sync from Exchange
+	if querier, ok := execAdapter.(exchange.TradeHistoryQuerier); ok && primaryAccountID != "" {
+		for _, symbol := range cfg.Risk.AllowedSymbols {
+			trades, err := querier.QueryTrades(context.Background(), symbol, 100)
+			if err != nil {
+				logger.Error("failed to sync trades for portfolio", map[string]any{"symbol": symbol, "error": err.Error()})
+			} else {
+				for _, t := range trades {
+					portfolioTracker.ApplyTrade(t)
+				}
+				logger.Info("synced recent trades to portfolio", map[string]any{"symbol": symbol, "count": len(trades)})
+			}
+		}
+	}
 
 	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
 	// Use paper balance (simulated) when trading on paper account.
@@ -371,6 +408,26 @@ func New(cfg config.Config) (*App, error) {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
 
+	// Start background reconciler loop
+	reconcileCtx, reconcileCancel := context.WithCancel(context.Background())
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-reconcileCtx.Done():
+				return
+			case <-ticker.C:
+				res, err := reconciler.ReconcileOrders(reconcileCtx, executionRepo.List())
+				if err != nil {
+					logger.Error("reconciliation failed", map[string]any{"error": err.Error()})
+				} else {
+					logger.Info("reconciliation completed", map[string]any{"summary": res.Summary()})
+				}
+			}
+		}
+	}()
+
 	return &App{
 		config:           cfg,
 		logger:           logger,
@@ -386,6 +443,8 @@ func New(cfg config.Config) (*App, error) {
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
 		executionManager: executionManager,
+		reconciler:       reconciler,
+		reconcilerStop:   reconcileCancel,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,
@@ -716,6 +775,9 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Flush signal log before shutdown
 	if a.signalLogStop != nil {
 		a.signalLogStop()
+	}
+	if a.reconcilerStop != nil {
+		a.reconcilerStop()
 	}
 	a.logger.Info("app shutdown initiated", map[string]any{
 		"signal_count":    a.signalLog.Count(),

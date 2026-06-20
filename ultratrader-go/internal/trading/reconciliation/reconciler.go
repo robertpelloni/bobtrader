@@ -50,6 +50,7 @@ type Discrepancy struct {
 	InternalStatus string
 	ExchangeStatus string
 	Description    string
+	Remote         *OrderStatus
 }
 
 // OrderQuerier is an optional interface that adapters can implement to query
@@ -109,6 +110,7 @@ func (r *Reconciler) ReconcileOrders(ctx context.Context, localOrders []exchange
 				InternalStatus: string(local.Status),
 				ExchangeStatus: remote.Status,
 				Description:    fmt.Sprintf("status mismatch: local=%s exchange=%s", local.Status, remote.Status),
+				Remote:         &remote,
 			})
 		}
 

@@ -68,6 +68,39 @@ func (t *Tracker) Apply(order exchange.Order) {
 	t.positions[symbol] = st
 }
 
+func (t *Tracker) ApplyTrade(trade exchange.Trade) {
+	qty := utils.ParseFloat(trade.Quantity)
+	price := utils.ParseFloat(trade.Price)
+	if qty == 0 {
+		return
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	symbol := strings.ToUpper(strings.TrimSpace(trade.Symbol))
+	st := t.positions[symbol]
+	if trade.Side == exchange.Sell {
+		if price > 0 {
+			st.realizedPnL += (price - st.avgEntry) * qty
+		}
+		st.quantity -= qty
+		if st.quantity <= 0 {
+			st.quantity = 0
+			st.avgEntry = 0
+		}
+	} else {
+		if price > 0 {
+			totalCost := (st.avgEntry * st.quantity) + (price * qty)
+			st.quantity += qty
+			if st.quantity > 0 {
+				st.avgEntry = totalCost / st.quantity
+			}
+		} else {
+			st.quantity += qty
+		}
+	}
+	t.positions[symbol] = st
+}
+
 func (t *Tracker) Positions() []Position {
 	t.mu.Lock()
 	defer t.mu.Unlock()

@@ -71,3 +71,21 @@ type Adapter interface {
 	Balances(ctx context.Context) ([]Balance, error)
 	PlaceOrder(ctx context.Context, request OrderRequest) (Order, error)
 }
+
+type Trade struct {
+	ID            string
+	OrderID       string
+	Symbol        string
+	Side          OrderSide
+	Price         string
+	Quantity      string
+	QuoteQuantity string
+	Commission    string
+	CommissionAsset string
+	Time          time.Time
+	IsMaker       bool
+}
+
+type TradeHistoryQuerier interface {
+	QueryTrades(ctx context.Context, symbol string, limit int) ([]Trade, error)
+}
