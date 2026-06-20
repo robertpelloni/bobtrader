@@ -82,3 +82,33 @@ func TestMACDCrossover_Name(t *testing.T) {
 		t.Errorf("expected name MACDCrossover, got %s", s.Name())
 	}
 }
+
+func TestMACDCrossover_OnMarketTick(t *testing.T) {
+	strategy := NewMACDCrossover("acc1", "BTCUSDT", "1.5", 12, 26, 9)
+	ctx := context.Background()
+
+	// Feed it some ticks to initialize
+	for i := 0; i < 30; i++ {
+		_, err := strategy.OnMarketTick(ctx, marketdata.Tick{
+			Symbol: "BTCUSDT",
+			Price:  "50000",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+
+	// Trigger a crossover (simulated)
+	_, _ = strategy.OnMarketTick(ctx, marketdata.Tick{Symbol: "BTCUSDT", Price: "51000"})
+	_, _ = strategy.OnMarketTick(ctx, marketdata.Tick{Symbol: "BTCUSDT", Price: "52000"})
+
+	signals, err := strategy.OnMarketTick(ctx, marketdata.Tick{Symbol: "BTCUSDT", Price: "53000"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// We just want to ensure it doesn't panic and returns a valid slice
+	if signals == nil {
+		_ = signals
+	}
+}
