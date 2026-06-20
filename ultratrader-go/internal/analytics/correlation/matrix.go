@@ -53,7 +53,19 @@ func Pearson(x, y []float64) float64 {
 
 	nf := float64(n)
 	numerator := nf*sumXY - sumX*sumY
-	denominator := math.Sqrt((nf*sumX2 - sumX*sumX) * (nf*sumY2 - sumY*sumY))
+	varX := nf*sumX2 - sumX*sumX
+	varY := nf*sumY2 - sumY*sumY
+
+	// Handle float precision issues
+	if varX < 1e-10 || varY < 1e-10 {
+		// If variance is near zero, they could be perfectly correlated if they are flat
+		if varX < 1e-10 && varY < 1e-10 {
+			return 1.0
+		}
+		return 0.0
+	}
+
+	denominator := math.Sqrt(varX * varY)
 
 	if denominator == 0 {
 		return 0

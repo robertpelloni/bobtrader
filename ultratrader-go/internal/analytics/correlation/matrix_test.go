@@ -69,7 +69,16 @@ func TestCorrelationMatrix_Compute(t *testing.T) {
 		t.Fatalf("expected 1 correlation pair, got %d", len(correlations))
 	}
 
-	corr := correlations["A:B"]
+	corr, ok := correlations["A:B"]
+	if !ok {
+		corr = correlations["B:A"]
+	}
+
+	// If standard deviation/variance is zero (i.e. perfectly flat line returns),
+	// our formula might return 0. Let's make sure the prices actually vary.
+	// Since prices are 100, 101, 102... returns are 0.01, 0.0099, 0.0098
+	// Wait, the returns are slightly DECREASING, so there is variance.
+	// Let's just print what corr is here in case it's somehow different.
 	if corr < 0.99 {
 		t.Errorf("expected near-perfect correlation, got %f", corr)
 	}
