@@ -6,7 +6,7 @@
 - [ ] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
 - [x] Add auto-reconnection with exponential backoff verification
 - [x] Add WebSocket health monitoring endpoint
-- [ ] Switch default from REST to WS once stable
+- [x] Switch default from REST to WS once stable
 
 ### Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing
