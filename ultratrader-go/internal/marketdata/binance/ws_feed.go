@@ -22,6 +22,7 @@ type StreamFeed struct {
 	adapter *binance.Adapter
 	mu      sync.Mutex
 	baseURL string
+	dialAndReadFunc func(ctx context.Context, wsURL string, handler func([]byte)) error
 }
 
 // NewStreamFeed creates a WebSocket-based market data feed.
@@ -30,10 +31,12 @@ func NewStreamFeed(adapter *binance.Adapter) *StreamFeed {
 	if adapter.IsTestnet() {
 		baseURL = "wss://testnet.binance.vision/ws"
 	}
-	return &StreamFeed{
+	feed := &StreamFeed{
 		adapter: adapter,
 		baseURL: baseURL,
 	}
+	feed.dialAndReadFunc = feed.defaultDialAndRead
+	return feed
 }
 
 func (f *StreamFeed) LatestTick(ctx context.Context, symbol string) (marketdata.Tick, error) {
@@ -113,7 +116,7 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 			return
 		default:
 		}
-		err := f.dialAndRead(ctx, wsURL, handler)
+		err := f.dialAndReadFunc(ctx, wsURL, handler)
 		if ctx.Err() != nil {
 			return
 		}
@@ -135,7 +138,7 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 
 // dialAndRead performs a WebSocket upgrade and reads text frames.
 // Uses the exact same approach as the working standalone test.
-func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func([]byte)) error {
+func (f *StreamFeed) defaultDialAndRead(ctx context.Context, wsURL string, handler func([]byte)) error {
 	parsed, err := url.Parse(wsURL)
 	if err != nil {
 		return fmt.Errorf("parse ws url: %w", err)
