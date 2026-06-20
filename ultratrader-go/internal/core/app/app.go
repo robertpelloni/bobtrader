@@ -216,6 +216,9 @@ func New(cfg config.Config) (*App, error) {
 	executionManager.Register(execution.NewMarketStrategy(execAdapter))
 	executionManager.Register(execution.NewWolfBotBollingerStrategy(execAdapter, 3))
 
+	// Initialize reconciler with the correct execution adapter
+	reconciler = reconciliation.NewReconciler(execAdapter)
+
 	// Trade History Sync from Exchange
 	if querier, ok := execAdapter.(exchange.TradeHistoryQuerier); ok && primaryAccountID != "" {
 		for _, symbol := range cfg.Risk.AllowedSymbols {
