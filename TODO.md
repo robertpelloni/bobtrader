@@ -9,10 +9,10 @@
 - [x] Switch default from REST to WS once stable
 
 ### Strategy Enhancement
-- [ ] Kelly criterion / volatility-adjusted position sizing
-- [ ] Walk-forward parameter optimization on historical data
-- [x] MACD strategy in stream mode
-- [ ] ATR-based dynamic sizing
+- [x] Kelly criterion / volatility-adjusted position sizing
+- [x] Walk-forward parameter optimization on historical data
+- [ ] MACD strategy in stream mode
+- [x] ATR-based dynamic sizing
 
 ### Real Exchange Integration
 - [x] Wire execution to real Binance spot API
