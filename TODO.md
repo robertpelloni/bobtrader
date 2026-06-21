@@ -10,8 +10,8 @@
 
 ### Strategy Enhancement
 - [x] Kelly criterion / volatility-adjusted position sizing
-- [x] Walk-forward parameter optimization on historical data
-- [ ] MACD strategy in stream mode
+- [ ] Walk-forward parameter optimization on historical data
+- [x] MACD strategy in stream mode
 - [x] ATR-based dynamic sizing
 
 ### Real Exchange Integration
@@ -136,7 +136,7 @@
 
 - [ ] Deploy to live market conditions (real capital, not paper)
 - [ ] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`
-- [x] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
+- [ ] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
 - [ ] Portfolio rebalancer with wash-sale prevention
 - [ ] Drawdown monitoring with auto-shutdown
 - [ ] Compliance reporting (risk flags, recommendations)
