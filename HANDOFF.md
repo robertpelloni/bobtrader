@@ -31,7 +31,7 @@ During this session, we completed several major milestones on the `v2.1.x` roadm
 
 *   The project is now fully compiling, and all tests pass (ignoring flaky live-connection tests in CI).
 *   The `TODO.md` and `ROADMAP.md` have been updated to reflect the completed tasks.
-*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Deploy to live market conditions (real capital, not paper)".
+*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Walk-forward parameter optimization on historical data".
 
 ## Key Learnings & Context
 *   **Binance JSON APIs**: Must use `json.Number` for numeric fields that could be exceptionally large or inconsistently formatted as strings vs numbers (e.g., `E` EventTime, `c` Price).
