@@ -10,7 +10,7 @@
 
 ### Strategy Enhancement
 - [x] Kelly criterion / volatility-adjusted position sizing
-- [ ] Walk-forward parameter optimization on historical data
+- [x] Walk-forward parameter optimization on historical data
 - [x] MACD strategy in stream mode
 - [x] ATR-based dynamic sizing
 
