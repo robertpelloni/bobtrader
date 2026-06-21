@@ -50,14 +50,14 @@ type Discrepancy struct {
 	InternalStatus string
 	ExchangeStatus string
 	Description    string
-	Remote         *exchange.Order
+	Remote         *OrderStatus
 }
 
 // OrderQuerier is an optional interface that adapters can implement to query
 // individual order status. If not implemented, the reconciler falls back to
 // a simple consistency check.
 type OrderQuerier interface {
-	QueryOrder(ctx context.Context, symbol, orderID string) (exchange.Order, error)
+	QueryOrder(ctx context.Context, symbol, orderID string) (OrderStatus, error)
 }
 
 // ReconcileOrders checks a batch of local orders against the exchange.
@@ -102,19 +102,19 @@ func (r *Reconciler) ReconcileOrders(ctx context.Context, localOrders []exchange
 		}
 
 		// Compare statuses
-		if normalizeStatus(string(local.Status)) == normalizeStatus(string(remote.Status)) {
+		if normalizeStatus(string(local.Status)) == normalizeStatus(remote.Status) {
 			result.Matched++
 		} else {
 			result.Discrepancies = append(result.Discrepancies, Discrepancy{
 				OrderID:        local.ID,
 				InternalStatus: string(local.Status),
-				ExchangeStatus: string(remote.Status),
+				ExchangeStatus: remote.Status,
 				Description:    fmt.Sprintf("status mismatch: local=%s exchange=%s", local.Status, remote.Status),
 				Remote:         &remote,
 			})
 		}
 
-		switch normalizeStatus(string(remote.Status)) {
+		switch normalizeStatus(remote.Status) {
 		case "filled":
 			result.Filled++
 		case "partially_filled":
