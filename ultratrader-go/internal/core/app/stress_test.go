@@ -31,9 +31,9 @@ func TestPerformanceStress(t *testing.T) {
 
 	cfg.Accounts = []config.AccountConfig{
 		{
-			ID: "stress-account",
-			Name: "Stress Test Account",
-			Enabled: true,
+			ID:       "stress-account",
+			Name:     "Stress Test Account",
+			Enabled:  true,
 			Exchange: "paper-market-aware",
 		},
 	}

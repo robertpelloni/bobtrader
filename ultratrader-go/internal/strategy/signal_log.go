@@ -37,23 +37,23 @@ type LoggedSignal struct {
 
 // StrategyStats tracks per-strategy performance.
 type StrategyStats struct {
-	Name        string  `json:"name"`
-	SignalsTotal int    `json:"signals_total"`
-	Executed    int     `json:"executed"`
-	Blocked     int     `json:"blocked"`
-	Skipped     int     `json:"skipped"`
-	WinTrades   int     `json:"win_trades"`
-	LossTrades  int     `json:"loss_trades"`
-	TotalPnL    float64 `json:"total_pnl"`
-	WinRate     float64 `json:"win_rate"`
-	SuccessRate float64 `json:"success_rate"` // executed / total signals
+	Name         string  `json:"name"`
+	SignalsTotal int     `json:"signals_total"`
+	Executed     int     `json:"executed"`
+	Blocked      int     `json:"blocked"`
+	Skipped      int     `json:"skipped"`
+	WinTrades    int     `json:"win_trades"`
+	LossTrades   int     `json:"loss_trades"`
+	TotalPnL     float64 `json:"total_pnl"`
+	WinRate      float64 `json:"win_rate"`
+	SuccessRate  float64 `json:"success_rate"` // executed / total signals
 }
 
 // SignalLog records all strategy signals and their outcomes.
 type SignalLog struct {
-	mu       sync.Mutex
-	signals  []LoggedSignal
-	maxSize  int
+	mu          sync.Mutex
+	signals     []LoggedSignal
+	maxSize     int
 	persistPath string
 	persistMu   sync.Mutex
 	lastPersist int // index of last persisted signal

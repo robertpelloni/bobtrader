@@ -138,5 +138,5 @@
 - [ ] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`
 - [x] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
 - [x] Portfolio rebalancer with wash-sale prevention
-- [ ] Drawdown monitoring with auto-shutdown
+- [x] Drawdown monitoring with auto-shutdown
 - [ ] Compliance reporting (risk flags, recommendations)

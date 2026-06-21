@@ -13,13 +13,13 @@ import (
 // price touches the lower band (oversold) and sells when price touches the
 // upper band (overbought).
 type BollingerReversion struct {
-	accountID   string
-	symbol      string
-	quantity    string
-	bb          *indicator.BollingerBands
-	warmup      int
-	period      int
-	lastSignal  string // "buy", "sell", or "" — prevents repeated same-direction signals
+	accountID  string
+	symbol     string
+	quantity   string
+	bb         *indicator.BollingerBands
+	warmup     int
+	period     int
+	lastSignal string // "buy", "sell", or "" — prevents repeated same-direction signals
 }
 
 func NewBollingerReversion(accountID, symbol, quantity string, period int, multiplier float64) *BollingerReversion {

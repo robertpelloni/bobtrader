@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/multiexchange"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockExchangeManagerV2 struct {
@@ -55,9 +55,9 @@ func TestLiquidityAggregator_SplitOrder(t *testing.T) {
 
 	for _, leg := range legs {
 		if leg.Exchange == "binance" {
-			assert.InDelta(t, 2.0 * 0.692, leg.Quantity, 0.01)
+			assert.InDelta(t, 2.0*0.692, leg.Quantity, 0.01)
 		} else if leg.Exchange == "coinbase" {
-			assert.InDelta(t, 2.0 * 0.308, leg.Quantity, 0.01)
+			assert.InDelta(t, 2.0*0.308, leg.Quantity, 0.01)
 		} else {
 			t.Errorf("unexpected exchange %s", leg.Exchange)
 		}

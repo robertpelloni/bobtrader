@@ -107,12 +107,12 @@ func (pa *PriceAggregator) DetectArbitrage(ctx context.Context, symbol string, m
 			spread := (highQuote.Price - lowQuote.Price) / lowQuote.Price
 			if spread >= minSpread {
 				opportunities = append(opportunities, ArbitrageOpportunity{
-					Symbol:      symbol,
-					BuyExchange: lowQuote.Exchange,
+					Symbol:       symbol,
+					BuyExchange:  lowQuote.Exchange,
 					SellExchange: highQuote.Exchange,
-					BuyPrice:    lowQuote.Price,
-					SellPrice:   highQuote.Price,
-					Spread:      spread,
+					BuyPrice:     lowQuote.Price,
+					SellPrice:    highQuote.Price,
+					Spread:       spread,
 				})
 			}
 		}

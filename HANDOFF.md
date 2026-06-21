@@ -22,12 +22,16 @@ During this session, we completed several major milestones on the `v2.1.x` roadm
 4.  **Strategy Enhancement & Tracking**:
     *   Updated the `MACDCrossover` strategy to support stream mode execution by implementing the `OnMarketTick` interface method.
     *   Updated `TODO.md` to accurately reflect features that were already built but not checked off: Kelly criterion / volatility-adjusted position sizing, ATR-based dynamic sizing, Walk-forward parameter optimization, and Multi-exchange price aggregation.
+5.  **Risk Management**:
+    *   Implemented `DrawdownMonitor` to track peak portfolio value and calculate drawdown against `MaxDrawdownPct`.
+    *   Integrated `DrawdownMonitor` into `app.go` background loop with an `os.Exit(1)` auto-shutdown trigger to prevent cascading losses.
+
 
 ## System State & Next Steps
 
 *   The project is now fully compiling, and all tests pass (ignoring flaky live-connection tests in CI).
 *   The `TODO.md` and `ROADMAP.md` have been updated to reflect the completed tasks.
-*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Drawdown monitoring with auto-shutdown" or "Deploy to live market conditions (real capital, not paper)".
+*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Deploy to live market conditions (real capital, not paper)".
 
 ## Key Learnings & Context
 *   **Binance JSON APIs**: Must use `json.Number` for numeric fields that could be exceptionally large or inconsistently formatted as strings vs numbers (e.g., `E` EventTime, `c` Price).

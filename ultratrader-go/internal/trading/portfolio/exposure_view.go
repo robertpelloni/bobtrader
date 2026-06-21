@@ -12,8 +12,8 @@ type USDTBalanceReader interface {
 }
 
 type ExposureView struct {
-	tracker    *Tracker
-	feed       marketdata.Feed
+	tracker       *Tracker
+	feed          marketdata.Feed
 	balanceReader USDTBalanceReader
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 )
 
-
 func buildCompositeWarmupTicks(n int, basePrice float64) []marketdata.Tick {
 	ticks := make([]marketdata.Tick, n)
 	for i := 0; i < n; i++ {

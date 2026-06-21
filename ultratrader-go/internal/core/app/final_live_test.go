@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
-	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
+	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 )
 
 func TestFinalLiveIntegration(t *testing.T) {
@@ -33,9 +33,9 @@ func TestFinalLiveIntegration(t *testing.T) {
 	// Wire to use real binance feed via paper-market-aware
 	cfg.Accounts = []config.AccountConfig{
 		{
-			ID: "final-test",
-			Name: "Final Live Test",
-			Enabled: true,
+			ID:       "final-test",
+			Name:     "Final Live Test",
+			Enabled:  true,
 			Exchange: "paper-market-aware",
 		},
 	}

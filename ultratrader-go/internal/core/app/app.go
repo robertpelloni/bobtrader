@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -56,6 +57,7 @@ type App struct {
 	executionManager *execution.Manager
 	reconciler       *reconciliation.Reconciler
 	reconcilerStop   func()
+	drawdownMonitor  *risk.DrawdownMonitor
 	strategyRuntime  *strategy.Runtime
 	scheduler        *strategyscheduler.EnhancedScheduler
 	schedulerService starter
@@ -144,8 +146,14 @@ func New(cfg config.Config) (*App, error) {
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
-	// Create reconciler using the paper adapter (which doesn't implement OrderQuerier yet, but falls back gracefully)
+	drawdownMonitor := risk.NewDrawdownMonitor(cfg.Risk.MaxDrawdownPct, func(reason string) {
+		logger.Error("AUTO-SHUTDOWN TRIGGERED", map[string]any{"reason": reason})
+		// In a real app, this would trigger graceful shutdown.
+		// For safety, we force exit to prevent further trading losses.
+		os.Exit(1)
+	})
 
+	// Create reconciler using the paper adapter (which doesn't implement OrderQuerier yet, but falls back gracefully)
 	reconciler := reconciliation.NewReconciler(marketAwarePaper)
 
 	// ── Risk Pipeline ──────────────────────────────────────────
@@ -427,6 +435,12 @@ func New(cfg config.Config) (*App, error) {
 				} else {
 					logger.Info("reconciliation completed", map[string]any{"summary": res.Summary()})
 				}
+
+				// Update drawdown monitor
+				currentVal := portfolioTracker.TotalMarketValue(reconcileCtx, marketDataFeed)
+				if err := drawdownMonitor.Update(reconcileCtx, currentVal); err != nil {
+					logger.Error("drawdown monitor error", map[string]any{"error": err.Error()})
+				}
 			}
 		}
 	}()
@@ -448,6 +462,7 @@ func New(cfg config.Config) (*App, error) {
 		executionManager: executionManager,
 		reconciler:       reconciler,
 		reconcilerStop:   reconcileCancel,
+		drawdownMonitor:  drawdownMonitor,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,

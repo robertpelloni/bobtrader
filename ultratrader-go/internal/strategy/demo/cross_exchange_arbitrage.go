@@ -16,15 +16,15 @@ import (
 // When Binance has BTC at $61,000 and Coinbase has it at $61,200,
 // we buy on Binance and sell on Coinbase for risk-free profit.
 type CrossExchangeArbitrage struct {
-	accountID       string
-	symbol          string
-	quantity        string
-	minSpreadPct    float64 // Minimum spread to trigger (e.g., 0.1%)
-	maxSpreadPct    float64 // Maximum spread (beyond this, probably bad data)
-	exchangePrices  map[string]float64
-	mu              sync.RWMutex
-	lastSignalTime  time.Time
-	cooldown        time.Duration
+	accountID      string
+	symbol         string
+	quantity       string
+	minSpreadPct   float64 // Minimum spread to trigger (e.g., 0.1%)
+	maxSpreadPct   float64 // Maximum spread (beyond this, probably bad data)
+	exchangePrices map[string]float64
+	mu             sync.RWMutex
+	lastSignalTime time.Time
+	cooldown       time.Duration
 }
 
 func NewCrossExchangeArbitrage(

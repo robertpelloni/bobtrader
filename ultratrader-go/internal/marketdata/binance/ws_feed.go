@@ -19,9 +19,9 @@ import (
 
 // StreamFeed implements marketdata.StreamFeed using Binance WebSocket streams.
 type StreamFeed struct {
-	adapter *binance.Adapter
-	mu      sync.Mutex
-	baseURL string
+	adapter         *binance.Adapter
+	mu              sync.Mutex
+	baseURL         string
 	dialAndReadFunc func(ctx context.Context, wsURL string, handler func([]byte)) error
 
 	connected   bool
@@ -249,8 +249,6 @@ func (f *StreamFeed) defaultDialAndRead(ctx context.Context, wsURL string, handl
 	}
 }
 
-
-
 // readWSFrame reads a single WebSocket frame from an io.Reader.
 // The w io.Writer is used to send pong responses.
 func readWSFrame(r io.Reader, w io.Writer) ([]byte, error) {
@@ -459,7 +457,6 @@ func dialTLS(ctx context.Context, addr string) (net.Conn, error) {
 		ServerName: host,
 	})
 }
-
 
 // IsConnected returns whether the WebSocket is currently connected.
 func (f *StreamFeed) IsConnected() bool {

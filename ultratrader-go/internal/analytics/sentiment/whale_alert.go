@@ -16,14 +16,14 @@ import (
 // Large outflows from exchanges = accumulation (bullish)
 // Large wallet-to-wallet = neutral but worth monitoring
 type WhaleAlertProvider struct {
-	name       string
-	apiKey     string // Whale Alert API key (free tier available)
-	client     *http.Client
-	cache      map[string]cachedWhaleData
-	mu         sync.RWMutex
-	logger     *logging.Logger
-	cacheTTL   time.Duration
-	minUSD     float64 // Minimum transaction size to consider (e.g., $1M)
+	name     string
+	apiKey   string // Whale Alert API key (free tier available)
+	client   *http.Client
+	cache    map[string]cachedWhaleData
+	mu       sync.RWMutex
+	logger   *logging.Logger
+	cacheTTL time.Duration
+	minUSD   float64 // Minimum transaction size to consider (e.g., $1M)
 }
 
 type cachedWhaleData struct {
@@ -34,15 +34,15 @@ type cachedWhaleData struct {
 
 // WhaleAlert represents a large transaction detected
 type WhaleAlert struct {
-	TxHash      string
-	From        string
-	To          string
-	Amount      float64
-	Symbol      string
-	USDValue    float64
-	Timestamp   time.Time
-	AlertType   string // "exchange_inflow", "exchange_outflow", "wallet_transfer", "mint", "burn"
-	IsExchangeIn bool
+	TxHash        string
+	From          string
+	To            string
+	Amount        float64
+	Symbol        string
+	USDValue      float64
+	Timestamp     time.Time
+	AlertType     string // "exchange_inflow", "exchange_outflow", "wallet_transfer", "mint", "burn"
+	IsExchangeIn  bool
 	IsExchangeOut bool
 }
 
@@ -104,21 +104,21 @@ func (p *WhaleAlertProvider) FetchSentiment(ctx context.Context, symbol string) 
 	var result struct {
 		Count        int `json:"count"`
 		Transactions []struct {
-			Hash        string `json:"hash"`
-			Timestamp   int64  `json:"timestamp"`
-			From        struct {
-				Address  string `json:"address"`
-				Owner    string `json:"owner"`
+			Hash      string `json:"hash"`
+			Timestamp int64  `json:"timestamp"`
+			From      struct {
+				Address   string `json:"address"`
+				Owner     string `json:"owner"`
 				OwnerType string `json:"owner_type"` // "exchange", "unknown", "wallet"
 			} `json:"from"`
 			To struct {
-				Address  string `json:"address"`
-				Owner    string `json:"owner"`
+				Address   string `json:"address"`
+				Owner     string `json:"owner"`
 				OwnerType string `json:"owner_type"`
 			} `json:"to"`
-			Amount      float64 `json:"amount"`
-			Symbol      string  `json:"symbol"`
-			TransactionCount int `json:"transaction_count"`
+			Amount           float64 `json:"amount"`
+			Symbol           string  `json:"symbol"`
+			TransactionCount int     `json:"transaction_count"`
 		} `json:"transactions"`
 	}
 
@@ -162,9 +162,9 @@ func (p *WhaleAlertProvider) analyzeTransactions(txs []struct {
 		Owner     string `json:"owner"`
 		OwnerType string `json:"owner_type"`
 	} `json:"to"`
-	Amount          float64 `json:"amount"`
-	Symbol          string  `json:"symbol"`
-	TransactionCount int    `json:"transaction_count"`
+	Amount           float64 `json:"amount"`
+	Symbol           string  `json:"symbol"`
+	TransactionCount int     `json:"transaction_count"`
 }) []WhaleAlert {
 
 	var alerts []WhaleAlert

@@ -3,8 +3,8 @@ package multiexchange_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/multiexchange"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestArbitrageExecutor_Scan(t *testing.T) {

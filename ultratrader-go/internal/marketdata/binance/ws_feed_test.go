@@ -105,7 +105,7 @@ func TestNewStreamFeed(t *testing.T) {
 // timeout. This reproduces the minimal scenario where the feed is created,
 // a subscription is started, and a tick is received on the channel.
 func TestWSFeed_TickReception(t *testing.T) {
-    t.Skip("skipping tick reception test during ci as stream may be quiet or network blocked")
+	t.Skip("skipping tick reception test during ci as stream may be quiet or network blocked")
 	adapter := exchangebinance.New(exchangebinance.Config{})
 
 	if adapter.IsTestnet() {

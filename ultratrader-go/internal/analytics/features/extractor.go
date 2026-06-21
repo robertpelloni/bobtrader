@@ -38,10 +38,10 @@ func NewExtractor(priceWindow, volWindow int) *Extractor {
 	return &Extractor{
 		priceWindow: priceWindow,
 		volWindow:   volWindow,
-		sma:        indicator.NewSMA(priceWindow),
-		ema:        indicator.NewEMA(priceWindow),
-		rsi:        indicator.NewRSI(14),
-		volSMA:    indicator.NewVolumeSMA(volWindow),
+		sma:         indicator.NewSMA(priceWindow),
+		ema:         indicator.NewEMA(priceWindow),
+		rsi:         indicator.NewRSI(14),
+		volSMA:      indicator.NewVolumeSMA(volWindow),
 	}
 }
 

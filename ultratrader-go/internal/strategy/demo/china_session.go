@@ -25,14 +25,14 @@ import (
 // - Sell INTO the Asia session spike (01:30-03:00 UTC)
 // - Also catches the "China lunch break" pattern (04:00-05:00 UTC = 12-1PM Beijing)
 type ChinaSessionStrategy struct {
-	accountID     string
-	symbol        string
-	quantity      string
+	accountID      string
+	symbol         string
+	quantity       string
 	lastSignalHour int
-	inPosition    bool
-	entryPrice    float64
-	priceHistory  []float64
-	maxHistory    int
+	inPosition     bool
+	entryPrice     float64
+	priceHistory   []float64
+	maxHistory     int
 }
 
 func NewChinaSessionStrategy(
@@ -225,16 +225,16 @@ func (s *ChinaSessionStrategy) GetSessionInfo() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"utc_time":      now.Format("15:04"),
-		"beijing_time":  beijing.Format("15:04"),
-		"session":       session,
-		"in_position":   s.inPosition,
-		"entry_price":   s.entryPrice,
+		"utc_time":     now.Format("15:04"),
+		"beijing_time": beijing.Format("15:04"),
+		"session":      session,
+		"in_position":  s.inPosition,
+		"entry_price":  s.entryPrice,
 		"windows": map[string]string{
-			"pre_asia_buy":      "00:00-01:00 UTC (8-9PM Beijing)",
-			"asia_spike_sell":   "01:30-03:00 UTC (9:30-11AM Beijing)",
-			"lunch_break_buy":   "04:00-05:00 UTC (12-1PM Beijing)",
-			"europe_overlap":    "08:00-10:00 UTC (4-6PM Beijing)",
+			"pre_asia_buy":    "00:00-01:00 UTC (8-9PM Beijing)",
+			"asia_spike_sell": "01:30-03:00 UTC (9:30-11AM Beijing)",
+			"lunch_break_buy": "04:00-05:00 UTC (12-1PM Beijing)",
+			"europe_overlap":  "08:00-10:00 UTC (4-6PM Beijing)",
 		},
 	}
 }

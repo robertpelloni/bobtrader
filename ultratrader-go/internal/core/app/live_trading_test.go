@@ -10,13 +10,13 @@ func TestLiveTradingInitialization(t *testing.T) {
 	cfg := config.Default()
 	cfg.Accounts = []config.AccountConfig{
 		{
-			ID: "live-test",
-			Name: "Live Test",
-			Exchange: "binance",
-			Enabled: true,
-			APIKey: "test-key",
+			ID:        "live-test",
+			Name:      "Live Test",
+			Exchange:  "binance",
+			Enabled:   true,
+			APIKey:    "test-key",
 			SecretKey: "test-secret",
-			Testnet: true,
+			Testnet:   true,
 		},
 	}
 

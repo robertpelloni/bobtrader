@@ -73,17 +73,17 @@ type Adapter interface {
 }
 
 type Trade struct {
-	ID            string
-	OrderID       string
-	Symbol        string
-	Side          OrderSide
-	Price         string
-	Quantity      string
-	QuoteQuantity string
-	Commission    string
+	ID              string
+	OrderID         string
+	Symbol          string
+	Side            OrderSide
+	Price           string
+	Quantity        string
+	QuoteQuantity   string
+	Commission      string
 	CommissionAsset string
-	Time          time.Time
-	IsMaker       bool
+	Time            time.Time
+	IsMaker         bool
 }
 
 type TradeHistoryQuerier interface {

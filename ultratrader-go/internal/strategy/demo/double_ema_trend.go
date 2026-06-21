@@ -12,27 +12,27 @@ import (
 // DoubleEMATrendStrategy implements a trend-following strategy with an EMA filter,
 // inspired by freqtrade references.
 type DoubleEMATrendStrategy struct {
-	mu           sync.Mutex
-	accountID    string
-	symbol       string
-	quantity     string
-	fastPeriod   int
-	slowPeriod   int
-	trendPeriod  int
-	history      []marketdata.Candle
-	lastAction   string
+	mu          sync.Mutex
+	accountID   string
+	symbol      string
+	quantity    string
+	fastPeriod  int
+	slowPeriod  int
+	trendPeriod int
+	history     []marketdata.Candle
+	lastAction  string
 }
 
 func NewDoubleEMATrendStrategy(accountID, symbol, quantity string, fast, slow, trend int) *DoubleEMATrendStrategy {
 	return &DoubleEMATrendStrategy{
-		accountID:    accountID,
-		symbol:       symbol,
-		quantity:     quantity,
-		fastPeriod:   fast,
-		slowPeriod:   slow,
-		trendPeriod:  trend,
-		history:      make([]marketdata.Candle, 0),
-		lastAction:   "none",
+		accountID:   accountID,
+		symbol:      symbol,
+		quantity:    quantity,
+		fastPeriod:  fast,
+		slowPeriod:  slow,
+		trendPeriod: trend,
+		history:     make([]marketdata.Candle, 0),
+		lastAction:  "none",
 	}
 }
 

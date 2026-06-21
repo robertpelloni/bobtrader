@@ -111,8 +111,6 @@ func extractStrategyName(reason string) string {
 	return name
 }
 
-
-
 func riskSide(action string) risk.OrderSide {
 	switch strings.ToLower(action) {
 	case "buy":

@@ -24,10 +24,10 @@ type CooldownGuard struct {
 
 func NewCooldownGuard(duration time.Duration) *CooldownGuard {
 	return &CooldownGuard{
-		BuyDuration: duration,
+		BuyDuration:  duration,
 		SellDuration: duration / 3, // sells cool down 3x faster than buys
-		lastBuy:     map[string]time.Time{},
-		lastSell:    map[string]time.Time{},
+		lastBuy:      map[string]time.Time{},
+		lastSell:     map[string]time.Time{},
 	}
 }
 

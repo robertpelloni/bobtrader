@@ -14,27 +14,27 @@ type Allocation struct {
 
 // Holding represents a current portfolio position.
 type Holding struct {
-	Symbol  string
+	Symbol   string
 	Quantity float64
-	Value   float64 // Current market value
+	Value    float64 // Current market value
 }
 
 // RebalanceOrder represents a trade needed to rebalance.
 type RebalanceOrder struct {
-	Symbol    string  `json:"symbol"`
-	Side      string  `json:"side"` // "buy" or "sell"
-	Quantity  float64 `json:"quantity"`
-	EstValue  float64 `json:"est_value"` // Estimated dollar value
-	DriftPct  float64 `json:"drift_pct"` // Current drift from target
+	Symbol   string  `json:"symbol"`
+	Side     string  `json:"side"` // "buy" or "sell"
+	Quantity float64 `json:"quantity"`
+	EstValue float64 `json:"est_value"` // Estimated dollar value
+	DriftPct float64 `json:"drift_pct"` // Current drift from target
 }
 
 // RebalanceResult contains the rebalancing analysis.
 type RebalanceResult struct {
-	Orders      []RebalanceOrder `json:"orders"`
-	TotalBuys   float64          `json:"total_buys"`
-	TotalSells  float64          `json:"total_sells"`
-	MaxDrift    float64          `json:"max_drift"`
-	NeedsRebalance bool          `json:"needs_rebalance"`
+	Orders         []RebalanceOrder `json:"orders"`
+	TotalBuys      float64          `json:"total_buys"`
+	TotalSells     float64          `json:"total_sells"`
+	MaxDrift       float64          `json:"max_drift"`
+	NeedsRebalance bool             `json:"needs_rebalance"`
 }
 
 // Rebalancer manages portfolio target allocations and drift detection.
@@ -157,7 +157,7 @@ func (r *Rebalancer) Compute(holdings []Holding) RebalanceResult {
 	})
 
 	return RebalanceResult{
-		Orders:          orders,
+		Orders:         orders,
 		TotalBuys:      totalBuys,
 		TotalSells:     totalSells,
 		MaxDrift:       maxDrift,

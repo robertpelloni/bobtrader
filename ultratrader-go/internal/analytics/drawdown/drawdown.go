@@ -141,12 +141,12 @@ func (t *Tracker) GetStatus() map[string]interface{} {
 	defer t.mu.RUnlock()
 
 	return map[string]interface{}{
-		"peak_value":      t.peakValue,
-		"current_value":   t.currentValue,
-		"current_dd":      t.currentDD,
-		"max_dd":          t.maxDrawdown,
-		"in_drawdown":     t.currentDD > 0,
-		"history_count":   len(t.history),
+		"peak_value":    t.peakValue,
+		"current_value": t.currentValue,
+		"current_dd":    t.currentDD,
+		"max_dd":        t.maxDrawdown,
+		"in_drawdown":   t.currentDD > 0,
+		"history_count": len(t.history),
 	}
 }
 
@@ -374,9 +374,9 @@ func (g *Guard) GetStatus() map[string]interface{} {
 	defer g.mu.RUnlock()
 
 	status := map[string]interface{}{
-		"max_drawdown_pct":   g.maxDrawdownPct,
-		"cooldown_duration":  g.cooldownDuration.String(),
-		"trading_allowed":    g.IsTradingAllowed(),
+		"max_drawdown_pct":  g.maxDrawdownPct,
+		"cooldown_duration": g.cooldownDuration.String(),
+		"trading_allowed":   g.IsTradingAllowed(),
 	}
 
 	if g.tracker != nil {

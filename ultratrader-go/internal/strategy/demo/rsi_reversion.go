@@ -14,14 +14,14 @@ import (
 // and sell signals when RSI rises above overbought. It is a mean-reversion
 // strategy that works well in ranging markets.
 type RSIReversion struct {
-	accountID    string
-	symbol       string
-	quantity     string
-	period       int
-	oversold     float64
-	overbought   float64
-	rsi          *indicator.RSI
-	lastSignal   string // "buy" or "sell" — prevents repeated signals
+	accountID  string
+	symbol     string
+	quantity   string
+	period     int
+	oversold   float64
+	overbought float64
+	rsi        *indicator.RSI
+	lastSignal string // "buy" or "sell" — prevents repeated signals
 }
 
 func NewRSIReversion(accountID, symbol, quantity string, period int, oversold, overbought float64) *RSIReversion {

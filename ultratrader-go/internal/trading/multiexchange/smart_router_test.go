@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/multiexchange"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockExchangeManager struct{}

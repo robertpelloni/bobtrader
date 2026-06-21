@@ -15,22 +15,22 @@ import (
 // YouTubeSentimentProvider analyzes crypto YouTube channels for market sentiment.
 // Monitors channels like Arcane Bear, Benjamin Cowen, Coin Bureau, etc.
 type YouTubeSentimentProvider struct {
-	name       string
-	apiKey     string // YouTube Data API key
-	client     *http.Client
-	cache      map[string]cachedSentiment
-	mu         sync.RWMutex
-	logger     *logging.Logger
-	cacheTTL   time.Duration
-	channels   []YouTubeChannel
-	keywords   SentimentKeywords
+	name     string
+	apiKey   string // YouTube Data API key
+	client   *http.Client
+	cache    map[string]cachedSentiment
+	mu       sync.RWMutex
+	logger   *logging.Logger
+	cacheTTL time.Duration
+	channels []YouTubeChannel
+	keywords SentimentKeywords
 }
 
 type YouTubeChannel struct {
-	ChannelID   string
-	Name        string
-	Weight      float64 // How influential (0.0-1.0)
-	Focus       []string // e.g., ["BTC", "ETH", "macro"]
+	ChannelID string
+	Name      string
+	Weight    float64  // How influential (0.0-1.0)
+	Focus     []string // e.g., ["BTC", "ETH", "macro"]
 }
 
 type SentimentKeywords struct {

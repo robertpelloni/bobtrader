@@ -12,10 +12,14 @@ type mockExecutionAdapter struct {
 	lastOrder exchange.Order
 }
 
-func (m *mockExecutionAdapter) Name() string                                               { return "mock" }
-func (m *mockExecutionAdapter) Capabilities() []exchange.Capability                        { return nil }
-func (m *mockExecutionAdapter) ListMarkets(ctx context.Context) ([]exchange.Market, error) { return nil, nil }
-func (m *mockExecutionAdapter) Balances(ctx context.Context) ([]exchange.Balance, error)   { return nil, nil }
+func (m *mockExecutionAdapter) Name() string                        { return "mock" }
+func (m *mockExecutionAdapter) Capabilities() []exchange.Capability { return nil }
+func (m *mockExecutionAdapter) ListMarkets(ctx context.Context) ([]exchange.Market, error) {
+	return nil, nil
+}
+func (m *mockExecutionAdapter) Balances(ctx context.Context) ([]exchange.Balance, error) {
+	return nil, nil
+}
 func (m *mockExecutionAdapter) PlaceOrder(ctx context.Context, r exchange.OrderRequest) (exchange.Order, error) {
 	m.lastOrder = exchange.Order{
 		ID:       "mock-1",

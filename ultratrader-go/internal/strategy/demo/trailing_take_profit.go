@@ -21,18 +21,18 @@ import (
 // 4. If price drops stopLossPct% below entry, cut losses (stop-loss)
 // 5. If position is held longer than maxHoldDuration, sell (time-based exit)
 type TrailingTakeProfit struct {
-	accountID    string
-	symbol       string
-	quantity     string
-	activatePct  float64       // profit % above entry to activate trailing
-	trailPct     float64       // trail gap % below peak
-	stopLossPct  float64       // max loss % before cutting (0 = disabled)
-	maxHold      time.Duration // max time to hold a position (0 = disabled)
-	portfolio    PositionReader
-	feed         marketdata.Feed
-	entryPrice   float64
+	accountID     string
+	symbol        string
+	quantity      string
+	activatePct   float64       // profit % above entry to activate trailing
+	trailPct      float64       // trail gap % below peak
+	stopLossPct   float64       // max loss % before cutting (0 = disabled)
+	maxHold       time.Duration // max time to hold a position (0 = disabled)
+	portfolio     PositionReader
+	feed          marketdata.Feed
+	entryPrice    float64
 	highWaterMark float64
-	activated    bool
+	activated     bool
 	positionKnown bool
 	positionStart time.Time // when we first detected the position
 }
@@ -218,7 +218,7 @@ func (s *TrailingTakeProfit) OnMarketTick(_ context.Context, tick marketdata.Tic
 			AccountID: s.accountID,
 			Symbol:    s.symbol,
 			Action:    "sell",
-			Reason:    fmt.Sprintf("trailing TP: price %.2f <= trail %.2f (entry %.2f, high %.2f)",
+			Reason: fmt.Sprintf("trailing TP: price %.2f <= trail %.2f (entry %.2f, high %.2f)",
 				price, trailStop, s.entryPrice, s.highWaterMark),
 			Quantity:  qty,
 			OrderType: "market",
