@@ -25,17 +25,13 @@ During this session, we completed several major milestones on the `v2.1.x` roadm
 5.  **Risk Management**:
     *   Implemented `DrawdownMonitor` to track peak portfolio value and calculate drawdown against `MaxDrawdownPct`.
     *   Integrated `DrawdownMonitor` into `app.go` background loop with an `os.Exit(1)` auto-shutdown trigger to prevent cascading losses.
-6.  **Backtest & Optimization**:
-    *   Unified `ParameterSet` to use generic `interface{}` maps to support flexible strategy arguments.
-    *   Implemented `BacktestEvaluator` in the optimizer package to allow `WalkForwardOptimizer` to run real historical backtests using the `backtest.Engine`.
-    *   Created skeleton HTTP API endpoints for `/api/strategy/backtest` and `/api/hyperopt/run` to prepare for frontend integration.
 
 
 ## System State & Next Steps
 
 *   The project is now fully compiling, and all tests pass (ignoring flaky live-connection tests in CI).
 *   The `TODO.md` and `ROADMAP.md` have been updated to reflect the completed tasks.
-*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Deploy to live market conditions (real capital, not paper)".
+*   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The next logical step would be "Walk-forward parameter optimization on historical data".
 
 ## Key Learnings & Context
 *   **Binance JSON APIs**: Must use `json.Number` for numeric fields that could be exceptionally large or inconsistently formatted as strings vs numbers (e.g., `E` EventTime, `c` Price).

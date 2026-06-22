@@ -135,7 +135,7 @@
 ## Remaining Backlog
 
 - [x] Deploy to live market conditions (real capital, not paper)
-- [ ] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`
+- [x] Search and categorize next 43 candidates in `ASSIMILATION_CANDIDATES.md`
 - [x] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
 - [x] Portfolio rebalancer with wash-sale prevention
 - [x] Drawdown monitoring with auto-shutdown
