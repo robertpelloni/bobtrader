@@ -5,6 +5,10 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.1.6] - 2026-06-21
+### Added
+- **Walk-forward parameter optimization** — Unified `ParameterSet` types to allow flexible parameter definitions (`map[string]interface{}`). Created the `BacktestEvaluator` bridge inside `internal/backtest/optimizer` to allow the WalkForwardOptimizer to run genuine backtests on sliced historical market data, rather than abstract unit-tests. Exposed stubs for `POST /api/strategy/backtest` and `POST /api/hyperopt/run` in the HTTP API.
+
 ## [2.1.5] - 2026-06-21
 ### Added
 - **Drawdown Monitor and Auto-Shutdown** — Added `DrawdownMonitor` to `internal/risk` to track peak portfolio value and calculate current drawdown. If the configured `MaxDrawdownPct` is exceeded, the application triggers an auto-shutdown (`os.Exit(1)`) to prevent further losses. This is wired into the main background loop in `app.go`.
