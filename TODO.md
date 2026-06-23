@@ -139,4 +139,4 @@
 - [x] Multi-exchange price aggregation (KuCoin, Coinbase adapters)
 - [x] Portfolio rebalancer with wash-sale prevention
 - [x] Drawdown monitoring with auto-shutdown
-- [ ] Compliance reporting (risk flags, recommendations)
+- [x] Compliance reporting (risk flags, recommendations)
