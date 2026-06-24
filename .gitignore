@@ -19,3 +19,4 @@ ultratrader-go/data/
 
 # Binance API credentials (never commit these)
 ultratrader-go/config/secrets/
+ultratrader-ui/node_modules/
