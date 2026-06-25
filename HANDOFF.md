@@ -2,7 +2,7 @@
 
 ## Summary of Accomplishments
 
-During this session, we completed several major milestones on the `v2.2.x` roadmap for BobTrader, primarily focusing on WebSocket hardening and React UI scaffolding.
+During this session, we completed several major milestones on the `v2.1.x` roadmap for BobTrader, primarily focusing on WebSocket hardening and React UI scaffolding.
 
 1.  **Dashboard Modernization**:
     *   Scaffolded a new React/Vite Single Page Application (SPA) in `ultratrader-ui`.

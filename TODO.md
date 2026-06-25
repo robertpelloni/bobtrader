@@ -1,6 +1,6 @@
 # TODO
 
-## Current Sprint (v2.2.x)
+## Current Sprint (v2.1.x)
 
 ### WebSocket Feed
 - [x] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
