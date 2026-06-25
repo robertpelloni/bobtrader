@@ -143,7 +143,7 @@ func Default() Config {
 			EMASlow:                21,
 		},
 		MarketData: MarketDataConfig{
-			Source:         "rest",
+			Source:         "websocket",
 			InitialBalance: 10000,
 		},
 		Accounts: []AccountConfig{{
