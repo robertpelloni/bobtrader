@@ -14,10 +14,10 @@ import (
 // market prices obtained from a marketdata.Feed. This allows simulated trades
 // to use live Binance data while never placing real orders.
 type MarketAwareAdapter struct {
-	mu      sync.Mutex
-	feed    marketdata.Feed
-	balance float64 // USDT balance
-	orders  []exchange.Order
+	mu        sync.Mutex
+	feed      marketdata.Feed
+	balance   float64 // USDT balance
+	orders    []exchange.Order
 	positions map[string]float64 // symbol -> quantity held
 }
 
@@ -63,8 +63,8 @@ func (a *MarketAwareAdapter) Balances(_ context.Context) ([]exchange.Balance, er
 	for asset, qty := range a.positions {
 		if qty > 0 {
 			out = append(out, exchange.Balance{
-				Asset: asset,
-				Free:  fmt.Sprintf("%.8f", qty),
+				Asset:  asset,
+				Free:   fmt.Sprintf("%.8f", qty),
 				Locked: "0",
 			})
 		}

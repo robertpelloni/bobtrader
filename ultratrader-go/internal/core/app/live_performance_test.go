@@ -34,9 +34,9 @@ func TestLivePerformanceIntegration(t *testing.T) {
 	// Wire to use real binance feed
 	cfg.Accounts = []config.AccountConfig{
 		{
-			ID: "test-live",
-			Name: "Live Integration Test",
-			Enabled: true,
+			ID:       "test-live",
+			Name:     "Live Integration Test",
+			Enabled:  true,
 			Exchange: "paper-market-aware",
 		},
 	}

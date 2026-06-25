@@ -35,7 +35,7 @@
     "ema_slow": 21
   },
   "market_data": {
-    "source": "rest",
+    "source": "websocket",
     "initial_balance": 55
   },
   "accounts": [

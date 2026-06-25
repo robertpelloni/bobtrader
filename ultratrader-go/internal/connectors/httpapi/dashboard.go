@@ -1083,7 +1083,7 @@ function renderConfig() {
 // ─── Main Data Fetch ──────────────────────────────────────────
 async function refreshDashboard() {
   try {
-    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config] = await Promise.all([
+    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config, wsHealth] = await Promise.all([
       fetchJson('/api/status'),
       fetchJson('/api/portfolio'),
       fetchJson('/api/portfolio-summary'),
@@ -1096,10 +1096,11 @@ async function refreshDashboard() {
       fetchJson('/api/runtime-reports/latest'),
       fetchJson('/api/runtime-reports/history?type=metrics-snapshot&limit=20'),
       fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20'),
-      fetchJson('/api/config')
+      fetchJson('/api/config'),
+      fetchJson('/api/ws-health').catch(e => ({}))
     ]);
 
-    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist,
+    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, wsHealth,
  configRisk: config.risk, configScheduler: config.scheduler, configStrategy: config.strategy, configMarketData: config.market_data
  };
 
@@ -1121,8 +1122,16 @@ async function refreshDashboard() {
     const t = trends || {};
 
     // ═══ Overview KPIs ═══
+    let feedStatus = "REST";
+    let feedColor = "cyan";
+    if (wsHealth && wsHealth.connected !== undefined) {
+       feedStatus = wsHealth.connected ? "WS Connected" : "WS Offline";
+       feedColor = wsHealth.connected ? "green" : "red";
+    }
+
     document.getElementById('overview-kpis').innerHTML = [
       kpi('Status', status.ready ? 'Operational' : 'Down', status.ready ? 'green' : 'red'),
+      kpi('Market Feed', feedStatus, feedColor, wsHealth?.staleness_ms !== undefined && wsHealth.staleness_ms >= 0 ? wsHealth.staleness_ms + 'ms ago' : ''),
       kpi('Market Value', '$' + fmt(ps.total_market_value), 'cyan',
         deltaHtml(t.portfolio_value?.latest, t.portfolio_value?.previous)),
       kpi('Realized PnL', '$' + fmt(ps.total_realized_pnl), ps.total_realized_pnl >= 0 ? 'green' : 'red'),

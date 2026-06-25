@@ -1,2 +1,7 @@
 data/
 *.log
+
+# Build artifacts
+ultratrader
+*.exe
+coverage.out

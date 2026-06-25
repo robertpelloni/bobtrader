@@ -37,6 +37,16 @@ func (r *Repository) Save(order exchange.Order) {
 	r.orders[order.ID] = StoredOrder{Order: order, SavedAt: time.Now().UTC()}
 }
 
+func (r *Repository) UpdateStatus(orderID string, status exchange.OrderStatus, executedQty string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if stored, ok := r.orders[orderID]; ok {
+		stored.Order.Status = status
+		stored.Order.ExecutedQty = executedQty
+		r.orders[orderID] = stored
+	}
+}
+
 func (r *Repository) List() []exchange.Order {
 	stored := r.ListStored()
 	out := make([]exchange.Order, 0, len(stored))

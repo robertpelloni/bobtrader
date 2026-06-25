@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
@@ -27,43 +29,46 @@ import (
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
-	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/reconciliation"
 )
 
 type starter interface{ Start(context.Context) }
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
-	config                  config.Config
-	logger                  *logging.Logger
-	eventLog                *eventlog.Log
-	snapshotStore           *snapshot.Store
-	orderStore              *orders.Store
-	reportStore             *reports.Store
-	accountService          *account.Service
-	exchangeRegistry        *exchange.Registry
-	marketDataFeed          marketdata.StreamFeed
-	metricsTracker          *metrics.Tracker
-	executionRepo           *execution.Repository
-	portfolioTracker        *portfolio.Tracker
-	executionService        *execution.Service
-	executionManager        *execution.Manager
-	strategyRuntime         *strategy.Runtime
-	scheduler               *strategyscheduler.EnhancedScheduler
-	schedulerService        starter
-	cycleRunner             cycleRunner
-	pipeline                *risk.Pipeline
-	signalLog               *strategy.SignalLog
-	signalLogStop           func()
-	marketAwarePaper        *exchangepaper.MarketAwareAdapter
-	balanceReader           strategydemo.BalanceReader
-	httpHandler             http.Handler
-	httpRuntime             *httpapi.Runtime
+	config           config.Config
+	logger           *logging.Logger
+	eventLog         *eventlog.Log
+	snapshotStore    *snapshot.Store
+	orderStore       *orders.Store
+	reportStore      *reports.Store
+	accountService   *account.Service
+	exchangeRegistry *exchange.Registry
+	marketDataFeed   marketdata.StreamFeed
+	metricsTracker   *metrics.Tracker
+	executionRepo    *execution.Repository
+	portfolioTracker *portfolio.Tracker
+	executionService *execution.Service
+	executionManager *execution.Manager
+	reconciler       *reconciliation.Reconciler
+	reconcilerStop   func()
+	drawdownMonitor  *risk.DrawdownMonitor
+	strategyRuntime  *strategy.Runtime
+	scheduler        *strategyscheduler.EnhancedScheduler
+	schedulerService starter
+	cycleRunner      cycleRunner
+	pipeline         *risk.Pipeline
+	signalLog        *strategy.SignalLog
+	signalLogStop    func()
+	marketAwarePaper *exchangepaper.MarketAwareAdapter
+	balanceReader    strategydemo.BalanceReader
+	httpHandler      http.Handler
+	httpRuntime      *httpapi.Runtime
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -141,6 +146,16 @@ func New(cfg config.Config) (*App, error) {
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
+	drawdownMonitor := risk.NewDrawdownMonitor(cfg.Risk.MaxDrawdownPct, func(reason string) {
+		logger.Error("AUTO-SHUTDOWN TRIGGERED", map[string]any{"reason": reason})
+		// In a real app, this would trigger graceful shutdown.
+		// For safety, we force exit to prevent further trading losses.
+		os.Exit(1)
+	})
+
+	// Create reconciler using the paper adapter (which doesn't implement OrderQuerier yet, but falls back gracefully)
+	reconciler := reconciliation.NewReconciler(marketAwarePaper)
+
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
@@ -190,9 +205,42 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
-	paperAdapter := exchangepaper.New()
-	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
-	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
+
+	// Determine which adapter to use for the execution manager strategies based on primary account
+	var execAdapter exchange.Adapter = exchangepaper.New()
+	if primaryAccountID != "" {
+		for _, acct := range cfg.Accounts {
+			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
+				execAdapter = binance.New(binance.Config{
+					APIKey:    acct.APIKey,
+					SecretKey: acct.SecretKey,
+					Testnet:   acct.Testnet,
+				})
+				break
+			}
+		}
+	}
+
+	executionManager.Register(execution.NewMarketStrategy(execAdapter))
+	executionManager.Register(execution.NewWolfBotBollingerStrategy(execAdapter, 3))
+
+	// Initialize reconciler with the correct execution adapter
+	reconciler = reconciliation.NewReconciler(execAdapter)
+
+	// Trade History Sync from Exchange
+	if querier, ok := execAdapter.(exchange.TradeHistoryQuerier); ok && primaryAccountID != "" {
+		for _, symbol := range cfg.Risk.AllowedSymbols {
+			trades, err := querier.QueryTrades(context.Background(), symbol, 100)
+			if err != nil {
+				logger.Error("failed to sync trades for portfolio", map[string]any{"symbol": symbol, "error": err.Error()})
+			} else {
+				for _, t := range trades {
+					portfolioTracker.ApplyTrade(t)
+				}
+				logger.Info("synced recent trades to portfolio", map[string]any{"symbol": symbol, "count": len(trades)})
+			}
+		}
+	}
 
 	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
 	// Use paper balance (simulated) when trading on paper account.
@@ -202,9 +250,9 @@ func New(cfg config.Config) (*App, error) {
 		for _, acct := range cfg.Accounts {
 			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
 				binanceAdapter := binance.New(binance.Config{
-					APIKey:   acct.APIKey,
+					APIKey:    acct.APIKey,
 					SecretKey: acct.SecretKey,
-					Testnet:  acct.Testnet,
+					Testnet:   acct.Testnet,
 				})
 				balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
 				balanceReader.(*strategydemo.BinanceBalanceReader).SetPriceQuerier(binanceAdapter)
@@ -285,23 +333,23 @@ func New(cfg config.Config) (*App, error) {
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
 			return httpapi.PortfolioSnapshot{
-				Positions:         portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
-				Concentration:     currentConcentration(),
-				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
+				Positions:          portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
+				Concentration:      currentConcentration(),
+				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
 			return httpapi.PortfolioSummary{
-				OpenPositions:     portfolioTracker.OpenPositionCount(),
-				Concentration:     currentConcentration(),
-				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
+				OpenPositions:      portfolioTracker.OpenPositionCount(),
+				Concentration:      currentConcentration(),
+				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
-		OrdersProvider: func() []exchange.Order { return executionRepo.List() },
+		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
 			return httpapi.ExecutionDiagnostics{
@@ -312,13 +360,13 @@ func New(cfg config.Config) (*App, error) {
 		ExposureDiagnosticsProvider: func() httpapi.ExposureDiagnostics {
 			topSymbol, topPct := topConcentration()
 			return httpapi.ExposureDiagnostics{
-				OpenPositions:        portfolioTracker.OpenPositionCount(),
-				Concentration:        currentConcentration(),
-				TopConcentration:     topSymbol,
-				TopConcentrationPct:  topPct,
-				TotalMarketValue:     portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:     portfolioTracker.TotalRealizedPnL(),
-				TotalUnrealizedPnL:   portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+				OpenPositions:       portfolioTracker.OpenPositionCount(),
+				Concentration:       currentConcentration(),
+				TopConcentration:    topSymbol,
+				TopConcentrationPct: topPct,
+				TotalMarketValue:    portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:    portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL:  portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
 		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
@@ -346,15 +394,56 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return history
 		},
-		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
-		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
+		ReportTrendsProvider:  func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
+		SignalLogProvider:     func() []strategy.LoggedSignal { return signalLog.Recent(200) },
 		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
+		WSHealthProvider: func() httpapi.WSHealth {
+			if hp, ok := marketDataFeed.(marketdata.StreamHealthProvider); ok {
+				lastMsg := hp.LastMessageTime()
+				var staleness int64 = -1
+				if !lastMsg.IsZero() {
+					staleness = time.Since(lastMsg).Milliseconds()
+				}
+				return httpapi.WSHealth{
+					Connected:       hp.IsConnected(),
+					LastMessageTime: lastMsg,
+					StalenessMS:     staleness,
+				}
+			}
+			return httpapi.WSHealth{Connected: false, StalenessMS: -1}
+		},
 	})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
+
+	// Start background reconciler loop
+	reconcileCtx, reconcileCancel := context.WithCancel(context.Background())
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-reconcileCtx.Done():
+				return
+			case <-ticker.C:
+				res, err := reconciler.ReconcileOrders(reconcileCtx, executionRepo.List())
+				if err != nil {
+					logger.Error("reconciliation failed", map[string]any{"error": err.Error()})
+				} else {
+					logger.Info("reconciliation completed", map[string]any{"summary": res.Summary()})
+				}
+
+				// Update drawdown monitor
+				currentVal := portfolioTracker.TotalMarketValue(reconcileCtx, marketDataFeed)
+				if err := drawdownMonitor.Update(reconcileCtx, currentVal); err != nil {
+					logger.Error("drawdown monitor error", map[string]any{"error": err.Error()})
+				}
+			}
+		}
+	}()
 
 	return &App{
 		config:           cfg,
@@ -371,13 +460,16 @@ func New(cfg config.Config) (*App, error) {
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
 		executionManager: executionManager,
+		reconciler:       reconciler,
+		reconcilerStop:   reconcileCancel,
+		drawdownMonitor:  drawdownMonitor,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,
 		cycleRunner:      cycleRunner,
 		pipeline:         pipeline,
 		signalLog:        signalLog,
-		signalLogStop:   signalLogStop,
+		signalLogStop:    signalLogStop,
 		marketAwarePaper: marketAwarePaper,
 		balanceReader:    balanceReader,
 		httpHandler:      handler,
@@ -678,16 +770,16 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	reportPayload := map[string]any{
-		"orders":         len(a.executionRepo.List()),
+		"orders":          len(a.executionRepo.List()),
 		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
-		"realized_pnl":   a.portfolioTracker.TotalRealizedPnL(),
-		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
-		"metrics":        a.metricsTracker.Snapshot(),
-		"guards":         a.pipeline.Names(),
-		"signal_count":   a.signalLog.Count(),
-		"usdt_balance":   a.balanceReader.USDTBalance(),
-		"market_data":    a.config.MarketData.Source,
-		"strategy":       a.config.Strategy,
+		"realized_pnl":    a.portfolioTracker.TotalRealizedPnL(),
+		"unrealized_pnl":  a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+		"metrics":         a.metricsTracker.Snapshot(),
+		"guards":          a.pipeline.Names(),
+		"signal_count":    a.signalLog.Count(),
+		"usdt_balance":    a.balanceReader.USDTBalance(),
+		"market_data":     a.config.MarketData.Source,
+		"strategy":        a.config.Strategy,
 	}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
@@ -701,6 +793,9 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Flush signal log before shutdown
 	if a.signalLogStop != nil {
 		a.signalLogStop()
+	}
+	if a.reconcilerStop != nil {
+		a.reconcilerStop()
 	}
 	a.logger.Info("app shutdown initiated", map[string]any{
 		"signal_count":    a.signalLog.Count(),

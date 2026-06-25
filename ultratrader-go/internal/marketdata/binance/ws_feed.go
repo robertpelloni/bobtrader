@@ -19,9 +19,13 @@ import (
 
 // StreamFeed implements marketdata.StreamFeed using Binance WebSocket streams.
 type StreamFeed struct {
-	adapter *binance.Adapter
-	mu      sync.Mutex
-	baseURL string
+	adapter         *binance.Adapter
+	mu              sync.Mutex
+	baseURL         string
+	dialAndReadFunc func(ctx context.Context, wsURL string, handler func([]byte)) error
+
+	connected   bool
+	lastMessage time.Time
 }
 
 // NewStreamFeed creates a WebSocket-based market data feed.
@@ -30,10 +34,12 @@ func NewStreamFeed(adapter *binance.Adapter) *StreamFeed {
 	if adapter.IsTestnet() {
 		baseURL = "wss://testnet.binance.vision/ws"
 	}
-	return &StreamFeed{
+	feed := &StreamFeed{
 		adapter: adapter,
 		baseURL: baseURL,
 	}
+	feed.dialAndReadFunc = feed.defaultDialAndRead
+	return feed
 }
 
 func (f *StreamFeed) LatestTick(ctx context.Context, symbol string) (marketdata.Tick, error) {
@@ -78,6 +84,9 @@ func (f *StreamFeed) SubscribeTicks(ctx context.Context, symbol string, interval
 	ch := make(chan marketdata.Tick, 10)
 	streamPath := fmt.Sprintf("%s/%s@ticker", f.baseURL, strings.ToLower(symbol))
 	go f.connectAndStream(ctx, streamPath, func(msg []byte) {
+		f.mu.Lock()
+		f.lastMessage = time.Now()
+		f.mu.Unlock()
 		if tick, ok := parseTickerMessage(msg); ok {
 			select {
 			case ch <- tick:
@@ -92,6 +101,9 @@ func (f *StreamFeed) SubscribeCandles(ctx context.Context, symbol, interval stri
 	ch := make(chan marketdata.Candle, 10)
 	streamPath := fmt.Sprintf("%s/%s@kline_%s", f.baseURL, strings.ToLower(symbol), interval)
 	go f.connectAndStream(ctx, streamPath, func(msg []byte) {
+		f.mu.Lock()
+		f.lastMessage = time.Now()
+		f.mu.Unlock()
 		if candle, ok := parseKlineMessage(msg); ok {
 			select {
 			case ch <- candle:
@@ -113,7 +125,7 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 			return
 		default:
 		}
-		err := f.dialAndRead(ctx, wsURL, handler)
+		err := f.dialAndReadFunc(ctx, wsURL, handler)
 		if ctx.Err() != nil {
 			return
 		}
@@ -135,7 +147,16 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 
 // dialAndRead performs a WebSocket upgrade and reads text frames.
 // Uses the exact same approach as the working standalone test.
-func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func([]byte)) error {
+func (f *StreamFeed) defaultDialAndRead(ctx context.Context, wsURL string, handler func([]byte)) error {
+	f.mu.Lock()
+	f.connected = true
+	f.mu.Unlock()
+	defer func() {
+		f.mu.Lock()
+		f.connected = false
+		f.mu.Unlock()
+	}()
+
 	parsed, err := url.Parse(wsURL)
 	if err != nil {
 		return fmt.Errorf("parse ws url: %w", err)
@@ -227,8 +248,6 @@ func (f *StreamFeed) dialAndRead(ctx context.Context, wsURL string, handler func
 		}
 	}
 }
-
-
 
 // readWSFrame reads a single WebSocket frame from an io.Reader.
 // The w io.Writer is used to send pong responses.
@@ -437,4 +456,18 @@ func dialTLS(ctx context.Context, addr string) (net.Conn, error) {
 	return tls.DialWithDialer(dialer, "tcp", addr, &tls.Config{
 		ServerName: host,
 	})
+}
+
+// IsConnected returns whether the WebSocket is currently connected.
+func (f *StreamFeed) IsConnected() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.connected
+}
+
+// LastMessageTime returns the timestamp of the last received message.
+func (f *StreamFeed) LastMessageTime() time.Time {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.lastMessage
 }

@@ -1,6 +1,6 @@
 # PowerTrader AI / BobTrader — Roadmap
 
-## Current State: v2.0.54 — Autonomous Paper Trading Platform
+## Current State: v2.2.3 — Autonomous Paper Trading Platform
 
 The Go ultra-project (`ultratrader-go/`) is now the primary development track. The legacy Python system is preserved for reference but no longer actively developed.
 
@@ -35,10 +35,10 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 ## Near-Term Roadmap (v2.1.x)
 
 ### 1. WebSocket Feed Hardening
-- [ ] Debug goroutine-to-channel delivery in WS feed
-- [ ] Add auto-reconnection with exponential backoff
-- [ ] Add WebSocket health monitoring endpoint
-- [ ] Switch default from REST to WS once stable
+- [x] Debug goroutine-to-channel delivery in WS feed
+- [x] Add auto-reconnection with exponential backoff
+- [x] Add WebSocket health monitoring endpoint
+- [x] Switch default from REST to WS once stable
 
 ### 2. Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing
@@ -48,10 +48,10 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [ ] Strategy backtesting with real market history
 
 ### 3. Real Exchange Integration
-- [ ] Wire execution to real Binance spot API
-- [ ] Order reconciliation service
-- [ ] Trade history sync from exchange
-- [ ] Circuit breaker for API resilience
+- [x] Wire execution to real Binance spot API
+- [x] Order reconciliation service
+- [x] Trade history sync from exchange
+- [x] Circuit breaker for API resilience
 
 ### 4. Dashboard Modernization
 - [ ] React/Vite SPA dashboard
@@ -135,6 +135,6 @@ Full list in `SUBMODULES.md` and `.gitmodules`.
 
 ---
 
-**Current Version:** 2.0.54
+**Current Version:** 2.2.3
 **Last Updated:** 2026-06-08
 **License:** Apache 2.0

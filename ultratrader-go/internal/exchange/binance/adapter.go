@@ -16,6 +16,8 @@ import (
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/ratelimit"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk/circuitbreaker"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/reconciliation"
 )
 
 const defaultBaseURL = "https://api.binance.us"
@@ -33,6 +35,7 @@ type Adapter struct {
 	baseURL    string
 	limiter    *ratelimit.Limiter
 	orderLimit *ratelimit.Limiter
+	breaker    *circuitbreaker.Breaker
 }
 
 func New(cfg Config) *Adapter {
@@ -50,6 +53,7 @@ func New(cfg Config) *Adapter {
 		baseURL:    baseURL,
 		limiter:    ratelimit.BinanceSpotLimiter(),
 		orderLimit: ratelimit.BinanceOrderLimiter(),
+		breaker:    circuitbreaker.New(circuitbreaker.DefaultConfig()),
 	}
 }
 
@@ -204,9 +208,9 @@ func mapStatus(s string) exchange.OrderStatus {
 }
 
 // QueryOrder fetches the current status of an order from Binance.
-func (a *Adapter) QueryOrder(ctx context.Context, symbol, orderID string) (OrderStatus, error) {
+func (a *Adapter) QueryOrder(ctx context.Context, symbol, orderID string) (reconciliation.OrderStatus, error) {
 	if a.config.APIKey == "" {
-		return OrderStatus{}, fmt.Errorf("api key required for order queries")
+		return reconciliation.OrderStatus{}, fmt.Errorf("api key required for order queries")
 	}
 
 	params := url.Values{}
@@ -226,10 +230,10 @@ func (a *Adapter) QueryOrder(ctx context.Context, symbol, orderID string) (Order
 		Time          int64  `json:"time"`
 	}
 	if err := a.signedGet(ctx, "/api/v3/order", params, &resp); err != nil {
-		return OrderStatus{}, fmt.Errorf("query order: %w", err)
+		return reconciliation.OrderStatus{}, fmt.Errorf("query order: %w", err)
 	}
 
-	return OrderStatus{
+	return reconciliation.OrderStatus{
 		ID:              strconv.FormatInt(resp.OrderID, 10),
 		Symbol:          resp.Symbol,
 		Side:            exchange.OrderSide(strings.ToLower(resp.Side)),
@@ -240,19 +244,6 @@ func (a *Adapter) QueryOrder(ctx context.Context, symbol, orderID string) (Order
 		Price:           resp.Price,
 		TransactionTime: time.UnixMilli(resp.Time),
 	}, nil
-}
-
-// OrderStatus represents the current state of an order on Binance.
-type OrderStatus struct {
-	ID              string
-	Symbol          string
-	Side            exchange.OrderSide
-	Type            exchange.OrderType
-	Status          string
-	Quantity        string
-	ExecutedQty     string
-	Price           string
-	TransactionTime time.Time
 }
 
 func (a *Adapter) GetTickerPrice(ctx context.Context, symbol string) (string, error) {
@@ -347,41 +338,43 @@ func (a *Adapter) doRequest(ctx context.Context, method, path string, params url
 		u += "?" + params.Encode()
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u, nil)
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
-
-	if a.config.APIKey != "" {
-		req.Header.Set("X-MBX-APIKEY", a.config.APIKey)
-	}
-
-	resp, err := a.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("read response: %w", err)
-	}
-
-	if resp.StatusCode >= 400 {
-		var apiErr struct {
-			Code int    `json:"code"`
-			Msg  string `json:"msg"`
+	return a.breaker.Execute(ctx, func() error {
+		req, err := http.NewRequestWithContext(ctx, method, u, nil)
+		if err != nil {
+			return fmt.Errorf("create request: %w", err)
 		}
-		if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.Msg != "" {
-			return fmt.Errorf("binance api error %d: %s", apiErr.Code, apiErr.Msg)
-		}
-		return fmt.Errorf("http %d: %s", resp.StatusCode, string(body))
-	}
 
-	if err := json.Unmarshal(body, result); err != nil {
-		return fmt.Errorf("unmarshal response: %w", err)
-	}
-	return nil
+		if a.config.APIKey != "" {
+			req.Header.Set("X-MBX-APIKEY", a.config.APIKey)
+		}
+
+		resp, err := a.httpClient.Do(req)
+		if err != nil {
+			return fmt.Errorf("execute request: %w", err)
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("read response: %w", err)
+		}
+
+		if resp.StatusCode >= 400 {
+			var apiErr struct {
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+			}
+			if err := json.Unmarshal(body, &apiErr); err == nil && apiErr.Msg != "" {
+				return fmt.Errorf("binance api error %d: %s", apiErr.Code, apiErr.Msg)
+			}
+			return fmt.Errorf("http %d: %s", resp.StatusCode, string(body))
+		}
+
+		if err := json.Unmarshal(body, result); err != nil {
+			return fmt.Errorf("unmarshal response: %w", err)
+		}
+		return nil
+	})
 }
 
 func (a *Adapter) sign(payload string) string {
@@ -391,4 +384,57 @@ func (a *Adapter) sign(payload string) string {
 	mac := hmac.New(sha256.New, []byte(a.config.SecretKey))
 	mac.Write([]byte(payload))
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// QueryTrades fetches the trade history for a specific symbol from Binance.
+func (a *Adapter) QueryTrades(ctx context.Context, symbol string, limit int) ([]exchange.Trade, error) {
+	if a.config.APIKey == "" {
+		return nil, fmt.Errorf("api key required for trade queries")
+	}
+
+	params := url.Values{}
+	params.Set("symbol", symbol)
+	if limit > 0 {
+		params.Set("limit", strconv.Itoa(limit))
+	}
+
+	var raw []struct {
+		Symbol          string `json:"symbol"`
+		ID              int64  `json:"id"`
+		OrderID         int64  `json:"orderId"`
+		Price           string `json:"price"`
+		Qty             string `json:"qty"`
+		QuoteQty        string `json:"quoteQty"`
+		Commission      string `json:"commission"`
+		CommissionAsset string `json:"commissionAsset"`
+		Time            int64  `json:"time"`
+		IsBuyer         bool   `json:"isBuyer"`
+		IsMaker         bool   `json:"isMaker"`
+	}
+
+	if err := a.signedGet(ctx, "/api/v3/myTrades", params, &raw); err != nil {
+		return nil, fmt.Errorf("query trades: %w", err)
+	}
+
+	var trades []exchange.Trade
+	for _, t := range raw {
+		side := exchange.Sell
+		if t.IsBuyer {
+			side = exchange.Buy
+		}
+		trades = append(trades, exchange.Trade{
+			ID:              strconv.FormatInt(t.ID, 10),
+			OrderID:         strconv.FormatInt(t.OrderID, 10),
+			Symbol:          t.Symbol,
+			Side:            side,
+			Price:           t.Price,
+			Quantity:        t.Qty,
+			QuoteQuantity:   t.QuoteQty,
+			Commission:      t.Commission,
+			CommissionAsset: t.CommissionAsset,
+			Time:            time.UnixMilli(t.Time),
+			IsMaker:         t.IsMaker,
+		})
+	}
+	return trades, nil
 }

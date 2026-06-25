@@ -16,16 +16,16 @@ import (
 // It uses news, YouTube, Fear/Greed, market events, and stock market correlation
 // to make trading decisions.
 type SentimentAwareStrategy struct {
-	accountID        string
-	symbol           string
-	quantity         string
-	engine           *sentiment.Engine
-	minConfidence    float64 // Minimum sentiment score to trigger (e.g., 0.3)
-	lastSignalTime   time.Time
-	cooldown         time.Duration
-	priceHistory     []float64
-	maxHistory       int
-	mu               sync.RWMutex
+	accountID      string
+	symbol         string
+	quantity       string
+	engine         *sentiment.Engine
+	minConfidence  float64 // Minimum sentiment score to trigger (e.g., 0.3)
+	lastSignalTime time.Time
+	cooldown       time.Duration
+	priceHistory   []float64
+	maxHistory     int
+	mu             sync.RWMutex
 }
 
 func NewSentimentAwareStrategy(

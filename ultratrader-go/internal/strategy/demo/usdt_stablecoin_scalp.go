@@ -13,17 +13,17 @@ import (
 // Strategy: buy when price dips below buyThreshold, sell when price recovers to sellThreshold.
 // Designed for the 0.9991-1.0000 range with occasional depeg events.
 type USDTStablecoinScalp struct {
-	accountID      string
-	symbol         string
-	quantity       string
-	buyThreshold   float64 // e.g., 0.9992 - buy below this
-	sellThreshold  float64 // e.g., 0.9999 - sell above this
-	stopLoss       float64 // e.g., 0.9800 - panic sell if below this
-	maxPosition    float64 // max USDT to hold in notional
-	lastBuyPrice   float64
-	inPosition     bool
-	priceHistory   []float64
-	maxHistory     int
+	accountID     string
+	symbol        string
+	quantity      string
+	buyThreshold  float64 // e.g., 0.9992 - buy below this
+	sellThreshold float64 // e.g., 0.9999 - sell above this
+	stopLoss      float64 // e.g., 0.9800 - panic sell if below this
+	maxPosition   float64 // max USDT to hold in notional
+	lastBuyPrice  float64
+	inPosition    bool
+	priceHistory  []float64
+	maxHistory    int
 }
 
 func NewUSDTStablecoinScalp(
@@ -43,15 +43,15 @@ func NewUSDTStablecoinScalp(
 		maxPosition = 1000.0
 	}
 	return &USDTStablecoinScalp{
-		accountID:    accountID,
-		symbol:       symbol,
-		quantity:     quantity,
-		buyThreshold: buyThreshold,
+		accountID:     accountID,
+		symbol:        symbol,
+		quantity:      quantity,
+		buyThreshold:  buyThreshold,
 		sellThreshold: sellThreshold,
-		stopLoss:     stopLoss,
-		maxPosition:  maxPosition,
-		priceHistory: make([]float64, 0, 100),
-		maxHistory:   100,
+		stopLoss:      stopLoss,
+		maxPosition:   maxPosition,
+		priceHistory:  make([]float64, 0, 100),
+		maxHistory:    100,
 	}
 }
 
@@ -113,7 +113,7 @@ func (s *USDTStablecoinScalp) OnMarketTick(_ context.Context, tick marketdata.Ti
 			Symbol:       s.symbol,
 			Action:       "sell",
 			Quantity:     s.quantity,
-			Reason:       fmt.Sprintf("TAKE PROFIT: price %.4f >= threshold %.4f (bought at %.4f, ~%.4f%% profit)", 
+			Reason: fmt.Sprintf("TAKE PROFIT: price %.4f >= threshold %.4f (bought at %.4f, ~%.4f%% profit)",
 				price, s.sellThreshold, s.lastBuyPrice, profitPct),
 		})
 		s.inPosition = false
@@ -132,7 +132,7 @@ func (s *USDTStablecoinScalp) OnMarketTick(_ context.Context, tick marketdata.Ti
 				Symbol:       s.symbol,
 				Action:       "buy",
 				Quantity:     s.quantity,
-				Reason:       fmt.Sprintf("STABLECOIN DIP: price %.4f <= threshold %.4f (SMA=%.4f)", 
+				Reason: fmt.Sprintf("STABLECOIN DIP: price %.4f <= threshold %.4f (SMA=%.4f)",
 					price, s.buyThreshold, sma),
 			})
 			s.inPosition = true

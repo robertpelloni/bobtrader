@@ -5,6 +5,33 @@ All notable changes to PowerTrader AI will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0.html).
 
+## [2.1.7] - 2026-06-21
+### Added
+- **Assimilation Candidate Categorization** — Extracted and categorized 43 repository submodules into `docs/ASSIMILATION_CANDIDATES.md` to organize the next phase of architectural study and feature merging.
+
+## [2.1.6] - 2026-06-21
+### Added
+- **Walk-forward parameter optimization** — Unified `ParameterSet` types to allow flexible parameter definitions (`map[string]interface{}`). Created the `BacktestEvaluator` bridge inside `internal/backtest/optimizer` to allow the WalkForwardOptimizer to run genuine backtests on sliced historical market data, rather than abstract unit-tests. Exposed stubs for `POST /api/strategy/backtest` and `POST /api/hyperopt/run` in the HTTP API.
+
+## [2.1.5] - 2026-06-21
+### Added
+- **Drawdown Monitor and Auto-Shutdown** — Added `DrawdownMonitor` to `internal/risk` to track peak portfolio value and calculate current drawdown. If the configured `MaxDrawdownPct` is exceeded, the application triggers an auto-shutdown (`os.Exit(1)`) to prevent further losses. This is wired into the main background loop in `app.go`.
+
+## [2.1.4] - 2026-06-20
+### Added
+- **Real Exchange Execution Wiring** — The `ExecutionManager` and `Reconciler` are now dynamically instantiated with the `binance.Adapter` when live trading accounts are active, correctly routing live execution outside of the paper fallback.
+- **Intelligent Order Reconciliation** — The background order `Reconciler` loop now actively resolves local state drift by updating the `executionRepo` against queried live exchange data.
+- **Trade History Boot-Sync** — On startup, the system now queries the exchange via the new `TradeHistoryQuerier` interface (`/api/v3/myTrades`) to fetch recent trades and perfectly sync the `PortfolioTracker` state.
+- **API Circuit Breaker** — Hardened the Binance adapter with a `circuitbreaker.Breaker` wrapping all HTTP execution pathways to prevent runaway failure loops during exchange instability.
+
+## [2.1.3] - 2026-06-18
+### Added
+- **WebSocket Feed Hardening** — Fixed goroutine-to-channel delivery bugs in the Binance WebSocket stream feed caused by json parsing of large numbers, added auto-reconnection with exponential backoff on disconnects.
+- **WebSocket Health API & Dashboard** — Exposed WS health (connection state and staleness ms) via `/api/ws-health` and added visual indicators to the web dashboard UI.
+
+### Changed
+- **Default Feed** — Switched `market_data.source` default from `rest` to `websocket` in primary paper trading config files.
+
 ## [2.1.2] - 2026-06-11
 ### Changed
 - **Live Risk Settings** — Optimized `config/eth-live.json` by reducing `cooldown_ms` to 30s and `duplicate_window_ms` to 1s to prevent over-blocking strategy transitions.

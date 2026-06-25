@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
-	"math"
 	"sync"
 	"time"
 
@@ -16,14 +16,14 @@ import (
 // CryptoNewsProvider fetches sentiment from crypto news APIs.
 // Integrates with CryptoPanic, CoinGecko trending, and Fear/Greed Index.
 type CryptoNewsProvider struct {
-	name       string
-	apiKey     string
-	baseURL    string
-	client     *http.Client
-	cache      map[string]cachedSentiment
-	mu         sync.RWMutex
-	logger     *logging.Logger
-	cacheTTL   time.Duration
+	name     string
+	apiKey   string
+	baseURL  string
+	client   *http.Client
+	cache    map[string]cachedSentiment
+	mu       sync.RWMutex
+	logger   *logging.Logger
+	cacheTTL time.Duration
 }
 
 type cachedSentiment struct {
@@ -110,8 +110,8 @@ func (p *CryptoNewsProvider) FetchSentiment(ctx context.Context, symbol string) 
 
 	var result struct {
 		Results []struct {
-			Title     string `json:"title"`
-			Votes     struct {
+			Title string `json:"title"`
+			Votes struct {
 				Positive int `json:"positive"`
 				Negative int `json:"negative"`
 			} `json:"votes"`
@@ -276,7 +276,7 @@ type MarketEvent struct {
 	Name      string
 	Date      time.Time
 	Impact    float64 // -1.0 (bearish) to 1.0 (bullish)
-	Symbol    string // Empty = market-wide
+	Symbol    string  // Empty = market-wide
 	Recurring bool
 }
 
@@ -377,12 +377,12 @@ func (p *MarketEventsProvider) AddEvent(event MarketEvent) {
 // StockMarketCorrelation provides sentiment based on stock market movements.
 // Crypto often correlates with risk-on assets like QQQ/SPY.
 type StockMarketCorrelation struct {
-	name       string
-	client     *http.Client
-	cache      *cachedSentiment
-	mu         sync.RWMutex
-	logger     *logging.Logger
-	apiKey     string // Alpha Vantage or similar
+	name   string
+	client *http.Client
+	cache  *cachedSentiment
+	mu     sync.RWMutex
+	logger *logging.Logger
+	apiKey string // Alpha Vantage or similar
 }
 
 func NewStockMarketCorrelation(apiKey string, logger *logging.Logger) *StockMarketCorrelation {

@@ -12,15 +12,15 @@ import (
 // DynamicTrailingStop implements a sophisticated trailing stop loss
 // inspired by whittlem/pycryptobot.
 type DynamicTrailingStop struct {
-	mu                sync.Mutex
-	adapter           exchange.Adapter
-	symbol            string
-	trailPercent      float64
-	triggerPercent    float64
-	multiplier        float64
-	maxTrailPercent   float64
-	highestPrice      float64
-	triggered         bool
+	mu              sync.Mutex
+	adapter         exchange.Adapter
+	symbol          string
+	trailPercent    float64
+	triggerPercent  float64
+	multiplier      float64
+	maxTrailPercent float64
+	highestPrice    float64
+	triggered       bool
 }
 
 // NewDynamicTrailingStop creates a new dynamic trailing stop strategy.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
+	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
 )
 
 // LiveHistoryProvider fetches real historical data from Binance for backtesting.

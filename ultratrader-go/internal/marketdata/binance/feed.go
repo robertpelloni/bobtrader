@@ -166,4 +166,3 @@ func candleIntervalToDuration(interval string) time.Duration {
 		return 1 * time.Minute
 	}
 }
-

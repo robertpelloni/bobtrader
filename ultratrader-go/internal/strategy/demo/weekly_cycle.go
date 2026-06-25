@@ -21,14 +21,14 @@ import (
 // - Hold through mid-week rally
 // - Sell on Saturday/Sunday before the peak fades
 type WeeklyCycleStrategy struct {
-	accountID      string
-	symbol         string
-	quantity       string
-	buyDays        []time.Weekday // Days to buy (accumulate)
-	sellDays       []time.Weekday // Days to sell (take profit)
-	lastSignalDay  int
-	inPosition     bool
-	entryPrice     float64
+	accountID     string
+	symbol        string
+	quantity      string
+	buyDays       []time.Weekday // Days to buy (accumulate)
+	sellDays      []time.Weekday // Days to sell (take profit)
+	lastSignalDay int
+	inPosition    bool
+	entryPrice    float64
 }
 
 func NewWeeklyCycleStrategy(
@@ -129,13 +129,13 @@ func (s *WeeklyCycleStrategy) OnMarketTick(_ context.Context, tick marketdata.Ti
 func (s *WeeklyCycleStrategy) GetCycleInfo() map[string]interface{} {
 	now := time.Now().UTC()
 	return map[string]interface{}{
-		"current_day":   now.Weekday().String(),
-		"current_hour":  now.Hour(),
-		"in_position":   s.inPosition,
-		"entry_price":   s.entryPrice,
-		"buy_days":      []string{"Sunday", "Monday"},
-		"sell_days":     []string{"Friday", "Saturday"},
-		"best_buy_time": "Sunday 22:00 - Monday 06:00 UTC",
+		"current_day":    now.Weekday().String(),
+		"current_hour":   now.Hour(),
+		"in_position":    s.inPosition,
+		"entry_price":    s.entryPrice,
+		"buy_days":       []string{"Sunday", "Monday"},
+		"sell_days":      []string{"Friday", "Saturday"},
+		"best_buy_time":  "Sunday 22:00 - Monday 06:00 UTC",
 		"best_sell_time": "Saturday 18:00 - Sunday 12:00 UTC",
 	}
 }

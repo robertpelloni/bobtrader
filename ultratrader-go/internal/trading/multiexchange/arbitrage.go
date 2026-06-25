@@ -20,10 +20,10 @@ type ArbitrageOpportunity struct {
 
 // ArbitrageExecutor scans and tracks arbitrage opportunities.
 type ArbitrageExecutor struct {
-	manager       ExchangeManager
-	fees          map[string]float64
-	minSpreadPct  float64
-	executed      []map[string]interface{}
+	manager      ExchangeManager
+	fees         map[string]float64
+	minSpreadPct float64
+	executed     []map[string]interface{}
 }
 
 // NewArbitrageExecutor creates a new ArbitrageExecutor.

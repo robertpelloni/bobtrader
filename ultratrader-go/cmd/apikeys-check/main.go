@@ -41,9 +41,9 @@ func main() {
 
 	// Create adapter with production URL (your keys are for Binance.US, not testnet)
 	adapter := binance.New(binance.Config{
-		APIKey:   acct.APIKey,
+		APIKey:    acct.APIKey,
 		SecretKey: acct.SecretKey,
-		Testnet:  false, // Your keys are real Binance.US keys
+		Testnet:   false, // Your keys are real Binance.US keys
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
