@@ -1,12 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
 	reportinganalysis "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/analysis"
@@ -35,6 +36,7 @@ type PortfolioSummary struct {
 	TotalMarketValue   float64            `json:"total_market_value"`
 	TotalRealizedPnL   float64            `json:"total_realized_pnl"`
 	TotalUnrealizedPnL float64            `json:"total_unrealized_pnl"`
+	TotalSiphoned      float64            `json:"total_siphoned"`
 }
 
 type ExecutionDiagnostics struct {
@@ -43,7 +45,7 @@ type ExecutionDiagnostics struct {
 }
 
 type GuardDiagnostics struct {
-	ActiveGuards []string         `json:"active_guards"`
+	ActiveGuards []string        `json:"active_guards"`
 	Metrics      metrics.Snapshot `json:"metrics"`
 }
 
@@ -58,12 +60,19 @@ type ExposureDiagnostics struct {
 }
 
 type RuntimeConfig struct {
-	Environment string         `json:"environment"`
-	Scheduler   SchedulerInfo  `json:"scheduler"`
-	Risk        RiskInfo       `json:"risk"`
-	Strategy    StrategyInfo   `json:"strategy"`
+	Environment string        `json:"environment"`
+	Scheduler   SchedulerInfo `json:"scheduler"`
+	Risk        RiskInfo      `json:"risk"`
+	Strategy    StrategyInfo  `json:"strategy"`
 	MarketData  MarketDataInfo `json:"market_data"`
 }
+
+// WSHealth represents the health state of a WebSocket connection.
+type WSHealth struct {
+	Connected   bool  `json:"connected"`
+	StalenessMS int64 `json:"staleness_ms"`
+}
+
 
 type SchedulerInfo struct {
 	Mode       string `json:"mode"`
@@ -74,26 +83,29 @@ type SchedulerInfo struct {
 type RiskInfo struct {
 	MaxNotional          float64  `json:"max_notional"`
 	MaxNotionalPerSymbol float64  `json:"max_notional_per_symbol"`
-	AllowedSymbols       []string `json:"allowed_symbols"`
-	CooldownMS           int      `json:"cooldown_ms"`
-	MaxOpenPositions     int      `json:"max_open_positions"`
-	MaxConcentrationPct  float64  `json:"max_concentration_pct"`
+	AllowedSymbols      []string `json:"allowed_symbols"`
+	CooldownMS          int      `json:"cooldown_ms"`
+	MaxOpenPositions    int      `json:"max_open_positions"`
+	MaxConcentrationPct float64  `json:"max_concentration_pct"`
 }
 
 type StrategyInfo struct {
-	RiskPct                float64 `json:"risk_pct"`
-	MaxNotional            float64 `json:"max_notional"`
-	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
-	TrailingGapPct         float64 `json:"trailing_gap_pct"`
-	TrailingStopLossPct    float64 `json:"trailing_stop_loss_pct"`
-	TrailingMaxHoldMinutes int     `json:"trailing_max_hold_minutes"`
-	BollingerPeriod        int     `json:"bollinger_period"`
-	BollingerStdDev        float64 `json:"bollinger_std_dev"`
-	RSIPeriod              int     `json:"rsi_period"`
-	RSIOversold            float64 `json:"rsi_oversold"`
-	RSIOverbought          float64 `json:"rsi_overbought"`
-	EMAFast                int     `json:"ema_fast"`
-	EMASlow                int     `json:"ema_slow"`
+	RiskPct                float64            `json:"risk_pct"`
+	MaxNotional            float64            `json:"max_notional"`
+	TrailingActivatePct    float64            `json:"trailing_activate_pct"`
+	TrailingGapPct         float64            `json:"trailing_gap_pct"`
+	TrailingStopLossPct    float64            `json:"trailing_stop_loss_pct"`
+	TrailingMaxHoldMinutes int                `json:"trailing_max_hold_minutes"`
+	BollingerPeriod        int                `json:"bollinger_period"`
+	BollingerStdDev        float64            `json:"bollinger_std_dev"`
+	RSIPeriod              int                `json:"rsi_period"`
+	RSIOversold            float64            `json:"rsi_oversold"`
+	RSIOverbought          float64            `json:"rsi_overbought"`
+	EMAFast                int                `json:"ema_fast"`
+	EMASlow                int                `json:"ema_slow"`
+	SiphoningEnabled       bool               `json:"siphoning_enabled"`
+	SiphoningPct           float64            `json:"siphoning_pct"`
+	SiphoningWeights       map[string]float64 `json:"siphoning_weights"`
 }
 
 type MarketDataInfo struct {
@@ -101,11 +113,6 @@ type MarketDataInfo struct {
 	InitialBalance float64 `json:"initial_balance"`
 }
 
-type WSHealth struct {
-	Connected       bool      `json:"connected"`
-	LastMessageTime time.Time `json:"last_message_time"`
-	StalenessMS     int64     `json:"staleness_ms"`
-}
 
 type Dependencies struct {
 	StatusProvider               func() Status
@@ -124,6 +131,10 @@ type Dependencies struct {
 	SignalLogProvider            func() []strategy.LoggedSignal
 	StrategyStatsProvider        func() map[string]strategy.StrategyStats
 	WSHealthProvider             func() WSHealth
+	MarketDataStatusProvider     func() map[string]any
+	CandleProvider               func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error)
+	GlobalBBOProvider            func(ctx context.Context, symbol string) (map[string]any, error)
+	OrderBookProvider            func(ctx context.Context, symbol string) (map[string]any, error)
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -245,11 +256,80 @@ func NewHandler(deps Dependencies) http.Handler {
 		_ = json.NewEncoder(w).Encode(deps.StrategyStatsProvider())
 	})
 
+
+
 	mux.HandleFunc("/api/ws-health", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if deps.WSHealthProvider != nil {
 			_ = json.NewEncoder(w).Encode(deps.WSHealthProvider())
 		}
+	})
+
+	mux.HandleFunc("/api/health/marketdata", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(deps.MarketDataStatusProvider())
+	})
+
+	mux.HandleFunc("/api/marketdata/candles", func(w http.ResponseWriter, r *http.Request) {
+		symbol := r.URL.Query().Get("symbol")
+		interval := r.URL.Query().Get("interval")
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit <= 0 {
+			limit = 100
+		}
+		if interval == "" {
+			interval = "1m"
+		}
+		candles, err := deps.CandleProvider(r.Context(), symbol, interval, limit)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(candles)
+	})
+
+	mux.HandleFunc("/api/marketdata/global-bbo", func(w http.ResponseWriter, r *http.Request) {
+		symbol := r.URL.Query().Get("symbol")
+		if symbol == "" {
+			symbol = "BTCUSDT"
+		}
+		bbo, err := deps.GlobalBBOProvider(r.Context(), symbol)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(bbo)
+	})
+
+	mux.HandleFunc("/api/marketdata/depth", func(w http.ResponseWriter, r *http.Request) {
+		symbol := r.URL.Query().Get("symbol")
+		if symbol == "" {
+			symbol = "BTCUSDT"
+		}
+		depth, err := deps.OrderBookProvider(r.Context(), symbol)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(depth)
+	})
+
+	mux.HandleFunc("/api/config/update", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// For demo/v2.8.0, we just return success
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "received": payload})
 	})
 
 	return mux

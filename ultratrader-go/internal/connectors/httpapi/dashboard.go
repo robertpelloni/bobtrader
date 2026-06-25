@@ -536,6 +536,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   <div class="topbar">
     <span class="topbar-title" id="page-title">Overview</span>
     <div class="topbar-controls">
+      <span id="ws-status" style="font-size:11px; margin-right:10px;">WS: ---</span>
       <span class="live-dot" id="live-dot"></span>
       <span class="muted" id="last-updated">Loading...</span>
       <button class="btn" id="refresh-btn">&#8635; Refresh</button>
@@ -693,8 +694,8 @@ tr:hover td { background: rgba(255,255,255,0.02); }
     </div>
     <div class="chart-grid">
       <div class="chart-box">
-        <div class="chart-header">Concentration Drift</div>
-        <div class="chart-canvas" id="concentration-trend-chart"></div>
+        <div class="chart-header">Siphoned Wealth Trend</div>
+        <div class="chart-canvas" id="siphoned-trend-chart"></div>
       </div>
       <div class="chart-box">
         <div class="chart-header">Realized PnL Trend</div>
@@ -1083,7 +1084,7 @@ function renderConfig() {
 // ─── Main Data Fetch ──────────────────────────────────────────
 async function refreshDashboard() {
   try {
-    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config, wsHealth] = await Promise.all([
+    const [status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, config, wsHealth, wsStatus] = await Promise.all([
       fetchJson('/api/status'),
       fetchJson('/api/portfolio'),
       fetchJson('/api/portfolio-summary'),
@@ -1097,14 +1098,27 @@ async function refreshDashboard() {
       fetchJson('/api/runtime-reports/history?type=metrics-snapshot&limit=20'),
       fetchJson('/api/runtime-reports/history?type=portfolio-valuation&limit=20'),
       fetchJson('/api/config'),
-      fetchJson('/api/ws-health').catch(e => ({}))
+      fetchJson('/api/ws-health').catch(e => ({})),
+      fetchJson('/api/health/marketdata')
     ]);
 
-    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, wsHealth,
+    appState = { status, portfolio, portfolioSummary, orders, execSummary, execDiag, exposureDiag, guardDiag, trends, latestReports, metricsHist, valuationHist, wsHealth, wsStatus,
  configRisk: config.risk, configScheduler: config.scheduler, configStrategy: config.strategy, configMarketData: config.market_data
  };
 
     // Status indicator
+    const wsEl = document.getElementById('ws-status');
+    if (wsStatus && wsStatus.connected) {
+      wsEl.textContent = 'WS: Connected';
+      wsEl.style.color = 'var(--green)';
+    } else if (wsStatus && wsStatus.source === 'rest') {
+      wsEl.textContent = 'REST: Polling';
+      wsEl.style.color = 'var(--blue2)';
+    } else {
+      wsEl.textContent = 'WS: Disconnected';
+      wsEl.style.color = 'var(--red)';
+    }
+
     const tag = document.getElementById('status-tag');
     const dot = document.getElementById('live-dot');
     if (status.ready) {
@@ -1136,6 +1150,7 @@ async function refreshDashboard() {
         deltaHtml(t.portfolio_value?.latest, t.portfolio_value?.previous)),
       kpi('Realized PnL', '$' + fmt(ps.total_realized_pnl), ps.total_realized_pnl >= 0 ? 'green' : 'red'),
       kpi('Unrealized PnL', '$' + fmt(ps.total_unrealized_pnl), ps.total_unrealized_pnl >= 0 ? 'green' : 'red'),
+      kpi('Siphoned Wealth', '$' + fmt(ps.total_siphoned), 'purple'),
       kpi('Open Positions', String(ps.open_positions || 0), 'blue'),
       kpi('Success Rate', fmtPct(m.success_rate), m.success_rate >= 0.8 ? 'green' : m.success_rate >= 0.5 ? 'orange' : 'red'),
     ].join('');
@@ -1149,6 +1164,14 @@ async function refreshDashboard() {
       { get: r => r.market_value ? '$' + fmt(r.market_value) : '\u2014' },
       { get: r => (r.unrealized_pnl ? '$' + fmt(r.unrealized_pnl) : '\u2014'), cls: r => pnlClass(r.unrealized_pnl || 0) },
     ]);
+
+    // Strategy Stats with Sharpe
+    const stats = await fetchJson('/api/strategy-stats');
+    if (stats) {
+      document.getElementById('overview-kpis').innerHTML += Object.values(stats).map(s =>
+        kpi(s.name + ' Sharpe', fmt(s.sharpe_ratio, 2), s.sharpe_ratio > 1 ? 'green' : 'blue')
+      ).join('');
+    }
 
     // Overview: Recent orders table
     const recentOrders = (orders || []).slice(-10).reverse();
@@ -1229,6 +1252,7 @@ async function refreshDashboard() {
       r => { const vals = Object.values(r.payload?.concentration || {}); return vals.length ? Math.max(...vals) * 100 : 0; },
       '#b388ff', '%');
     renderLineChart('blocked-trend-chart', metricsHist, r => Number(r.payload?.metrics?.execution_blocked ?? 0), '#ff5252');
+    renderLineChart('siphoned-trend-chart', valuationHist, r => Number(r.payload?.total_siphoned ?? 0), '#b388ff', '$');
     renderLineChart('pnl-trend-chart', valuationHist, r => Number(r.payload?.realized_pnl ?? 0), '#00e676', '$');
 
     const concEntries = Object.entries(ed.concentration || {}).map(([label, value]) => ({

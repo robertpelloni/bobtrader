@@ -2,6 +2,7 @@ package strategy
 
 import (
 	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
 	"sync"
@@ -37,23 +38,24 @@ type LoggedSignal struct {
 
 // StrategyStats tracks per-strategy performance.
 type StrategyStats struct {
-	Name         string  `json:"name"`
-	SignalsTotal int     `json:"signals_total"`
-	Executed     int     `json:"executed"`
-	Blocked      int     `json:"blocked"`
-	Skipped      int     `json:"skipped"`
-	WinTrades    int     `json:"win_trades"`
-	LossTrades   int     `json:"loss_trades"`
-	TotalPnL     float64 `json:"total_pnl"`
-	WinRate      float64 `json:"win_rate"`
-	SuccessRate  float64 `json:"success_rate"` // executed / total signals
+	Name        string  `json:"name"`
+	SignalsTotal int    `json:"signals_total"`
+	Executed    int     `json:"executed"`
+	Blocked     int     `json:"blocked"`
+	Skipped     int     `json:"skipped"`
+	WinTrades   int     `json:"win_trades"`
+	LossTrades  int     `json:"loss_trades"`
+	TotalPnL    float64 `json:"total_pnl"`
+	WinRate     float64 `json:"win_rate"`
+	SuccessRate float64 `json:"success_rate"` // executed / total signals
+	SharpeRatio float64 `json:"sharpe_ratio"`
 }
 
 // SignalLog records all strategy signals and their outcomes.
 type SignalLog struct {
-	mu          sync.Mutex
-	signals     []LoggedSignal
-	maxSize     int
+	mu       sync.Mutex
+	signals  []LoggedSignal
+	maxSize  int
 	persistPath string
 	persistMu   sync.Mutex
 	lastPersist int // index of last persisted signal
@@ -216,6 +218,30 @@ func (l *SignalLog) StatsByStrategy() map[string]StrategyStats {
 	}
 	// Compute derived rates
 	for name, st := range stats {
+		// Calculate Sharpe Ratio (simplified daily-proxy)
+		// Sharpe = (Avg PnL) / StdDev(PnL)
+		var pnls []float64
+		for _, s := range l.signals {
+			if s.Strategy == name && s.Action == "sell" && s.Outcome == OutcomeExecuted {
+				pnls = append(pnls, s.PnL)
+			}
+		}
+		if len(pnls) > 2 {
+			sum := 0.0
+			for _, p := range pnls { sum += p }
+			mean := sum / float64(len(pnls))
+
+			sqDiffSum := 0.0
+			for _, p := range pnls { sqDiffSum += (p-mean)*(p-mean) }
+			stdDev := 0.0
+			if len(pnls) > 1 {
+				stdDev = math.Sqrt(sqDiffSum / float64(len(pnls)-1))
+			}
+			if stdDev > 0 {
+				st.SharpeRatio = mean / stdDev
+			}
+		}
+
 		if st.SignalsTotal > 0 {
 			st.SuccessRate = float64(st.Executed) / float64(st.SignalsTotal)
 		}

@@ -2,11 +2,48 @@
 
 ## Current Sprint (v2.1.x)
 
+<<<<<<< HEAD
 ### WebSocket Feed
 - [x] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
 - [x] Add auto-reconnection with exponential backoff verification
 - [x] Add WebSocket health monitoring endpoint
 - [x] Switch default from REST to WS once stable
+=======
+### Hierarchical Strategies (v2.4.0)
+- [x] Bump version to 2.4.0
+- [x] Implement ADX indicator for trend strength
+- [x] Implement MacroRegime strategy (EMA + ADX)
+- [x] Implement MicroScalper (Tick-volatility)
+- [x] Implement RegimeFilter (Macro -> Micro signal suppression)
+- [x] Implement ATR reusable sizer
+- [x] Implement SiphoningManager (Micro-to-Macro profit redirection)
+- [x] Wire 'hierarchical_scalper' suite in App container
+- [x] Implement DrawdownGuard for ruin protection
+- [x] Implement GridTrading strategy for volatile ranges
+- [x] Implement GoldenCross strategy for major trends
+- [x] Implement BollingerBreakout strategy
+- [x] Integrate Arbitrage signals into strategy runtime
+- [x] Implement MLAwareStrategy with kNN Ensemble
+- [x] Implement AdaptiveKellySizer using live strategy stats
+- [x] Implement Diversified Siphoning (Multi-asset accumulation)
+- [x] Implement OrderflowScalper strategy
+- [x] Add "Siphoned Wealth" KPI to dashboard
+- [x] Implement StatisticalArbitrage strategy (Pairs trading)
+- [x] Implement WhaleFlow macro strategy
+- [x] Integrate Rebalancer into Siphoning flow
+- [x] Implement GeneticOptimizer for evolutionary tuning
+- [x] Implement RLFilter for reinforcement learning entries
+- [x] Add Siphoning Trend charts to Dashboard
+
+### WebSocket Feed (v2.3.0)
+- [x] Debug goroutine-to-channel delivery (Migrated to gorilla/websocket)
+- [x] Add auto-reconnection with exponential backoff
+- [x] Add WebSocket health monitoring endpoint
+- [x] Add Candle History API
+- [x] Implement Sharpe Ratio calculation in SignalLog
+- [x] Implement RegimeSwitcher strategy
+- [x] Upgrade MacroRegime with CompositeDetector
+>>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
 
 ### Strategy Enhancement
 - [x] Kelly criterion / volatility-adjusted position sizing

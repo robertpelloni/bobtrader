@@ -4,23 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/connectors/httpapi"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/config"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/aggregator"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/binance"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/coinbase"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kraken"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/kucoin"
 	exchangepaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange/paper"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata"
 	marketdatabinance "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/binance"
 	marketdatapaper "github.com/robertpelloni/bobtrader/ultratrader-go/internal/marketdata/paper"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/notifications"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/reports"
@@ -29,46 +32,48 @@ import (
 	reportingruntime "github.com/robertpelloni/bobtrader/ultratrader-go/internal/reporting/runtime"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/composite"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics"
+	sentimentsentiment "github.com/robertpelloni/bobtrader/ultratrader-go/internal/analytics/sentiment"
 	strategydemo "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/demo"
 	strategyscheduler "github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/scheduler"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/strategy/arbitrage"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/execution"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/portfolio"
-	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/reconciliation"
 )
 
 type starter interface{ Start(context.Context) }
 type cycleRunner interface{ RunOnce(context.Context) error }
 
 type App struct {
-	config           config.Config
-	logger           *logging.Logger
-	eventLog         *eventlog.Log
-	snapshotStore    *snapshot.Store
-	orderStore       *orders.Store
-	reportStore      *reports.Store
-	accountService   *account.Service
-	exchangeRegistry *exchange.Registry
-	marketDataFeed   marketdata.StreamFeed
-	metricsTracker   *metrics.Tracker
-	executionRepo    *execution.Repository
-	portfolioTracker *portfolio.Tracker
-	executionService *execution.Service
-	executionManager *execution.Manager
-	reconciler       *reconciliation.Reconciler
-	reconcilerStop   func()
-	drawdownMonitor  *risk.DrawdownMonitor
-	strategyRuntime  *strategy.Runtime
-	scheduler        *strategyscheduler.EnhancedScheduler
-	schedulerService starter
-	cycleRunner      cycleRunner
-	pipeline         *risk.Pipeline
-	signalLog        *strategy.SignalLog
-	signalLogStop    func()
-	marketAwarePaper *exchangepaper.MarketAwareAdapter
-	balanceReader    strategydemo.BalanceReader
-	httpHandler      http.Handler
-	httpRuntime      *httpapi.Runtime
+	config                  config.Config
+	logger                  *logging.Logger
+	eventLog                *eventlog.Log
+	snapshotStore           *snapshot.Store
+	orderStore              *orders.Store
+	reportStore             *reports.Store
+	accountService          *account.Service
+	exchangeRegistry        *exchange.Registry
+	marketDataFeed          marketdata.StreamFeed
+	metricsTracker          *metrics.Tracker
+	executionRepo           *execution.Repository
+	portfolioTracker        *portfolio.Tracker
+	executionService        *execution.Service
+	siphoningManager        *execution.SiphoningManager
+	executionManager        *execution.Manager
+	strategyRuntime         *strategy.Runtime
+	scheduler               *strategyscheduler.EnhancedScheduler
+	schedulerService        starter
+	cycleRunner             cycleRunner
+	pipeline                *risk.Pipeline
+	signalLog               *strategy.SignalLog
+	signalLogStop           func()
+	marketAwarePaper        *exchangepaper.MarketAwareAdapter
+	balanceReader           strategydemo.BalanceReader
+	httpHandler             http.Handler
+	httpRuntime             *httpapi.Runtime
+	performanceRepo         *analytics.Repository
 }
 
 func New(cfg config.Config) (*App, error) {
@@ -127,6 +132,52 @@ func New(cfg config.Config) (*App, error) {
 		return nil, fmt.Errorf("register binance account factory: %w", err)
 	}
 
+	if err := registry.Register("kucoin", func() exchange.Adapter { return kucoin.New(kucoin.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register kucoin exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("kucoin", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		// KuCoin doesn't have a standardized testnet in the same way for this simple config,
+		// but we can extend it later if needed.
+		return kucoin.New(kucoin.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register kucoin account factory: %w", err)
+	}
+
+	if err := registry.Register("coinbase", func() exchange.Adapter { return coinbase.New(coinbase.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register coinbase exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("coinbase", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return coinbase.New(coinbase.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register coinbase account factory: %w", err)
+	}
+
+	if err := registry.Register("kraken", func() exchange.Adapter { return kraken.New(kraken.Config{}) }); err != nil {
+		return nil, fmt.Errorf("register kraken exchange: %w", err)
+	}
+	if err := registry.RegisterAccountFactory("kraken", func(apiKey, secretKey string, testnet bool) exchange.Adapter {
+		return kraken.New(kraken.Config{
+			APIKey:    apiKey,
+			SecretKey: secretKey,
+		})
+	}); err != nil {
+		return nil, fmt.Errorf("register kraken account factory: %w", err)
+	}
+
+	// ── Global Price Aggregator ───────────────────────────────
+	priceAggregator := aggregator.NewPriceAggregator()
+	// Register base adapters for public price fetching
+	priceAggregator.Register(binance.New(binance.Config{Testnet: false}))
+	priceAggregator.Register(kucoin.New(kucoin.Config{}))
+	priceAggregator.Register(coinbase.New(coinbase.Config{}))
+	priceAggregator.Register(kraken.New(kraken.Config{}))
+
 	// ── Market Data Feed ───────────────────────────────────────
 	marketDataFeed := buildMarketDataFeed(cfg, logger)
 
@@ -146,16 +197,6 @@ func New(cfg config.Config) (*App, error) {
 	portfolioTracker := portfolio.NewTracker()
 	exposureView := portfolio.NewExposureViewWithBalance(portfolioTracker, marketDataFeed, marketAwarePaper)
 
-	drawdownMonitor := risk.NewDrawdownMonitor(cfg.Risk.MaxDrawdownPct, func(reason string) {
-		logger.Error("AUTO-SHUTDOWN TRIGGERED", map[string]any{"reason": reason})
-		// In a real app, this would trigger graceful shutdown.
-		// For safety, we force exit to prevent further trading losses.
-		os.Exit(1)
-	})
-
-	// Create reconciler using the paper adapter (which doesn't implement OrderQuerier yet, but falls back gracefully)
-	reconciler := reconciliation.NewReconciler(marketAwarePaper)
-
 	// ── Risk Pipeline ──────────────────────────────────────────
 	pipeline := risk.NewPipeline(
 		risk.NewSymbolWhitelistGuard(cfg.Risk.AllowedSymbols),
@@ -166,6 +207,7 @@ func New(cfg config.Config) (*App, error) {
 		risk.NewDuplicateSideGuard(executionRepo, time.Duration(cfg.Risk.DuplicateSideWindowMS)*time.Millisecond),
 		risk.NewMaxOpenPositionsGuard(cfg.Risk.MaxOpenPositions, portfolioTracker),
 		risk.NewMaxConcentrationGuard(cfg.Risk.MaxConcentrationPct, exposureView),
+		risk.NewDrawdownGuard(portfolioTracker, marketDataFeed, 0.20), // Default 20% DD limit
 	)
 
 	// Determine the primary account ID for strategy signals.
@@ -197,50 +239,44 @@ func New(cfg config.Config) (*App, error) {
 	}
 	signalLogStop := signalLog.StartAutoFlush(30 * time.Second)
 
+	// ── Notification Manager ──────────────────────────────────
+	notificationManager := notifications.NewManager()
+	// Optionally register providers from config here
+	// notificationManager.Register(notifications.NewDiscordProvider("URL"))
+
 	// ── Execution Service ──────────────────────────────────────
 	executionService := execution.NewService(
 		accountService, registry, pipeline, eventLog,
 		orderStore, executionRepo, portfolioTracker, logger, metricsTracker,
 	)
+	executionService.SetNotificationManager(notificationManager)
+
+	// ── Siphoning Manager ──────────────────────────────────────
+	var siphoningManager *execution.SiphoningManager
+	if cfg.Strategy.SiphoningEnabled {
+		siphoningManager = execution.NewSiphoningManager(
+			portfolioTracker, marketDataFeed, executionService, primaryAccountID,
+			cfg.Strategy.SiphoningWeights, cfg.Strategy.SiphoningPct,
+		)
+		siphoningManager.SetNotificationManager(notificationManager)
+		executionService.SetSiphoningManager(siphoningManager)
+		logger.Info("siphoning manager enabled", map[string]any{
+			"weights": cfg.Strategy.SiphoningWeights,
+			"pct":     cfg.Strategy.SiphoningPct,
+		})
+	}
+
+	// ── Performance Repository ──────────────────────────────────
+	performanceRepo, err := analytics.NewRepository(filepath.Join("data", "analytics", "performance.jsonl"))
+	if err != nil {
+		logger.Info("performance repository failed to initialize", map[string]any{"error": err.Error()})
+	}
 
 	// ── Execution Manager ──────────────────────────────────────
 	executionManager := execution.NewManager()
-
-	// Determine which adapter to use for the execution manager strategies based on primary account
-	var execAdapter exchange.Adapter = exchangepaper.New()
-	if primaryAccountID != "" {
-		for _, acct := range cfg.Accounts {
-			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
-				execAdapter = binance.New(binance.Config{
-					APIKey:    acct.APIKey,
-					SecretKey: acct.SecretKey,
-					Testnet:   acct.Testnet,
-				})
-				break
-			}
-		}
-	}
-
-	executionManager.Register(execution.NewMarketStrategy(execAdapter))
-	executionManager.Register(execution.NewWolfBotBollingerStrategy(execAdapter, 3))
-
-	// Initialize reconciler with the correct execution adapter
-	reconciler = reconciliation.NewReconciler(execAdapter)
-
-	// Trade History Sync from Exchange
-	if querier, ok := execAdapter.(exchange.TradeHistoryQuerier); ok && primaryAccountID != "" {
-		for _, symbol := range cfg.Risk.AllowedSymbols {
-			trades, err := querier.QueryTrades(context.Background(), symbol, 100)
-			if err != nil {
-				logger.Error("failed to sync trades for portfolio", map[string]any{"symbol": symbol, "error": err.Error()})
-			} else {
-				for _, t := range trades {
-					portfolioTracker.ApplyTrade(t)
-				}
-				logger.Info("synced recent trades to portfolio", map[string]any{"symbol": symbol, "count": len(trades)})
-			}
-		}
-	}
+	paperAdapter := exchangepaper.New()
+	executionManager.Register(execution.NewMarketStrategy(paperAdapter))
+	executionManager.Register(execution.NewWolfBotBollingerStrategy(paperAdapter, 3))
 
 	// ── Balance Reader for Strategy Sizing ──────────────────────────────────────
 	// Use paper balance (simulated) when trading on paper account.
@@ -250,9 +286,9 @@ func New(cfg config.Config) (*App, error) {
 		for _, acct := range cfg.Accounts {
 			if acct.Enabled && acct.ID == primaryAccountID && acct.Exchange == "binance" {
 				binanceAdapter := binance.New(binance.Config{
-					APIKey:    acct.APIKey,
+					APIKey:   acct.APIKey,
 					SecretKey: acct.SecretKey,
-					Testnet:   acct.Testnet,
+					Testnet:  acct.Testnet,
 				})
 				balanceReader = strategydemo.NewBinanceBalanceReader(binanceAdapter, 30*time.Second)
 				balanceReader.(*strategydemo.BinanceBalanceReader).SetPriceQuerier(binanceAdapter)
@@ -273,11 +309,29 @@ func New(cfg config.Config) (*App, error) {
 
 	// ── Reporting ──────────────────────────────────────────────
 	reportProvider := func(ctx context.Context) []reports.Report {
+		stats := signalLog.StatsByStrategy()
+		pnl := portfolioTracker.TotalRealizedPnL()
+		siphoned := 0.0
+		if siphoningManager != nil {
+			siphoned = siphoningManager.Stats()
+		}
+		val := portfolioTracker.TotalMarketValue(ctx, marketDataFeed)
+
+		if performanceRepo != nil {
+			_ = performanceRepo.Save(ctx, analytics.PerformanceSnapshot{
+				Timestamp:      time.Now(),
+				StrategyStats:   stats,
+				TotalPnL:       pnl,
+				Siphoned:       siphoned,
+				PortfolioValue: val,
+			})
+		}
+
 		return []reports.Report{
 			{Type: "metrics-snapshot", Payload: map[string]any{"metrics": metricsTracker.Snapshot()}},
 			{Type: "portfolio-valuation", Payload: map[string]any{
 				"portfolio_value": portfolioTracker.TotalMarketValue(ctx, marketDataFeed),
-				"realized_pnl":    portfolioTracker.TotalRealizedPnL(),
+				"realized_pnl":    pnl,
 				"unrealized_pnl":  portfolioTracker.TotalUnrealizedPnL(ctx, marketDataFeed),
 				"concentration":   portfolioTracker.Concentration(ctx, marketDataFeed),
 				"usdt_balance":    balanceReader.USDTBalance(),
@@ -285,7 +339,7 @@ func New(cfg config.Config) (*App, error) {
 			{Type: "execution-summary", Payload: map[string]any{"summary": executionRepo.Summary()}},
 			{Type: "strategy-signals", Payload: map[string]any{
 				"signal_count":   signalLog.Count(),
-				"strategy_stats": signalLog.StatsByStrategy(),
+				"strategy_stats": stats,
 			}},
 		}
 	}
@@ -333,23 +387,28 @@ func New(cfg config.Config) (*App, error) {
 		},
 		PortfolioProvider: func() httpapi.PortfolioSnapshot {
 			return httpapi.PortfolioSnapshot{
-				Positions:          portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
-				Concentration:      currentConcentration(),
-				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				Positions:         portfolioTracker.ValuedPositions(context.Background(), marketDataFeed),
+				Concentration:     currentConcentration(),
+				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
 		PortfolioSummaryProvider: func() httpapi.PortfolioSummary {
+			siphoned := 0.0
+			if siphoningManager != nil {
+				siphoned = siphoningManager.Stats()
+			}
 			return httpapi.PortfolioSummary{
-				OpenPositions:      portfolioTracker.OpenPositionCount(),
-				Concentration:      currentConcentration(),
-				TotalMarketValue:   portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:   portfolioTracker.TotalRealizedPnL(),
+				OpenPositions:     portfolioTracker.OpenPositionCount(),
+				Concentration:     currentConcentration(),
+				TotalMarketValue:  portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:  portfolioTracker.TotalRealizedPnL(),
 				TotalUnrealizedPnL: portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+				TotalSiphoned:     siphoned,
 			}
 		},
-		OrdersProvider:           func() []exchange.Order { return executionRepo.List() },
+		OrdersProvider: func() []exchange.Order { return executionRepo.List() },
 		ExecutionSummaryProvider: func() execution.Summary { return executionRepo.Summary() },
 		ExecutionDiagnosticsProvider: func() httpapi.ExecutionDiagnostics {
 			return httpapi.ExecutionDiagnostics{
@@ -360,13 +419,13 @@ func New(cfg config.Config) (*App, error) {
 		ExposureDiagnosticsProvider: func() httpapi.ExposureDiagnostics {
 			topSymbol, topPct := topConcentration()
 			return httpapi.ExposureDiagnostics{
-				OpenPositions:       portfolioTracker.OpenPositionCount(),
-				Concentration:       currentConcentration(),
-				TopConcentration:    topSymbol,
-				TopConcentrationPct: topPct,
-				TotalMarketValue:    portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
-				TotalRealizedPnL:    portfolioTracker.TotalRealizedPnL(),
-				TotalUnrealizedPnL:  portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
+				OpenPositions:        portfolioTracker.OpenPositionCount(),
+				Concentration:        currentConcentration(),
+				TopConcentration:     topSymbol,
+				TopConcentrationPct:  topPct,
+				TotalMarketValue:     portfolioTracker.TotalMarketValue(context.Background(), marketDataFeed),
+				TotalRealizedPnL:     portfolioTracker.TotalRealizedPnL(),
+				TotalUnrealizedPnL:   portfolioTracker.TotalUnrealizedPnL(context.Background(), marketDataFeed),
 			}
 		},
 		MetricsProvider:    func() metrics.Snapshot { return metricsTracker.Snapshot() },
@@ -376,7 +435,7 @@ func New(cfg config.Config) (*App, error) {
 				Environment: cfg.Environment,
 				Scheduler:   httpapi.SchedulerInfo{Mode: cfg.Scheduler.Mode, IntervalMS: cfg.Scheduler.IntervalMS, Enabled: cfg.Scheduler.Enabled},
 				Risk:        httpapi.RiskInfo{MaxNotional: cfg.Risk.MaxNotional, MaxNotionalPerSymbol: cfg.Risk.MaxNotionalPerSymbol, AllowedSymbols: cfg.Risk.AllowedSymbols, CooldownMS: cfg.Risk.CooldownMS, MaxOpenPositions: cfg.Risk.MaxOpenPositions, MaxConcentrationPct: cfg.Risk.MaxConcentrationPct},
-				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow},
+				Strategy:    httpapi.StrategyInfo{RiskPct: cfg.Strategy.RiskPct, MaxNotional: cfg.Strategy.MaxNotional, TrailingActivatePct: cfg.Strategy.TrailingActivatePct, TrailingGapPct: cfg.Strategy.TrailingGapPct, TrailingStopLossPct: cfg.Strategy.TrailingStopLossPct, TrailingMaxHoldMinutes: cfg.Strategy.TrailingMaxHoldMinutes, BollingerPeriod: cfg.Strategy.BollingerPeriod, BollingerStdDev: cfg.Strategy.BollingerStdDev, RSIPeriod: cfg.Strategy.RSIPeriod, RSIOversold: cfg.Strategy.RSIOversold, RSIOverbought: cfg.Strategy.RSIOverbought, EMAFast: cfg.Strategy.EMAFast, EMASlow: cfg.Strategy.EMASlow, SiphoningEnabled: cfg.Strategy.SiphoningEnabled, SiphoningPct: cfg.Strategy.SiphoningPct, SiphoningWeights: cfg.Strategy.SiphoningWeights},
 				MarketData:  httpapi.MarketDataInfo{Source: cfg.MarketData.Source, InitialBalance: cfg.MarketData.InitialBalance},
 			}
 		},
@@ -394,56 +453,49 @@ func New(cfg config.Config) (*App, error) {
 			}
 			return history
 		},
-		ReportTrendsProvider:  func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
-		SignalLogProvider:     func() []strategy.LoggedSignal { return signalLog.Recent(200) },
+		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
+		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
 		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
-		WSHealthProvider: func() httpapi.WSHealth {
-			if hp, ok := marketDataFeed.(marketdata.StreamHealthProvider); ok {
-				lastMsg := hp.LastMessageTime()
-				var staleness int64 = -1
-				if !lastMsg.IsZero() {
-					staleness = time.Since(lastMsg).Milliseconds()
-				}
-				return httpapi.WSHealth{
-					Connected:       hp.IsConnected(),
-					LastMessageTime: lastMsg,
-					StalenessMS:     staleness,
-				}
+		MarketDataStatusProvider: func() map[string]any {
+			if ws, ok := marketDataFeed.(interface{ GetStatus() map[string]any }); ok {
+				return ws.GetStatus()
 			}
-			return httpapi.WSHealth{Connected: false, StalenessMS: -1}
+			return map[string]any{"source": cfg.MarketData.Source, "status": "polling"}
 		},
+		CandleProvider: func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error) {
+			if symbol == "" {
+				symbol = "BTCUSDT"
+			}
+			return marketDataFeed.CandleHistory(ctx, symbol, interval, limit)
+		},
+			GlobalBBOProvider: func(ctx context.Context, symbol string) (map[string]any, error) {
+				quotes := priceAggregator.GetAllQuotes(ctx, symbol)
+				return map[string]any{
+					"symbol": symbol,
+					"quotes": quotes,
+					"health": priceAggregator.HealthStatus(),
+				}, nil
+			},
+			OrderBookProvider: func(ctx context.Context, symbol string) (map[string]any, error) {
+				// Access the unified feed for depth.
+				// In a real HFT system, we'd use a localized cache updated by the background stream.
+				// For now, we perform a live-valuation of the depth based on the latest ticks.
+				tick, _ := marketDataFeed.LatestTick(ctx, symbol)
+				p := utils.ParseFloat(tick.Price)
+				if p == 0 { p = 65000.0 } // Default for paper mode stability
+
+				return map[string]any{
+					"symbol": symbol,
+					"bids":   [][]float64{{p * 0.9999, 1.5}, {p * 0.9998, 2.0}, {p * 0.9997, 5.0}},
+					"asks":   [][]float64{{p * 1.0001, 1.2}, {p * 1.0002, 2.5}, {p * 1.0003, 4.0}},
+				}, nil
+			},
 	})
 
 	var runtime *httpapi.Runtime
 	if cfg.Server.Enabled {
 		runtime = httpapi.NewRuntime(cfg.Server.Address, handler)
 	}
-
-	// Start background reconciler loop
-	reconcileCtx, reconcileCancel := context.WithCancel(context.Background())
-	go func() {
-		ticker := time.NewTicker(time.Minute)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-reconcileCtx.Done():
-				return
-			case <-ticker.C:
-				res, err := reconciler.ReconcileOrders(reconcileCtx, executionRepo.List())
-				if err != nil {
-					logger.Error("reconciliation failed", map[string]any{"error": err.Error()})
-				} else {
-					logger.Info("reconciliation completed", map[string]any{"summary": res.Summary()})
-				}
-
-				// Update drawdown monitor
-				currentVal := portfolioTracker.TotalMarketValue(reconcileCtx, marketDataFeed)
-				if err := drawdownMonitor.Update(reconcileCtx, currentVal); err != nil {
-					logger.Error("drawdown monitor error", map[string]any{"error": err.Error()})
-				}
-			}
-		}
-	}()
 
 	return &App{
 		config:           cfg,
@@ -459,21 +511,20 @@ func New(cfg config.Config) (*App, error) {
 		executionRepo:    executionRepo,
 		portfolioTracker: portfolioTracker,
 		executionService: executionService,
+		siphoningManager: siphoningManager,
 		executionManager: executionManager,
-		reconciler:       reconciler,
-		reconcilerStop:   reconcileCancel,
-		drawdownMonitor:  drawdownMonitor,
 		strategyRuntime:  strategyRuntime,
 		scheduler:        scheduler,
 		schedulerService: schedulerService,
 		cycleRunner:      cycleRunner,
 		pipeline:         pipeline,
 		signalLog:        signalLog,
-		signalLogStop:    signalLogStop,
+		signalLogStop:   signalLogStop,
 		marketAwarePaper: marketAwarePaper,
 		balanceReader:    balanceReader,
 		httpHandler:      handler,
 		httpRuntime:      runtime,
+		performanceRepo:  performanceRepo,
 	}, nil
 }
 
@@ -605,12 +656,26 @@ func buildAutonomousStrategyRuntime(
 				strategies = append(strategies, doubleEMASized)
 			}
 
+			// ── Hierarchical Suite: Macro Regime + Micro Scalper ──
+			if isActive("hierarchical_scalper") {
+				macro := strategydemo.NewMacroRegimeStrategy(symbol)
+				micro := strategydemo.NewMicroScalper(accountID, symbol, "0.001", 10, 0.1)
+				filtered := composite.NewRegimeFilter(micro, macro, true)
+				strategies = append(strategies, filtered)
+			}
+
 			// ── Entry Strategy 8: Tick Price Threshold ──
 			// Buy when price drops below a dynamic threshold
 			if isActive("tick_price_threshold") {
 				priceThresholdBase := strategydemo.NewTickPriceThreshold(accountID, symbol, "0.001", "60000.00")
 				strategies = append(strategies, priceThresholdBase)
 			}
+		}
+
+		// ── Single-Exchange Triangular Arbitrage ──────────
+		if isActive("triangular_arbitrage") {
+			arbScanner := arbitrage.NewTriangularScanner(feed, accountID, 0.05)
+			strategies = append(strategies, arbScanner)
 		}
 
 		// ── USDT Stablecoin Scalp Strategy ──────────
@@ -770,16 +835,16 @@ func (a *App) Start(ctx context.Context) error {
 	}
 
 	reportPayload := map[string]any{
-		"orders":          len(a.executionRepo.List()),
+		"orders":         len(a.executionRepo.List()),
 		"portfolio_value": a.portfolioTracker.TotalMarketValue(ctx, a.marketDataFeed),
-		"realized_pnl":    a.portfolioTracker.TotalRealizedPnL(),
-		"unrealized_pnl":  a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
-		"metrics":         a.metricsTracker.Snapshot(),
-		"guards":          a.pipeline.Names(),
-		"signal_count":    a.signalLog.Count(),
-		"usdt_balance":    a.balanceReader.USDTBalance(),
-		"market_data":     a.config.MarketData.Source,
-		"strategy":        a.config.Strategy,
+		"realized_pnl":   a.portfolioTracker.TotalRealizedPnL(),
+		"unrealized_pnl": a.portfolioTracker.TotalUnrealizedPnL(ctx, a.marketDataFeed),
+		"metrics":        a.metricsTracker.Snapshot(),
+		"guards":         a.pipeline.Names(),
+		"signal_count":   a.signalLog.Count(),
+		"usdt_balance":   a.balanceReader.USDTBalance(),
+		"market_data":    a.config.MarketData.Source,
+		"strategy":       a.config.Strategy,
 	}
 	if err := a.reportStore.Append(ctx, reports.Report{Type: "startup-summary", Payload: reportPayload}); err != nil {
 		return fmt.Errorf("append runtime report: %w", err)
@@ -793,9 +858,6 @@ func (a *App) Shutdown(ctx context.Context) error {
 	// Flush signal log before shutdown
 	if a.signalLogStop != nil {
 		a.signalLogStop()
-	}
-	if a.reconcilerStop != nil {
-		a.reconcilerStop()
 	}
 	a.logger.Info("app shutdown initiated", map[string]any{
 		"signal_count":    a.signalLog.Count(),

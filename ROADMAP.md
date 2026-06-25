@@ -34,11 +34,38 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 
 ## Near-Term Roadmap (v2.1.x)
 
+<<<<<<< HEAD
 ### 1. WebSocket Feed Hardening
 - [x] Debug goroutine-to-channel delivery in WS feed
 - [x] Add auto-reconnection with exponential backoff
 - [x] Add WebSocket health monitoring endpoint
 - [x] Switch default from REST to WS once stable
+=======
+### 1. Hierarchical Strategy Suite (The "Best Suite" Initiative)
+- [x] Implement Macro Regime Filter (Trend/Vol/Range detection)
+- [x] Implement Micro Volatility Scalper (Tick-level capture)
+- [x] Implement Micro-to-Macro Profit Siphoning logic
+- [x] ATR-based dynamic sizing for all strategies
+- [x] Implement Drawdown Monitoring with auto-shutdown (v2.1.4)
+- [x] Implement Grid and Golden Cross strategies (v2.1.4)
+- [x] Implement Bollinger Volatility Breakout (v2.1.5)
+- [x] Integrate Multi-Exchange Arbitrage signals (v2.1.5)
+- [x] Implement ML-Aware Strategy with Ensemble Predictor (v2.1.5)
+- [x] Implement Adaptive Kelly Criterion Sizer (v2.1.6)
+- [x] Implement Diversified Siphoning & Orderflow Edge (v2.1.7)
+- [x] Implement Statistical Arbitrage & Whale-Flow Alpha (v2.1.8)
+- [x] Implement Genetic Parameter Optimizer (v2.2.0)
+- [x] Implement RL-based Entry Filter Strategy (v2.2.0)
+- [x] Refine Dashboard with AI and Siphoning Trends (v2.2.0)
+- [x] Harden WebSocket Feed Reliability & Reconnection (v2.3.0)
+- [x] Implement WebSocket Health Monitoring (v2.3.0)
+- [x] Implement Candle Data API for Charts (v2.3.0)
+- [x] Implement Composite Regime Detection (v2.4.0)
+- [x] Implement Regime-Switching Strategy (v2.4.0)
+- [x] Add Sharpe Ratio Performance Metric (v2.4.0)
+
+### 2. Dashboard Modernization
+>>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
 
 ### 2. Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing

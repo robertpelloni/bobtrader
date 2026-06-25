@@ -5,6 +5,7 @@ import "time"
 type Tick struct {
 	Symbol    string
 	Price     string
+	Quantity  string
 	Source    string
 	Timestamp time.Time
 }

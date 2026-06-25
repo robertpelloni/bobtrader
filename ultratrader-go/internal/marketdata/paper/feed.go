@@ -3,6 +3,7 @@ package paper
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -22,6 +23,10 @@ type candleSubscription struct{ ch <-chan marketdata.Candle }
 
 func (s candleSubscription) Chan() <-chan marketdata.Candle { return s.ch }
 
+type depthSubscription struct{ ch <-chan marketdata.DepthUpdate }
+
+func (s depthSubscription) Chan() <-chan marketdata.DepthUpdate { return s.ch }
+
 func New() *Feed { return &Feed{indices: map[string]int{}} }
 
 func (f *Feed) LatestTick(_ context.Context, symbol string) (marketdata.Tick, error) {
@@ -29,7 +34,7 @@ func (f *Feed) LatestTick(_ context.Context, symbol string) (marketdata.Tick, er
 	if !ok {
 		return marketdata.Tick{}, fmt.Errorf("unknown symbol %q", symbol)
 	}
-	return marketdata.Tick{Symbol: symbol, Price: price, Source: "paper", Timestamp: time.Now().UTC()}, nil
+	return marketdata.Tick{Symbol: symbol, Price: price, Quantity: "1.0", Source: "paper", Timestamp: time.Now().UTC()}, nil
 }
 
 func (f *Feed) LatestCandle(_ context.Context, symbol, interval string) (marketdata.Candle, error) {
@@ -104,7 +109,7 @@ func (f *Feed) nextStreamTick(symbol string) (marketdata.Tick, error) {
 	}
 	idx := f.indices[symbol] % len(sequence)
 	f.indices[symbol] = f.indices[symbol] + 1
-	return marketdata.Tick{Symbol: symbol, Price: sequence[idx], Source: "paper-stream", Timestamp: time.Now().UTC()}, nil
+	return marketdata.Tick{Symbol: symbol, Price: sequence[idx], Quantity: "1.0", Source: "paper-stream", Timestamp: time.Now().UTC()}, nil
 }
 
 func (f *Feed) SubscribeCandles(ctx context.Context, symbol, interval string) marketdata.CandleSubscription {
@@ -134,6 +139,45 @@ func (f *Feed) SubscribeCandles(ctx context.Context, symbol, interval string) ma
 		}
 	}()
 	return candleSubscription{ch: ch}
+}
+
+func (f *Feed) SubscribeDepth(ctx context.Context, symbol string) marketdata.DepthSubscription {
+	ch := make(chan marketdata.DepthUpdate, 1)
+	go func() {
+		defer close(ch)
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				tick, _ := f.LatestTick(ctx, symbol)
+				price := tick.Price
+				if price == "" {
+					price = "100.0"
+				}
+				p := 100.0
+				if pf, err := strconv.ParseFloat(price, 64); err == nil {
+					p = pf
+				}
+
+				ch <- marketdata.DepthUpdate{
+					Symbol: symbol,
+					Bids: [][2]string{
+						{fmt.Sprintf("%.2f", p*0.999), "1.0"},
+						{fmt.Sprintf("%.2f", p*0.998), "2.0"},
+					},
+					Asks: [][2]string{
+						{fmt.Sprintf("%.2f", p*1.001), "1.0"},
+						{fmt.Sprintf("%.2f", p*1.002), "2.0"},
+					},
+					Timestamp: time.Now().UTC(),
+				}
+			}
+		}
+	}()
+	return depthSubscription{ch: ch}
 }
 
 func (f *Feed) nextStreamCandle(symbol, interval string) (marketdata.Candle, error) {

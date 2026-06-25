@@ -8,8 +8,10 @@ import (
 
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/eventlog"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/logging"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/core/utils"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/exchange"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/metrics"
+	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/notifications"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/persistence/orders"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/risk"
 	"github.com/robertpelloni/bobtrader/ultratrader-go/internal/trading/account"
@@ -24,8 +26,10 @@ type Service struct {
 	orders     *orders.Store
 	repository *Repository
 	portfolio  *portfolio.Tracker
-	logger     *logging.Logger
-	metrics    *metrics.Tracker
+	siphoning  *SiphoningManager
+	logger        *logging.Logger
+	metrics       *metrics.Tracker
+	notifications *notifications.Manager
 }
 
 func NewService(accounts *account.Service, registry *exchange.Registry, pipeline *risk.Pipeline, events *eventlog.Log, orderStore *orders.Store, repository *Repository, portfolioTracker *portfolio.Tracker, logger *logging.Logger, metricsTracker *metrics.Tracker) *Service {
@@ -36,6 +40,14 @@ func NewService(accounts *account.Service, registry *exchange.Registry, pipeline
 		metricsTracker = metrics.NewTracker()
 	}
 	return &Service{accounts: accounts, registry: registry, pipeline: pipeline, events: events, orders: orderStore, repository: repository, portfolio: portfolioTracker, logger: logger, metrics: metricsTracker}
+}
+
+func (s *Service) SetSiphoningManager(m *SiphoningManager) {
+	s.siphoning = m
+}
+
+func (s *Service) SetNotificationManager(m *notifications.Manager) {
+	s.notifications = m
 }
 
 func (s *Service) Execute(ctx context.Context, accountID string, request exchange.OrderRequest, intent risk.OrderIntent) (exchange.Order, error) {
@@ -82,12 +94,40 @@ func (s *Service) Execute(ctx context.Context, accountID string, request exchang
 		s.repository.Save(order)
 	}
 	if s.portfolio != nil {
+		// Calculate realized PnL before applying sell order if we have a siphoning manager
+		var realizedPnL float64
+		if order.Side == exchange.Sell && s.siphoning != nil {
+			avgEntry := s.portfolio.AverageEntryPrice(order.Symbol)
+			qty := utils.ParseFloat(order.Quantity)
+			price := utils.ParseFloat(order.Price)
+			if avgEntry > 0 && price > 0 {
+				realizedPnL = (price - avgEntry) * qty
+			}
+		}
+
 		s.portfolio.Apply(order)
+
+		// Trigger siphoning if we just realized a profit
+		if realizedPnL > 0 && s.siphoning != nil {
+			go func() {
+				// Use a fresh context or background context for siphoning to avoid
+				// cancelling the macro trade if the micro trade context is short-lived.
+				s.siphoning.OnTradeExit(context.Background(), order.Symbol, realizedPnL)
+			}()
+		}
 	}
 	if s.orders != nil {
 		if err := s.orders.Append(ctx, orders.Record{AccountID: acct.ID, Exchange: acct.ExchangeName, OrderID: order.ID, Symbol: order.Symbol, Side: string(order.Side), Type: string(order.Type), Status: string(order.Status), Quantity: order.Quantity, Price: order.Price, Metadata: map[string]any{"account_name": acct.Name, "correlation_id": correlationID}}); err != nil {
 			return exchange.Order{}, fmt.Errorf("append order record: %w", err)
 		}
+	}
+
+	if s.notifications != nil {
+		s.notifications.Notify(ctx, notifications.Notification{
+			Level:   notifications.Trade,
+			Source:  "ExecutionService",
+			Message: fmt.Sprintf("Order executed: %s %s %s @ %s", order.Side, order.Quantity, order.Symbol, order.Price),
+		})
 	}
 	if s.events != nil {
 		_ = s.events.Append(ctx, eventlog.Entry{Type: "execution.order_placed", Source: "execution-service", Payload: map[string]any{"account_id": accountID, "exchange": acct.ExchangeName, "symbol": order.Symbol, "side": order.Side, "type": order.Type, "status": string(order.Status), "order_id": order.ID, "correlation_id": correlationID}})

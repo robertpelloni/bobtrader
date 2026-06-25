@@ -8,18 +8,18 @@ import (
 )
 
 type Config struct {
-	Environment string           `json:"environment"`
-	EventLog    EventLogConfig   `json:"event_log"`
-	Snapshots   SnapshotConfig   `json:"snapshots"`
-	Orders      OrderConfig      `json:"orders"`
-	Reports     ReportConfig     `json:"reports"`
-	Logging     LoggingConfig    `json:"logging"`
-	Server      ServerConfig     `json:"server"`
-	Scheduler   SchedulerConfig  `json:"scheduler"`
-	Risk        RiskConfig       `json:"risk"`
-	Strategy    StrategyConfig   `json:"strategy"`
+	Environment string          `json:"environment"`
+	EventLog    EventLogConfig  `json:"event_log"`
+	Snapshots   SnapshotConfig  `json:"snapshots"`
+	Orders      OrderConfig     `json:"orders"`
+	Reports     ReportConfig    `json:"reports"`
+	Logging     LoggingConfig   `json:"logging"`
+	Server      ServerConfig    `json:"server"`
+	Scheduler   SchedulerConfig `json:"scheduler"`
+	Risk        RiskConfig      `json:"risk"`
+	Strategy    StrategyConfig  `json:"strategy"`
 	MarketData  MarketDataConfig `json:"market_data"`
-	Accounts    []AccountConfig  `json:"accounts"`
+	Accounts    []AccountConfig `json:"accounts"`
 }
 
 type EventLogConfig struct {
@@ -55,32 +55,34 @@ type SchedulerConfig struct {
 }
 
 type RiskConfig struct {
-	MaxNotional           float64  `json:"max_notional"`
-	MaxNotionalPerSymbol  float64  `json:"max_notional_per_symbol"`
-	AllowedSymbols        []string `json:"allowed_symbols"`
-	CooldownMS            int      `json:"cooldown_ms"`
-	DuplicateWindowMS     int      `json:"duplicate_window_ms"`
-	DuplicateSideWindowMS int      `json:"duplicate_side_window_ms"`
-	MaxOpenPositions      int      `json:"max_open_positions"`
-	MaxConcentrationPct   float64  `json:"max_concentration_pct"`
-	MaxDrawdownPct        float64  `json:"max_drawdown_pct"`
+	MaxNotional            float64  `json:"max_notional"`
+	MaxNotionalPerSymbol   float64  `json:"max_notional_per_symbol"`
+	AllowedSymbols         []string `json:"allowed_symbols"`
+	CooldownMS             int      `json:"cooldown_ms"`
+	DuplicateWindowMS      int      `json:"duplicate_window_ms"`
+	DuplicateSideWindowMS  int      `json:"duplicate_side_window_ms"`
+	MaxOpenPositions       int      `json:"max_open_positions"`
+	MaxConcentrationPct    float64  `json:"max_concentration_pct"`
 }
 
 type StrategyConfig struct {
 	ActiveStrategies       []string `json:"active_strategies"`
-	RiskPct                float64  `json:"risk_pct"`
-	MaxNotional            float64  `json:"max_notional"`
-	TrailingActivatePct    float64  `json:"trailing_activate_pct"`
-	TrailingGapPct         float64  `json:"trailing_gap_pct"`
-	TrailingStopLossPct    float64  `json:"trailing_stop_loss_pct"`
-	TrailingMaxHoldMinutes int      `json:"trailing_max_hold_minutes"`
-	BollingerPeriod        int      `json:"bollinger_period"`
-	BollingerStdDev        float64  `json:"bollinger_std_dev"`
-	RSIPeriod              int      `json:"rsi_period"`
-	RSIOversold            float64  `json:"rsi_oversold"`
-	RSIOverbought          float64  `json:"rsi_overbought"`
-	EMAFast                int      `json:"ema_fast"`
-	EMASlow                int      `json:"ema_slow"`
+	RiskPct                float64 `json:"risk_pct"`
+	MaxNotional            float64 `json:"max_notional"`
+	TrailingActivatePct    float64 `json:"trailing_activate_pct"`
+	TrailingGapPct         float64 `json:"trailing_gap_pct"`
+	TrailingStopLossPct    float64 `json:"trailing_stop_loss_pct"`
+	TrailingMaxHoldMinutes int     `json:"trailing_max_hold_minutes"`
+	BollingerPeriod        int     `json:"bollinger_period"`
+	BollingerStdDev        float64 `json:"bollinger_std_dev"`
+	RSIPeriod              int     `json:"rsi_period"`
+	RSIOversold            float64 `json:"rsi_oversold"`
+	RSIOverbought          float64 `json:"rsi_overbought"`
+	EMAFast                int     `json:"ema_fast"`
+	EMASlow                int     `json:"ema_slow"`
+	SiphoningEnabled       bool               `json:"siphoning_enabled"`
+	SiphoningPct           float64            `json:"siphoning_pct"`
+	SiphoningWeights       map[string]float64 `json:"siphoning_weights"`
 }
 
 type MarketDataConfig struct {
@@ -97,7 +99,7 @@ type AccountConfig struct {
 	APIKey       string   `json:"api_key"`
 	SecretKey    string   `json:"secret_key"`
 	Testnet      bool     `json:"testnet"`
-	SecretsFile  string   `json:"secrets_file"` // path to JSON file with api_key/secret_key
+	SecretsFile   string   `json:"secrets_file"` // path to JSON file with api_key/secret_key
 }
 
 type secretsFile struct {
@@ -116,15 +118,14 @@ func Default() Config {
 		Server:      ServerConfig{Enabled: true, Address: "127.0.0.1:0"},
 		Scheduler:   SchedulerConfig{Enabled: false, Mode: "timer", IntervalMS: 1000},
 		Risk: RiskConfig{
-			MaxNotional:           1000,
-			MaxNotionalPerSymbol:  0,
-			AllowedSymbols:        []string{"BTCUSDT", "ETHUSDT"},
-			CooldownMS:            0,
-			DuplicateWindowMS:     0,
+			MaxNotional:          1000,
+			MaxNotionalPerSymbol: 0,
+			AllowedSymbols:       []string{"BTCUSDT", "ETHUSDT"},
+			CooldownMS:           0,
+			DuplicateWindowMS:    0,
 			DuplicateSideWindowMS: 0,
-			MaxOpenPositions:      0,
-			MaxConcentrationPct:   0,
-			MaxDrawdownPct:        0.20,
+			MaxOpenPositions:     0,
+			MaxConcentrationPct:  0,
 		},
 		Strategy: StrategyConfig{
 			ActiveStrategies:       []string{"rsi_reversion"},
@@ -141,6 +142,9 @@ func Default() Config {
 			RSIOverbought:          65,
 			EMAFast:                9,
 			EMASlow:                21,
+			SiphoningEnabled:       false,
+			SiphoningPct:           0.1,
+			SiphoningWeights:       map[string]float64{"BTCUSDT": 1.0},
 		},
 		MarketData: MarketDataConfig{
 			Source:         "rest",
@@ -201,9 +205,6 @@ func Load(path string) (Config, error) {
 	}
 	if len(cfg.Risk.AllowedSymbols) == 0 {
 		cfg.Risk.AllowedSymbols = defaults.Risk.AllowedSymbols
-	}
-	if cfg.Risk.MaxDrawdownPct <= 0 {
-		cfg.Risk.MaxDrawdownPct = defaults.Risk.MaxDrawdownPct
 	}
 	if len(cfg.Accounts) == 0 {
 		cfg.Accounts = defaults.Accounts
