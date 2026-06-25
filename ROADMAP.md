@@ -1,6 +1,6 @@
 # PowerTrader AI / BobTrader — Roadmap
 
-## Current State: v2.0.54 — Autonomous Paper Trading Platform
+## Current State: v2.2.3 — Autonomous Paper Trading Platform
 
 The Go ultra-project (`ultratrader-go/`) is now the primary development track. The legacy Python system is preserved for reference but no longer actively developed.
 
@@ -135,6 +135,6 @@ Full list in `SUBMODULES.md` and `.gitmodules`.
 
 ---
 
-**Current Version:** 2.0.54
+**Current Version:** 2.2.3
 **Last Updated:** 2026-06-08
 **License:** Apache 2.0
