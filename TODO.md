@@ -2,13 +2,11 @@
 
 ## Current Sprint (v2.1.x)
 
-<<<<<<< HEAD
 ### WebSocket Feed
 - [x] Debug goroutine-to-channel delivery — WS connects but ticks don't reach consumer
 - [x] Add auto-reconnection with exponential backoff verification
 - [x] Add WebSocket health monitoring endpoint
 - [x] Switch default from REST to WS once stable
-=======
 ### Hierarchical Strategies (v2.4.0)
 - [x] Bump version to 2.4.0
 - [x] Implement ADX indicator for trend strength
@@ -43,8 +41,6 @@
 - [x] Implement Sharpe Ratio calculation in SignalLog
 - [x] Implement RegimeSwitcher strategy
 - [x] Upgrade MacroRegime with CompositeDetector
->>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
-
 ### Strategy Enhancement
 - [x] Kelly criterion / volatility-adjusted position sizing
 - [x] Walk-forward parameter optimization on historical data
@@ -177,3 +173,6 @@
 - [x] Portfolio rebalancer with wash-sale prevention
 - [x] Drawdown monitoring with auto-shutdown
 - [x] Compliance reporting (risk flags, recommendations)
+- [x] Graceful server shutdown endpoint (`/api/system/shutdown`)
+- [x] Standalone system tray and process monitor CLI (`pt_tray.py`)
+- [x] High-value consolidation of React UI (`ultratrader-ui`)

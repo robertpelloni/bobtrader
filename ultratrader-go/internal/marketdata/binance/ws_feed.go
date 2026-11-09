@@ -19,6 +19,9 @@ type StreamFeed struct {
 	adapter *binance.Adapter
 	baseURL string
 
+	// dialAndReadFunc allows mocking WebSocket connections for tests
+	dialAndReadFunc func(ctx context.Context, wsURL string, handler func([]byte)) error
+
 	// Health monitoring
 	mu             sync.RWMutex
 	connected      bool
@@ -138,7 +141,11 @@ func (f *StreamFeed) connectAndStream(ctx context.Context, wsURL string, handler
 		default:
 		}
 
-		_ = f.dialAndRead(ctx, wsURL, handler)
+		dialFn := f.dialAndRead
+		if f.dialAndReadFunc != nil {
+			dialFn = f.dialAndReadFunc
+		}
+		_ = dialFn(ctx, wsURL, handler)
 		if ctx.Err() != nil {
 			return
 		}

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -267,5 +268,43 @@ func TestWSHealthEndpoint(t *testing.T) {
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("expected 200, got %d", resp.StatusCode)
+	}
+}
+
+func TestShutdownEndpoint(t *testing.T) {
+	deps := makeTestDeps()
+	shutdownCalled := false
+	deps.ShutdownHandler = func(ctx context.Context) error {
+		shutdownCalled = true
+		return nil
+	}
+	handler := NewHandler(deps)
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	// GET method should be rejected with 405
+	resp, err := http.Get(server.URL + "/api/system/shutdown")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusMethodNotAllowed {
+		t.Errorf("expected 405 Method Not Allowed, got %d", resp.StatusCode)
+	}
+
+	// POST method should succeed with 200
+	respPost, err := http.Post(server.URL+"/api/system/shutdown", "application/json", nil)
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	defer respPost.Body.Close()
+	if respPost.StatusCode != http.StatusOK {
+		t.Errorf("expected 200 OK, got %d", respPost.StatusCode)
+	}
+
+	// Verify asynchronous trigger was called
+	time.Sleep(50 * time.Millisecond)
+	if !shutdownCalled {
+		t.Errorf("expected ShutdownHandler to be triggered")
 	}
 }

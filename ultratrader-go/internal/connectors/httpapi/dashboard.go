@@ -549,6 +549,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         <option value="10000">10s</option>
         <option value="30000">30s</option>
       </select>
+      <button class="btn" id="shutdown-btn" style="background:rgba(255,82,82,0.15);color:var(--red);border-color:rgba(255,82,82,0.3);font-weight:600;" title="Graceful Server Shutdown">&#x23FB; Quit Server</button>
     </div>
   </div>
 
@@ -1311,6 +1312,19 @@ function scheduleRefresh() {
 document.getElementById('refresh-btn').addEventListener('click', refreshDashboard);
 document.getElementById('auto-refresh').addEventListener('change', scheduleRefresh);
 document.getElementById('refresh-interval').addEventListener('change', scheduleRefresh);
+document.getElementById('shutdown-btn').addEventListener('click', async function() {
+  if (!confirm('Are you sure you want to shut down the UltraTrader Go server?')) return;
+  try {
+    const res = await fetch('/api/system/shutdown', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    if (res.ok) {
+      alert('Shutdown initiated. Server is terminating gracefully.');
+      document.getElementById('status-tag').textContent = 'OFFLINE';
+      document.getElementById('status-tag').className = 'tag offline';
+    }
+  } catch (err) {
+    alert('Error sending shutdown command: ' + err.message);
+  }
+});
 
 // ─── Initial load ─────────────────────────────────────────────
 refreshDashboard();

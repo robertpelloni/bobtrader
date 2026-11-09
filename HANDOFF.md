@@ -4,7 +4,6 @@
 
 During this session, we completed several major milestones on the `v2.1.x` roadmap for BobTrader, primarily focusing on WebSocket hardening and React UI scaffolding.
 
-<<<<<<< HEAD
 1.  **Dashboard Modernization**:
     *   Scaffolded a new React/Vite Single Page Application (SPA) in `ultratrader-ui`.
     *   Configured TailwindCSS for styling and set up basic routing with `react-router-dom`.
@@ -35,22 +34,17 @@ During this session, we completed several major milestones on the `v2.1.x` roadm
 8.  **Compliance & Reporting**:
     *   Implemented `ComplianceAnalyzer` to generate risk flags based on portfolio concentration, drawdowns, and guard trigger frequency.
     *   Exposed compliance reports via `GET /api/compliance`.
-=======
 ## Current State: v3.4.0-Alpha — Triangular & Multi-Hop Arbitrage
->>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
-
 ## System State & Next Steps
 
 *   The project is now fully compiling, and all tests pass (ignoring flaky live-connection tests in CI).
 *   The `TODO.md` and `ROADMAP.md` have been updated to reflect the completed tasks.
 *   **Next Priority**: We need to continue working through the "Remaining Backlog" section of the `TODO.md`. The current sprint features are complete. The next logical step is to start mining the `ASSIMILATION_CANDIDATES.md` repositories to assimilate the next batch of features for v2.2.
 
-<<<<<<< HEAD
 ## Key Learnings & Context
 *   **Binance JSON APIs**: Must use `json.Number` for numeric fields that could be exceptionally large or inconsistently formatted as strings vs numbers (e.g., `E` EventTime, `c` Price).
 *   **Testing**: Do not rely on real Binance testnet WebSockets for CI tests, as they can be completely silent and cause timeouts. Mock the network layer where possible.
 *   **Architecture**: The backend uses an adapter pattern for exchanges and a pipeline pattern for risk guards. The frontend is a standard Vite React app that proxies `/api` calls to the Go backend on port 8400.
-=======
 **Supervisor:** An AI agent monitors both bots, modifies source, rebuilds,
 restarts, and rebalances capital based on comparative performance. See
 `AUTONOMOUS_DUAL_BOT_STRATEGY.md` for full protocol.
@@ -180,4 +174,11 @@ This release enables complex, multi-leg arbitrage and live liquidity streaming.
 3. **Live HFT Benchmarking** — Test VWAP slippage against benchmarks on live accounts.
 4. **Real-time Depth Streaming** — Transition `/api/marketdata/depth` from mock to live Binance depth feed.
 5. **Strategy Portfolio Rebalancing** — Automatically shift capital to strategies with highest rolling Sharpe ratio.
->>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
+
+---
+
+## Session Hand-off (v3.4.1-alpha)
+* **Status**: Cleanly compiling Go backend (`ultratrader-go`), passing test suites, and successful Vite frontend build (`ultratrader-ui`).
+* **Conflict Resolution**: Completely resolved all git conflict markers across docs.
+* **Server Control**: Added `POST /api/system/shutdown` and `pt_tray.py` for headless or graphical tray icon server control.
+* **Consolidated UI**: Upgraded `ultratrader-ui` with comprehensive KPI ribbon, real-time depth, interactive price chart, guard inspection, and multi-venue arbitrage badges.

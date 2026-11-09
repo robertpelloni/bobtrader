@@ -135,6 +135,7 @@ type Dependencies struct {
 	CandleProvider               func(ctx context.Context, symbol, interval string, limit int) ([]marketdata.Candle, error)
 	GlobalBBOProvider            func(ctx context.Context, symbol string) (map[string]any, error)
 	OrderBookProvider            func(ctx context.Context, symbol string) (map[string]any, error)
+	ShutdownHandler              func(ctx context.Context) error
 }
 
 func NewHandler(deps Dependencies) http.Handler {
@@ -330,6 +331,25 @@ func NewHandler(deps Dependencies) http.Handler {
 		// For demo/v2.8.0, we just return success
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "received": payload})
+	})
+
+	mux.HandleFunc("/api/system/shutdown", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"ok":      true,
+			"message": "Shutdown signal received. Server terminating gracefully...",
+		})
+
+		// Trigger shutdown asynchronously so response flushes
+		if deps.ShutdownHandler != nil {
+			go func() {
+				_ = deps.ShutdownHandler(context.Background())
+			}()
+		}
 	})
 
 	return mux
