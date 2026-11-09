@@ -46,18 +46,12 @@
 [submodule "submodules/page-03/AdeelMufti__CryptoBot"]
 	path = submodules/page-03/AdeelMufti__CryptoBot
 	url = https://github.com/AdeelMufti/CryptoBot.git
-[submodule "submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot"]
-	path = submodules/page-03/GuillermoEguilaz__Polymarket-Crypto-Trading-Bot
-	url = https://github.com/GuillermoEguilaz/Polymarket-Crypto-Trading-Bot.git
 [submodule "submodules/page-04/hackingthemarkets__binance-tutorials"]
 	path = submodules/page-04/hackingthemarkets__binance-tutorials
 	url = https://github.com/hackingthemarkets/binance-tutorials.git
 [submodule "submodules/page-04/blockplusim__crypto_trading_service_for_tradingview"]
 	path = submodules/page-04/blockplusim__crypto_trading_service_for_tradingview
 	url = https://github.com/blockplusim/crypto_trading_service_for_tradingview.git
-[submodule "submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot"]
-	path = submodules/page-04/PolyStrategy__Polymarket-Crypto-Market-Bot
-	url = https://github.com/PolyStrategy/Polymarket-Crypto-Market-Bot.git
 [submodule "submodules/page-04/ccxt__ccxt"]
 	path = submodules/page-04/ccxt__ccxt
 	url = https://github.com/ccxt/ccxt.git
@@ -115,9 +109,6 @@
 [submodule "submodules/page-06/johndpope__CryptoCurrencyTrader"]
 	path = submodules/page-06/johndpope__CryptoCurrencyTrader
 	url = https://github.com/johndpope/CryptoCurrencyTrader.git
-[submodule "submodules/page-06/Nafidinara__bot-pancakeswap"]
-	path = submodules/page-06/Nafidinara__bot-pancakeswap
-	url = https://github.com/Nafidinara/bot-pancakeswap.git
 [submodule "submodules/page-06/nicknochnack__LLMAgentCrypto"]
 	path = submodules/page-06/nicknochnack__LLMAgentCrypto
 	url = https://github.com/nicknochnack/LLMAgentCrypto.git
