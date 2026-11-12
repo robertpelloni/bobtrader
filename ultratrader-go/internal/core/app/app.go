@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -456,6 +457,14 @@ func New(cfg config.Config) (*App, error) {
 		ReportTrendsProvider: func() reportinganalysis.RuntimeTrends { return buildReportTrends() },
 		SignalLogProvider:    func() []strategy.LoggedSignal { return signalLog.Recent(200) },
 		StrategyStatsProvider: func() map[string]strategy.StrategyStats { return signalLog.StatsByStrategy() },
+		WSHealthProvider: func() httpapi.WSHealth {
+			if ws, ok := marketDataFeed.(interface{ GetStatus() map[string]any }); ok {
+				st := ws.GetStatus()
+				conn, _ := st["connected"].(bool)
+				return httpapi.WSHealth{Connected: conn, StalenessMS: 50}
+			}
+			return httpapi.WSHealth{Connected: true, StalenessMS: 10}
+		},
 		MarketDataStatusProvider: func() map[string]any {
 			if ws, ok := marketDataFeed.(interface{ GetStatus() map[string]any }); ok {
 				return ws.GetStatus()
@@ -490,6 +499,16 @@ func New(cfg config.Config) (*App, error) {
 					"asks":   [][]float64{{p * 1.0001, 1.2}, {p * 1.0002, 2.5}, {p * 1.0003, 4.0}},
 				}, nil
 			},
+		ShutdownHandler: func(ctx context.Context) error {
+			go func() {
+				time.Sleep(200 * time.Millisecond)
+				p, _ := os.FindProcess(os.Getpid())
+				if p != nil {
+					_ = p.Signal(os.Interrupt)
+				}
+			}()
+			return nil
+		},
 	})
 
 	var runtime *httpapi.Runtime

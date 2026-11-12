@@ -34,13 +34,11 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 
 ## Near-Term Roadmap (v2.1.x)
 
-<<<<<<< HEAD
 ### 1. WebSocket Feed Hardening
 - [x] Debug goroutine-to-channel delivery in WS feed
 - [x] Add auto-reconnection with exponential backoff
 - [x] Add WebSocket health monitoring endpoint
 - [x] Switch default from REST to WS once stable
-=======
 ### 1. Hierarchical Strategy Suite (The "Best Suite" Initiative)
 - [x] Implement Macro Regime Filter (Trend/Vol/Range detection)
 - [x] Implement Micro Volatility Scalper (Tick-level capture)
@@ -65,8 +63,6 @@ The Go ultra-project (`ultratrader-go/`) is now the primary development track. T
 - [x] Add Sharpe Ratio Performance Metric (v2.4.0)
 
 ### 2. Dashboard Modernization
->>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
-
 ### 2. Strategy Enhancement
 - [ ] Kelly criterion / volatility-adjusted position sizing
 - [ ] Walk-forward parameter optimization on historical data

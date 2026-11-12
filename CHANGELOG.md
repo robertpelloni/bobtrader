@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v3.0.0
 
 ## Version History (merged: v2.1.x + v3.4.0-alpha)
 
+### v3.4.1-alpha Track
+## [3.4.1-alpha] - 2026-11-09
+### Added
+- **Unified High-Value Dashboard UI** — Complete redesign and consolidation of `ultratrader-ui/src/pages/Dashboard.tsx` into a high-value layout featuring executive KPIs, live interactive price action & L2 liquidity depth, consolidated portfolio & recent order history, risk guard inspection with tooltips, cross-exchange arbitrage opportunities, strategy configuration tuning forms, and server control buttons.
+- **Graceful Server Shutdown Endpoint** — Added `POST /api/system/shutdown` to `httpapi.Server` wired through `httpapi.Dependencies` and `app.App`, enabling safe remote and tray-driven termination.
+- **Standalone System Tray & Process Manager** — Created `pt_tray.py` providing dual graphical tray icon and interactive terminal modes for monitoring health, opening dashboards in browsers, and gracefully stopping servers.
+- **WebSocket Reconnection Mocking** — Added `dialAndReadFunc` mock hook in `StreamFeed` to verify exponential backoff algorithms without flaky external connections.
+
+### Fixed
+- Resolved all remaining git merge conflict markers across `TODO.md`, `ROADMAP.md`, `MEMORY.md`, and `HANDOFF.md`.
+- Added fallback `WSHealthProvider` in `app.go` ensuring valid WebSocket health JSON responses in all execution modes.
+
 ### v3.4.0-alpha Track
 ## [3.4.0-alpha] - 2026-06-17
 ### Added

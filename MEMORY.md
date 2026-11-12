@@ -103,7 +103,6 @@ The Go implementation is highly modular, focusing on interfaces, dependency inje
 - **HFT Core (v3.3.0):** Institutional-grade execution with **VWAP** (Volume Weighted Average Price) slicing and atomic multi-venue arbitrage legs for low-latency market exploitation.
 - **Frontend Dashboard:** React/Vite SPA embedded into the Go binary via `http.FileServer`, providing real-time PnL trends, Arbitrage Scanners, and **Order Book Depth** visualization.
 
-<<<<<<< HEAD
 Design patterns emphasize Go routines for parallel evaluation and TDD with comprehensive mocking.
 
 ## Real Exchange Integration (v2.1.4)
@@ -111,6 +110,4 @@ Design patterns emphasize Go routines for parallel evaluation and TDD with compr
 * **Resilience:** Implemented a new `CircuitBreaker` pattern in `internal/risk/circuitbreaker` wrapping all outbound HTTP calls.
 * **Portfolio Sync:** The `TradeHistoryQuerier` interface was implemented allowing the application to pull the last 100 historical trades on boot to hydrate the internal portfolio state natively.
 * **Order Reconciliation:** The periodic background reconciler loop now actively updates local order discrepancies against the live exchange status.
-=======
 Design patterns emphasize Go routines for parallel evaluation, interface-driven dependency injection, and TDD with comprehensive mocking.
->>>>>>> origin/hierarchical-suite-v2.1.3-13090092632671158488
